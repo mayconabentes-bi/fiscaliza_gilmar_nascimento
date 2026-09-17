@@ -35,10 +35,11 @@ function Brand({ privateMode = false }: { privateMode?: boolean }) {
   );
 }
 
-function MobileNav({ user }: { user: any }) {
+function MobileNav({ user, onLogout }: { user: any; onLogout: () => void | Promise<void> }) {
   const location = useLocation();
   const isAdmin = user?.type === "admin" && ["ADMIN", "SUPER_ADMIN"].includes(user?.perfil_acesso);
   const itemClass = (path: string) => `relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1.5 py-2 text-[10px] font-bold transition ${location.pathname === path ? "text-[#1f2e6e]" : "text-[#727d94]"}`;
+  const actionClass = "relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1.5 py-2 text-[10px] font-bold text-[#727d94] transition hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#c94d06]";
   const iconClass = (path: string) => location.pathname === path ? "h-5 w-5 stroke-[2.4]" : "h-5 w-5 stroke-[1.9]";
 
   return (
@@ -49,11 +50,12 @@ function MobileNav({ user }: { user: any }) {
           <Link to="/admin/demandas" className={itemClass("/admin/demandas")}><FileText className={iconClass("/admin/demandas")} /><span>Triagem</span></Link>
           <Link to="/radar-manaus" className={itemClass("/radar-manaus")}><MapPinned className={iconClass("/radar-manaus")} /><span>Radar</span></Link>
           <Link to="/estrategia-2028" className={itemClass("/estrategia-2028")}><Flag className={iconClass("/estrategia-2028")} /><span>Estratégia</span></Link>
+          <button type="button" onClick={onLogout} data-mobile-logout="admin" aria-label="Sair da área administrativa" className={actionClass}><LogOut className="h-5 w-5 stroke-[1.9]" /><span>Sair</span></button>
         </> : <>
           <Link to="/" className={itemClass("/")}><HomeIcon className={iconClass("/")} /><span>Início</span></Link>
           <Link to="/demandas/nova" className={itemClass("/demandas/nova")}><CirclePlus className={iconClass("/demandas/nova")} /><span>Registrar</span></Link>
           <Link to="/protocolo" className={itemClass("/protocolo")}><Search className={iconClass("/protocolo")} /><span>Acompanhar</span></Link>
-          {!user && <Link to="/login" className={itemClass("/login")}><LogIn className={iconClass("/login")} /><span>Entrar</span></Link>}
+          {user ? <button type="button" onClick={onLogout} data-mobile-logout="user" aria-label="Sair da conta" className={actionClass}><LogOut className="h-5 w-5 stroke-[1.9]" /><span>Sair</span></button> : <Link to="/login" className={itemClass("/login")}><LogIn className={iconClass("/login")} /><span>Entrar</span></Link>}
         </>}
       </div>
     </nav>
@@ -191,7 +193,7 @@ function AppShell() {
       </main>
 
       {!isAdmin && <footer className="mt-auto border-t border-[#d7e0f2] bg-white pb-24 pt-9 lg:pb-9"><div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"><div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between"><div className="flex max-w-2xl flex-col gap-5 sm:flex-row sm:items-start"><span className="brand-signature-mark brand-signature-mark--footer" aria-hidden="true"><img src="/brand/gilmar-nascimento-oficial.png" alt="" /></span><div className="max-w-xl"><div className="flex items-center gap-2.5"><Radar className="h-4 w-4 text-[#1f2e6e]" /><span className="text-base font-extrabold text-[#1f2e6e]">FISCALIZE</span></div><p className="mt-3 text-sm leading-relaxed text-[#657089]">Um espaço para registrar, organizar e acompanhar problemas relatados em Manaus.</p></div></div><div className="flex flex-wrap gap-x-6 gap-y-3 text-sm font-semibold text-[#657089]"><Link to="/metodologia" className="hover:text-[#1f2e6e]">Como funciona</Link><Link to="/transparencia" className="hover:text-[#1f2e6e]">Sobre</Link><Link to="/privacidade" className="hover:text-[#1f2e6e]">Privacidade</Link><Link to="/termos" className="hover:text-[#1f2e6e]">Termos</Link></div></div><div className="mt-8 border-t border-[#eef2fb] pt-5 text-xs leading-relaxed text-[#7b8599]">© {new Date().getFullYear()} FISCALIZE.</div></div></footer>}
-      <MobileNav user={user} />
+      <MobileNav user={user} onLogout={handleLogout} />
     </div>
   );
 }
