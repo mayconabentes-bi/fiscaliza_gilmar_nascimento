@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { BarChart3, Database, GraduationCap, HeartPulse, MapPinned, RefreshCw, ShieldCheck, Wrench } from "lucide-react";
+import { fetchWithTimeout } from "../lib/request";
 
 type Resumo = {
   municipio: string;
@@ -14,7 +15,6 @@ type Resumo = {
 type Fonte = { key: string; etapa: string; nome: string; status: string; endpoint?: string | null; paginaOficial?: string };
 type MapFeature = { attributes?: Record<string, unknown>; geometry?: { rings?: number[][][] } };
 type MapaResponse = { total: number; retornados: number; truncated: boolean; features: MapFeature[] };
-type SessionResponse = { authenticated: boolean; user?: { type?: string; perfil_acesso?: string } };
 type Territorio = { bairro: string; demandas: number; prioritarias: number; concluidas: number; temas: number; taxaConclusao: number; obras: number; unidadesSaude: number; escolas: number };
 type IndicadorExterno = { key: string; nome: string; configurado: boolean; disponibilidade: string; registrosObservados: number | null; tipo: string | null; erro?: string | null };
 type QualityResponse = { dimensions: Array<{ key: string; received: number; classified: number; unclassified: number; coverage: number }>; methodology: string };
@@ -117,64 +117,82 @@ export default function RadarTerritorial() {
   const [indicadoresExternos, setIndicadoresExternos] = useState<IndicadorExterno[]>([]);
   const [quality, setQuality] = useState<QualityResponse | null>(null);
   const [bairroSelecionado, setBairroSelecionado] = useState("");
-  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
+  const [hasAccess, setHasAccess] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const controllerRef = useRef<AbortController | null>(null);
 
   async function carregar() {
+    controllerRef.current?.abort();
+    const controller = new AbortController();
+    controllerRef.current = controller;
     setLoading(true);
     setError(null);
+
     try {
-      const [resumoResponse, fontesResponse, mapaResponse, territoriosResponse, externosResponse, qualityResponse] = await Promise.all([
-        fetch("/api/radar/manaus/resumo", { credentials: "same-origin", cache: "no-store" }),
-        fetch("/api/radar/manaus/fontes", { credentials: "same-origin", cache: "no-store" }),
-        fetch("/api/radar/manaus/mapa/bairros", { credentials: "same-origin" }),
-        fetch("/api/radar/manaus/territorios", { credentials: "same-origin", cache: "no-store" }),
-        fetch("/api/radar/manaus/indicadores-externos", { credentials: "same-origin", cache: "no-store" }),
-        fetch("/api/intelligence/quality/territorial", { credentials: "same-origin", cache: "no-store" }),
-      ]);
+      const resumoResponse = await fetchWithTimeout(
+        "/api/radar/manaus/resumo",
+        { credentials: "same-origin", cache: "no-store", signal: controller.signal },
+        8000
+      );
       if (resumoResponse.status === 401 || resumoResponse.status === 403) {
         setHasAccess(false);
         throw new Error("Acesso privado não autorizado.");
       }
       if (!resumoResponse.ok) throw new Error("Não foi possível carregar o resumo territorial.");
-      setResumo(await resumoResponse.json());
-      if (fontesResponse.ok) setFontes((await fontesResponse.json()).fontes || []);
-      if (mapaResponse.ok) setMapa(await mapaResponse.json());
-      if (territoriosResponse.ok) setTerritorios((await territoriosResponse.json()).territorios || []);
-      if (externosResponse.ok) setIndicadoresExternos((await externosResponse.json()).indicadores || []);
-      if (qualityResponse.ok) setQuality(await qualityResponse.json());
+      const resumoPayload = await resumoResponse.json();
+      if (controller.signal.aborted) return;
+      setHasAccess(true);
+      setResumo(resumoPayload);
+      setLoading(false);
+
+      const optionalLoaders: Array<() => Promise<void>> = [
+        async () => {
+          const response = await fetchWithTimeout("/api/radar/manaus/fontes", { credentials: "same-origin", cache: "no-store", signal: controller.signal }, 7000);
+          if (response.ok && !controller.signal.aborted) setFontes((await response.json()).fontes || []);
+        },
+        async () => {
+          const response = await fetchWithTimeout("/api/radar/manaus/mapa/bairros", { credentials: "same-origin", signal: controller.signal }, 7000);
+          if (response.ok && !controller.signal.aborted) setMapa(await response.json());
+        },
+        async () => {
+          const response = await fetchWithTimeout("/api/radar/manaus/territorios", { credentials: "same-origin", cache: "no-store", signal: controller.signal }, 7000);
+          if (response.ok && !controller.signal.aborted) setTerritorios((await response.json()).territorios || []);
+        },
+        async () => {
+          const response = await fetchWithTimeout("/api/radar/manaus/indicadores-externos", { credentials: "same-origin", cache: "no-store", signal: controller.signal }, 7000);
+          if (response.ok && !controller.signal.aborted) setIndicadoresExternos((await response.json()).indicadores || []);
+        },
+        async () => {
+          const response = await fetchWithTimeout("/api/intelligence/quality/territorial", { credentials: "same-origin", cache: "no-store", signal: controller.signal }, 7000);
+          if (response.ok && !controller.signal.aborted) setQuality(await response.json());
+        },
+      ];
+
+      for (const load of optionalLoaders) {
+        if (controller.signal.aborted) break;
+        try { await load(); } catch (optionalError: any) {
+          if (controller.signal.aborted || optionalError?.name === "AbortError") break;
+        }
+      }
     } catch (e: any) {
+      if (controller.signal.aborted || e?.name === "AbortError") return;
       setError(e?.message || "Falha ao carregar Radar Territorial.");
-    } finally { setLoading(false); }
+    } finally {
+      if (controllerRef.current === controller && !controller.signal.aborted) setLoading(false);
+    }
   }
 
   useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const response = await fetch("/api/auth/session", { credentials: "same-origin", cache: "no-store" });
-        const session: SessionResponse = response.ok ? await response.json() : { authenticated: false };
-        const allowed = Boolean(
-          session.authenticated &&
-          session.user?.type === "admin" &&
-          ["ADMIN", "SUPER_ADMIN"].includes(String(session.user?.perfil_acesso || ""))
-        );
-        if (!active) return;
-        setHasAccess(allowed);
-        if (allowed) await carregar();
-        else setLoading(false);
-      } catch {
-        if (active) { setHasAccess(false); setLoading(false); }
-      }
-    })();
-    return () => { active = false; };
+    carregar();
+    return () => controllerRef.current?.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const maxBairro = useMemo(() => Math.max(1, ...(resumo?.demandasPorBairro || []).map((item) => Number(item.total) || 0)), [resumo]);
   const territorioSelecionado = useMemo(() => territorios.find((item) => normalize(item.bairro) === normalize(bairroSelecionado)) || null, [territorios, bairroSelecionado]);
 
-  if (hasAccess === null || (loading && !resumo)) return <div className="py-16 text-center text-sm text-slate-500">Carregando Radar Territorial…</div>;
+  if (loading && !resumo) return <div className="py-16 text-center text-sm text-slate-500">Carregando Radar Territorial…</div>;
   if (!hasAccess) return <div className="max-w-3xl mx-auto bg-white border border-slate-200 rounded-2xl p-8 text-center shadow-sm"><ShieldCheck className="w-12 h-12 text-slate-400 mx-auto mb-4" /><h1 className="text-2xl font-bold text-slate-900">Radar territorial restrito</h1><p className="mt-3 text-slate-600">Este módulo pertence ao núcleo privado e é exclusivo do administrador.</p></div>;
 
   const cards = [
