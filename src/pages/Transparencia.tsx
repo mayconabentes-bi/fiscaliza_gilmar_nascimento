@@ -28,7 +28,7 @@ export default function Transparencia() {
         <section className="rounded-3xl border border-slate-200 bg-white p-7">
           <Eye className="w-6 h-6 text-emerald-700" />
           <h2 className="mt-4 text-xl font-bold">Resultados com contexto</h2>
-          <p className="mt-3 text-slate-600 leading-relaxed">Quando houver atualização ou resultado, o FISCALIZE registra o que foi confirmado, a data e as evidências disponíveis, sem atribuir a si ações que não realizou.</p>
+          <p className="mt-3 text-slate-600 leading-relaxed">Quando houver atualização ou resultado, o FISCALIZE registra o que foi confirmado, a data e, quando houver, a existência de evidências verificadas, sem expor conteúdo privado nem atribuir a si ações que não realizou.</p>
         </section>
       </div>
 
