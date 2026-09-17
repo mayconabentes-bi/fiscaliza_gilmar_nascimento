@@ -170,7 +170,7 @@ function AppShell() {
           <Route path="/login" element={<Login setUser={setUser} />} />
           <Route path="/register-cidadao" element={publicOnly(<RegisterCidadao />)} />
           <Route path="/demandas/nova" element={publicOnly(<NovaDemanda />)} />
-          <Route path="/protocolo" element={publicOnly(<ConsultaProtocolo />)} />
+          <Route path="/protocolo" element={<ConsultaProtocolo />} />
           <Route path="/metodologia" element={publicOnly(<Metodologia />)} />
           <Route path="/transparencia" element={publicOnly(<Transparencia />)} />
           <Route path="/termos" element={publicOnly(<Termos />)} />
