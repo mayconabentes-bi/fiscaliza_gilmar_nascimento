@@ -22,14 +22,15 @@ const SecurityAudit = lazy(() => import("./pages/SecurityAudit"));
 const AdminDemandas = lazy(() => import("./pages/AdminDemandas"));
 
 function RouteFallback() {
-  return <div className="py-20 text-center text-sm font-semibold text-[#69736d]">Carregando...</div>;
+  return <div className="py-20 text-center text-sm font-semibold text-[#657089]">Carregando...</div>;
 }
 
 function Brand({ privateMode = false }: { privateMode?: boolean }) {
   return (
-    <Link to={privateMode ? "/dashboard" : "/"} className="flex items-center gap-3" aria-label={privateMode ? "FISCALIZE - núcleo privado" : "FISCALIZE - início"}>
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#dfe5e1] bg-white text-[#157a55] shadow-sm"><Radar className="h-[18px] w-[18px]" strokeWidth={2.2} /></span>
-      <span><span className="block text-[19px] font-extrabold tracking-[-0.045em] text-[#101513]">FISCALIZE</span>{privateMode && <span className="hidden text-[10px] font-bold uppercase tracking-[0.12em] text-[#8a928e] sm:block">Privado</span>}</span>
+    <Link to={privateMode ? "/dashboard" : "/"} className="flex min-w-0 items-center gap-2.5 sm:gap-3" aria-label={privateMode ? "FISCALIZE - núcleo privado" : "FISCALIZE - início"}>
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#d7e0f2] bg-white text-[#1f2e6e] shadow-sm"><Radar className="h-[18px] w-[18px]" strokeWidth={2.2} /></span>
+      <span className="min-w-0"><span className="block text-[18px] font-extrabold tracking-[-0.045em] text-[#1f2e6e] sm:text-[19px]">FISCALIZE</span>{privateMode && <span className="hidden text-[10px] font-bold uppercase tracking-[0.12em] text-[#657089] sm:block">Privado</span>}</span>
+      {!privateMode && <span className="brand-signature-mark hidden sm:block" aria-hidden="true"><img src="/brand/gilmar-nascimento-oficial.png" alt="" /></span>}
     </Link>
   );
 }
@@ -37,11 +38,11 @@ function Brand({ privateMode = false }: { privateMode?: boolean }) {
 function MobileNav({ user }: { user: any }) {
   const location = useLocation();
   const isAdmin = user?.type === "admin" && ["ADMIN", "SUPER_ADMIN"].includes(user?.perfil_acesso);
-  const itemClass = (path: string) => `relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1.5 py-2 text-[10px] font-bold transition ${location.pathname === path ? "text-[#157a55]" : "text-[#78817c]"}`;
+  const itemClass = (path: string) => `relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1.5 py-2 text-[10px] font-bold transition ${location.pathname === path ? "text-[#1f2e6e]" : "text-[#727d94]"}`;
   const iconClass = (path: string) => location.pathname === path ? "h-5 w-5 stroke-[2.4]" : "h-5 w-5 stroke-[1.9]";
 
   return (
-    <nav aria-label={isAdmin ? "Navegação privada" : "Navegação principal"} className="fixed inset-x-0 bottom-0 z-40 border-t border-[#e4e8e5] bg-white/96 px-2 pt-1.5 backdrop-blur-xl lg:hidden pb-[max(env(safe-area-inset-bottom),0.35rem)]">
+    <nav aria-label={isAdmin ? "Navegação privada" : "Navegação principal"} className="fixed inset-x-0 bottom-0 z-40 border-t border-[#dde4ef] bg-white/96 px-2 pt-1.5 backdrop-blur-xl lg:hidden pb-[max(env(safe-area-inset-bottom),0.35rem)]">
       <div className="mx-auto flex h-[62px] max-w-lg items-stretch gap-1">
         {isAdmin ? <>
           <Link to="/dashboard" className={itemClass("/dashboard")}><LayoutDashboard className={iconClass("/dashboard")} /><span>Painel</span></Link>
@@ -127,8 +128,8 @@ function AppShell() {
 
   const isAdmin = user?.type === "admin" && ["ADMIN", "SUPER_ADMIN"].includes(user?.perfil_acesso);
   const onDemandForm = location.pathname === "/demandas/nova";
-  const publicNavClass = (path: string) => `rounded-lg px-3 py-2 text-sm font-semibold transition ${location.pathname === path ? "text-[#101513]" : "text-[#69736d] hover:text-[#101513]"}`;
-  const privateNavClass = (path: string) => `rounded-lg px-3 py-2 text-sm font-bold transition ${location.pathname === path ? "bg-white text-[#101513] shadow-sm" : "text-[#69736d] hover:bg-white/70 hover:text-[#101513]"}`;
+  const publicNavClass = (path: string) => `rounded-lg px-3 py-2 text-sm font-semibold transition ${location.pathname === path ? "bg-[#eef2fb] text-[#1f2e6e]" : "text-[#657089] hover:bg-white hover:text-[#1f2e6e]"}`;
+  const privateNavClass = (path: string) => `rounded-lg px-3 py-2 text-sm font-bold transition ${location.pathname === path ? "bg-white text-[#1f2e6e] shadow-sm" : "text-[#657089] hover:bg-white/80 hover:text-[#1f2e6e]"}`;
 
   const publicOnly = (element: ReactNode) => authReady && isAdmin ? <Navigate to="/dashboard" replace /> : element;
   const adminOnly = (element: ReactNode) => {
@@ -138,10 +139,11 @@ function AppShell() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col font-sans text-[#101513]">
+    <div className="flex min-h-screen flex-col font-sans text-[#172033]">
       {!isAdmin && !onDemandForm && <LGPDConsent />}
-      <header className="sticky top-0 z-30 border-b border-[#e7ebe8] bg-[#f7f8f6]/95 backdrop-blur-xl">
-        <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="brand-accent-bar" aria-hidden="true" />
+      <header className="sticky top-0 z-30 border-b border-[#dde4ef] bg-[#f5f7fb]/95 backdrop-blur-xl">
+        <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
           <Brand privateMode={isAdmin} />
           {!isAdmin && !onDemandForm && <div className="lg:hidden"><Link to="/demandas/nova" className="primary-button min-h-10 rounded-lg px-4 py-2">Registrar</Link></div>}
           {isAdmin ? (
@@ -153,12 +155,12 @@ function AppShell() {
               <Link to="/admin" className={privateNavClass("/admin")}><span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4" />Governança</span></Link>
               <Link to="/admin/audit" className={privateNavClass("/admin/audit")}><span className="flex items-center gap-2"><Lock className="h-4 w-4" />Auditoria</span></Link>
               <Link to="/relatorios" className={privateNavClass("/relatorios")}><span className="flex items-center gap-2"><FileBarChart className="h-4 w-4" />Relatórios</span></Link>
-              <div className="ml-2 flex items-center gap-2 border-l border-[#e0e5e2] pl-3"><div className="flex max-w-40 items-center gap-2 rounded-lg border border-[#e4e8e5] bg-white px-3 py-2 text-sm font-semibold text-[#56615b]"><User className="h-4 w-4" /><span className="truncate">{user.nome}</span></div><button onClick={handleLogout} aria-label="Sair" className="rounded-lg p-2 text-[#8a928e] transition hover:bg-red-50 hover:text-red-600"><LogOut className="h-4.5 w-4.5" /></button></div>
+              <div className="ml-2 flex items-center gap-2 border-l border-[#d7e0f2] pl-3"><div className="flex max-w-40 items-center gap-2 rounded-lg border border-[#dde4ef] bg-white px-3 py-2 text-sm font-semibold text-[#526078]"><User className="h-4 w-4" /><span className="truncate">{user.nome}</span></div><button onClick={handleLogout} aria-label="Sair" className="rounded-lg p-2 text-[#7b8599] transition hover:bg-red-50 hover:text-red-600"><LogOut className="h-4.5 w-4.5" /></button></div>
             </nav>
           ) : (
             <nav className="hidden items-center gap-1 lg:flex" aria-label="Navegação superior">
               <Link to="/" className={publicNavClass("/")}>Início</Link><Link to="/demandas/nova" className={publicNavClass("/demandas/nova")}>Registrar</Link><Link to="/protocolo" className={publicNavClass("/protocolo")}>Acompanhar</Link><Link to="/metodologia" className={publicNavClass("/metodologia")}>Como funciona</Link><Link to="/transparencia" className={publicNavClass("/transparencia")}>Sobre</Link>
-              {user ? <div className="ml-3 flex items-center gap-2 border-l border-[#e0e5e2] pl-4"><div className="flex max-w-40 items-center gap-2 rounded-lg border border-[#e4e8e5] bg-white px-3 py-2 text-sm font-semibold text-[#56615b]"><User className="h-4 w-4" /><span className="truncate">{user.nome_completo}</span></div><button onClick={handleLogout} aria-label="Sair" className="rounded-lg p-2 text-[#8a928e] transition hover:bg-red-50 hover:text-red-600"><LogOut className="h-4.5 w-4.5" /></button></div> : <Link to="/login" className="ml-3 rounded-lg border border-[#dfe4e1] bg-white px-4 py-2.5 text-sm font-bold text-[#101513] shadow-sm">Entrar</Link>}
+              {user ? <div className="ml-3 flex items-center gap-2 border-l border-[#d7e0f2] pl-4"><div className="flex max-w-40 items-center gap-2 rounded-lg border border-[#dde4ef] bg-white px-3 py-2 text-sm font-semibold text-[#526078]"><User className="h-4 w-4" /><span className="truncate">{user.nome_completo}</span></div><button onClick={handleLogout} aria-label="Sair" className="rounded-lg p-2 text-[#7b8599] transition hover:bg-red-50 hover:text-red-600"><LogOut className="h-4.5 w-4.5" /></button></div> : <Link to="/login" className="ml-3 rounded-lg border border-[#cfd8e8] bg-white px-4 py-2.5 text-sm font-bold text-[#1f2e6e] shadow-sm transition hover:border-[#aebcda]">Entrar</Link>}
             </nav>
           )}
         </div>
@@ -186,7 +188,7 @@ function AppShell() {
         </Routes></Suspense>
       </main>
 
-      {!isAdmin && <footer className="mt-auto border-t border-[#e4e8e5] bg-white pb-24 pt-9 lg:pb-9"><div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"><div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between"><div className="max-w-xl"><div className="flex items-center gap-2.5"><Radar className="h-4 w-4 text-[#157a55]" /><span className="text-base font-extrabold">FISCALIZE</span></div><p className="mt-3 text-sm leading-relaxed text-[#69736d]">Um espaço para registrar, organizar e acompanhar problemas relatados em Manaus.</p></div><div className="flex flex-wrap gap-x-6 gap-y-3 text-sm font-semibold text-[#69736d]"><Link to="/metodologia" className="hover:text-[#101513]">Como funciona</Link><Link to="/transparencia" className="hover:text-[#101513]">Sobre</Link><Link to="/privacidade" className="hover:text-[#101513]">Privacidade</Link><Link to="/termos" className="hover:text-[#101513]">Termos</Link></div></div><div className="mt-8 border-t border-[#eef0ee] pt-5 text-xs leading-relaxed text-[#8a928e]">© {new Date().getFullYear()} FISCALIZE.</div></div></footer>}
+      {!isAdmin && <footer className="mt-auto border-t border-[#d7e0f2] bg-white pb-24 pt-9 lg:pb-9"><div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"><div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between"><div className="flex max-w-2xl flex-col gap-5 sm:flex-row sm:items-start"><span className="brand-signature-mark brand-signature-mark--footer" aria-hidden="true"><img src="/brand/gilmar-nascimento-oficial.png" alt="" /></span><div className="max-w-xl"><div className="flex items-center gap-2.5"><Radar className="h-4 w-4 text-[#1f2e6e]" /><span className="text-base font-extrabold text-[#1f2e6e]">FISCALIZE</span></div><p className="mt-3 text-sm leading-relaxed text-[#657089]">Um espaço para registrar, organizar e acompanhar problemas relatados em Manaus.</p></div></div><div className="flex flex-wrap gap-x-6 gap-y-3 text-sm font-semibold text-[#657089]"><Link to="/metodologia" className="hover:text-[#1f2e6e]">Como funciona</Link><Link to="/transparencia" className="hover:text-[#1f2e6e]">Sobre</Link><Link to="/privacidade" className="hover:text-[#1f2e6e]">Privacidade</Link><Link to="/termos" className="hover:text-[#1f2e6e]">Termos</Link></div></div><div className="mt-8 border-t border-[#eef2fb] pt-5 text-xs leading-relaxed text-[#7b8599]">© {new Date().getFullYear()} FISCALIZE.</div></div></footer>}
       <MobileNav user={user} />
     </div>
   );

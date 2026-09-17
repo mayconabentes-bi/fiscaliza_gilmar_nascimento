@@ -36,29 +36,31 @@ export default function Login({ setUser }: { setUser: (user: any) => void }) {
   };
 
   return (
-    <div className="mx-auto max-w-md py-8 sm:py-16">
+    <div className="mx-auto max-w-md py-8 sm:py-14">
       <div className="text-center">
-        <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl border border-[#dfe5e1] bg-white text-[#157a55] shadow-sm"><ShieldCheck className="h-5 w-5" /></span>
-        <h1 className="mt-5 text-3xl font-extrabold tracking-[-0.045em]">Entrar no FISCALIZE</h1>
-        <p className="mt-2 text-sm leading-6 text-[#69736d]">Acesse sua conta ou o núcleo privado.</p>
+        <span className="brand-signature-mark brand-signature-mark--login" aria-hidden="true"><img src="/brand/gilmar-nascimento-oficial.png" alt="" /></span>
+        <span className="mx-auto mt-2 flex h-11 w-11 items-center justify-center rounded-xl border border-[#d7e0f2] bg-white text-[#1f2e6e] shadow-sm"><ShieldCheck className="h-5 w-5" /></span>
+        <h1 className="mt-5 text-3xl font-extrabold tracking-[-0.045em] text-[#172033]">Entrar no FISCALIZE</h1>
+        <p className="mt-2 text-sm leading-6 text-[#657089]">Acesse sua conta ou o núcleo privado.</p>
       </div>
 
-      <section className="surface-card mt-8 p-5 sm:p-7">
-        <div className="grid grid-cols-2 gap-1 rounded-xl bg-[#f3f5f3] p-1" role="group" aria-label="Tipo de acesso">
-          <button type="button" aria-pressed={type === "cidadao"} onClick={() => { setType("cidadao"); setError(""); }} className={`min-h-11 rounded-lg px-3 text-sm font-bold transition ${type === "cidadao" ? "bg-white text-[#101513] shadow-sm" : "text-[#78817c]"}`}><span className="flex items-center justify-center gap-2"><User className="h-4 w-4" /> Pessoa</span></button>
-          <button type="button" aria-pressed={type === "admin"} onClick={() => { setType("admin"); setError(""); }} className={`min-h-11 rounded-lg px-3 text-sm font-bold transition ${type === "admin" ? "bg-white text-[#101513] shadow-sm" : "text-[#78817c]"}`}><span className="flex items-center justify-center gap-2"><ShieldCheck className="h-4 w-4" /> Administrador</span></button>
+      <section className="surface-card mt-8 overflow-hidden p-5 sm:p-7">
+        <div className="-mx-5 -mt-5 mb-5 h-1 bg-[#f36a10] sm:-mx-7 sm:-mt-7" aria-hidden="true" />
+        <div className="grid grid-cols-2 gap-1 rounded-xl bg-[#eef2fb] p-1" role="group" aria-label="Tipo de acesso">
+          <button type="button" aria-pressed={type === "cidadao"} onClick={() => { setType("cidadao"); setError(""); }} className={`min-h-11 rounded-lg px-3 text-sm font-bold transition ${type === "cidadao" ? "bg-white text-[#1f2e6e] shadow-sm" : "text-[#657089]"}`}><span className="flex items-center justify-center gap-2"><User className="h-4 w-4" /> Pessoa</span></button>
+          <button type="button" aria-pressed={type === "admin"} onClick={() => { setType("admin"); setError(""); }} className={`min-h-11 rounded-lg px-3 text-sm font-bold transition ${type === "admin" ? "bg-white text-[#1f2e6e] shadow-sm" : "text-[#657089]"}`}><span className="flex items-center justify-center gap-2"><ShieldCheck className="h-4 w-4" /> Administrador</span></button>
         </div>
 
-        {type === "admin" && <p className="mt-4 text-xs leading-5 text-[#69736d]">Acesso privado. Não existe cadastro de administrador pela aplicação.</p>}
+        {type === "admin" && <p className="mt-4 text-xs leading-5 text-[#657089]">Acesso privado. Não existe cadastro de administrador pela aplicação.</p>}
 
         <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
           {error && <div role="alert" className="rounded-xl border border-red-100 bg-red-50 p-3.5 text-sm text-red-700">{error}</div>}
-          <label className="block"><span className="text-sm font-bold text-[#37413c]">E-mail</span><input id="email" name="email" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} required value={email} onChange={(e) => setEmail(e.target.value)} className="field" placeholder="voce@exemplo.com" /></label>
-          <label className="block"><span className="text-sm font-bold text-[#37413c]">Senha</span><input id="password" name="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} className="field" placeholder="Sua senha" /></label>
+          <label className="block"><span className="text-sm font-bold text-[#34425b]">E-mail</span><input id="email" name="email" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} required value={email} onChange={(e) => setEmail(e.target.value)} className="field" placeholder="voce@exemplo.com" /></label>
+          <label className="block"><span className="text-sm font-bold text-[#34425b]">Senha</span><input id="password" name="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} className="field" placeholder="Sua senha" /></label>
           <button type="submit" disabled={loading} className="primary-button min-h-13 w-full text-base">{loading ? "Entrando..." : "Entrar"}<ArrowRight className="h-4 w-4" /></button>
         </form>
 
-        {type === "cidadao" && <p className="mt-6 text-center text-sm text-[#69736d]">Ainda não tem conta? <Link to="/register-cidadao" className="font-extrabold text-[#157a55]">Criar conta</Link></p>}
+        {type === "cidadao" && <p className="mt-6 text-center text-sm text-[#657089]">Ainda não tem conta? <Link to="/register-cidadao" className="font-extrabold text-[#1f2e6e] underline decoration-[#f36a10] decoration-2 underline-offset-4">Criar conta</Link></p>}
       </section>
     </div>
   );

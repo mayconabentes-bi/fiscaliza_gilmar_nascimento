@@ -7,15 +7,29 @@
 
 :root {
   color-scheme: light;
-  --pulso-ink: #101513;
-  --pulso-soft-ink: #37413c;
-  --pulso-accent: #157a55;
-  --pulso-accent-strong: #0d6544;
-  --pulso-accent-soft: #eef7f2;
-  --pulso-bg: #f7f8f6;
+
+  /* Identidade visual Gilmar Nascimento */
+  --brand-blue: #1f2e6e;
+  --brand-blue-strong: #18255c;
+  --brand-blue-soft: #eef2fb;
+  --brand-blue-line: #d7e0f2;
+  --brand-orange: #f36a10;
+  --brand-orange-accessible: #c94d06;
+  --brand-orange-strong: #b84405;
+  --brand-yellow: #f2d126;
+  --brand-sky: #4aa3d8;
+  --brand-green: #6eaf35;
+
+  /* Tokens existentes mantidos para compatibilidade */
+  --pulso-ink: #172033;
+  --pulso-soft-ink: #34425b;
+  --pulso-accent: var(--brand-blue);
+  --pulso-accent-strong: var(--brand-blue-strong);
+  --pulso-accent-soft: var(--brand-blue-soft);
+  --pulso-bg: #f5f7fb;
   --pulso-surface: #ffffff;
-  --pulso-line: #e5e9e6;
-  --pulso-muted: #69736d;
+  --pulso-line: #dde4ef;
+  --pulso-muted: #657089;
 }
 
 * {
@@ -76,8 +90,8 @@ label {
 }
 
 ::selection {
-  background: #dcefe5;
-  color: var(--pulso-ink);
+  background: #fff0e5;
+  color: var(--brand-blue);
 }
 
 button,
@@ -89,8 +103,96 @@ select {
 }
 
 :focus-visible {
-  outline: 2px solid rgba(21, 122, 85, 0.45);
+  outline: 2px solid rgba(31, 46, 110, 0.48);
   outline-offset: 3px;
+}
+
+/*
+ * A arte fornecida inclui uma identificação de cargo que não é usada pela interface.
+ * O recorte visual abaixo exibe somente o nome e o elemento gráfico da marca,
+ * preservando a imagem original sem alterar o arquivo-fonte.
+ */
+.brand-signature-mark {
+  position: relative;
+  display: block;
+  width: 108px;
+  height: 48px;
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.brand-signature-mark img {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 108px;
+  max-width: none;
+  height: auto;
+}
+
+.brand-signature-mark--footer {
+  width: 150px;
+  height: 66px;
+}
+
+.brand-signature-mark--footer img {
+  width: 150px;
+}
+
+.brand-signature-mark--login {
+  width: 220px;
+  height: 98px;
+  margin-inline: auto;
+}
+
+.brand-signature-mark--login img {
+  width: 220px;
+}
+
+.brand-accent-bar {
+  height: 3px;
+  background: linear-gradient(90deg, var(--brand-blue) 0 72%, var(--brand-orange) 72% 100%);
+}
+
+/* Migração suave dos verdes históricos do tema para o azul institucional. */
+.text-\[\#157a55\],
+.text-\[\#0f766e\] {
+  color: var(--brand-blue) !important;
+}
+
+.bg-\[\#eaf8f3\],
+.bg-\[\#eef7f2\] {
+  background-color: var(--brand-blue-soft) !important;
+}
+
+.border-\[\#cfeee2\],
+.border-\[\#65a8a1\],
+.border-\[\#dce8e1\] {
+  border-color: var(--brand-blue-line) !important;
+}
+
+.text-\[\#164e49\],
+.text-\[\#285e59\] {
+  color: #33466f !important;
+}
+
+@media (max-width: 639px) {
+  .brand-signature-mark {
+    width: 82px;
+    height: 37px;
+  }
+
+  .brand-signature-mark img {
+    width: 82px;
+  }
+
+  .brand-signature-mark--login {
+    width: 190px;
+    height: 86px;
+  }
+
+  .brand-signature-mark--login img {
+    width: 190px;
+  }
 }
 
 @media (pointer: coarse) {
@@ -137,7 +239,7 @@ select {
   .surface-card {
     @apply rounded-[1.5rem] border bg-white;
     border-color: var(--pulso-line);
-    box-shadow: 0 1px 2px rgba(16, 21, 19, 0.03), 0 14px 40px rgba(16, 21, 19, 0.035);
+    box-shadow: 0 1px 2px rgba(31, 46, 110, 0.025), 0 14px 40px rgba(31, 46, 110, 0.045);
   }
 
   .soft-card {
@@ -147,46 +249,46 @@ select {
 
   .section-kicker {
     @apply inline-flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.16em];
-    color: var(--pulso-accent);
+    color: var(--brand-blue);
   }
 
   .icon-tile {
     @apply inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border;
-    border-color: #dce8e1;
-    background: var(--pulso-accent-soft);
-    color: var(--pulso-accent);
+    border-color: var(--brand-blue-line);
+    background: var(--brand-blue-soft);
+    color: var(--brand-blue);
   }
 
   .primary-button {
     @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-extrabold text-white transition duration-150 disabled:cursor-not-allowed disabled:opacity-60;
-    background: var(--pulso-accent);
-    box-shadow: 0 5px 14px rgba(21, 122, 85, 0.14);
+    background: var(--brand-orange-accessible);
+    box-shadow: 0 5px 14px rgba(243, 106, 16, 0.2);
   }
 
   .primary-button:hover {
-    background: var(--pulso-accent-strong);
-    box-shadow: 0 7px 18px rgba(21, 122, 85, 0.18);
+    background: var(--brand-orange-strong);
+    box-shadow: 0 7px 18px rgba(243, 106, 16, 0.26);
   }
 
   .secondary-button {
     @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border bg-white px-5 py-3 text-sm font-extrabold transition duration-150;
-    border-color: #dce1de;
-    color: var(--pulso-ink);
+    border-color: #cfd8e8;
+    color: var(--brand-blue);
   }
 
   .secondary-button:hover {
-    border-color: #cbd3ce;
-    background: #fafbfa;
+    border-color: #aebcda;
+    background: #f7f9fd;
   }
 
   .field {
     @apply mt-2 min-h-12 w-full rounded-xl border bg-white px-4 py-3 text-base transition placeholder:text-slate-400 focus:outline-none focus:ring-4;
-    border-color: #d7ddd9;
+    border-color: #d2dae8;
     color: var(--pulso-ink);
   }
 
   .field:focus {
-    border-color: #73a58f;
-    --tw-ring-color: rgba(21, 122, 85, 0.09);
+    border-color: #7d8fc1;
+    --tw-ring-color: rgba(31, 46, 110, 0.1);
   }
 }
