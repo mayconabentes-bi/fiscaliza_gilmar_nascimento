@@ -33,9 +33,9 @@ export default function Home() {
             <Link to={protocolUrl} className="secondary-button min-h-14 px-6 text-base"><Radar className="h-4.5 w-4.5 text-[#157a55]" /> Acompanhar protocolo</Link>
           </div>
           <div className="mt-7 flex flex-wrap gap-x-6 gap-y-3 text-sm text-[#69736d]">
-            <span className="flex items-center gap-2"><Check className="h-4 w-4 text-[#157a55]" /> Mobile-first</span>
+            <span className="flex items-center gap-2"><Check className="h-4 w-4 text-[#157a55]" /> Funciona bem no celular</span>
             <span className="flex items-center gap-2"><Check className="h-4 w-4 text-[#157a55]" /> Protocolo imediato</span>
-            <span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#157a55]" /> Uso independente</span>
+            <span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#157a55]" /> Participação livre</span>
           </div>
         </div>
 
