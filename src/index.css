@@ -107,27 +107,50 @@ select {
   outline-offset: 3px;
 }
 
-/* Assinatura institucional no topo sem comprometer a marca principal FISCALIZE. */
-header a[aria-label^="FISCALIZE"]::after {
-  content: "";
-  display: none;
-  width: 92px;
-  height: 46px;
-  margin-left: 0.2rem;
-  padding-left: 0.75rem;
-  border-left: 1px solid var(--brand-blue-line);
-  background: url('/brand/gilmar-nascimento-oficial.png') center right / contain no-repeat;
+/*
+ * A arte fornecida inclui uma identificação de cargo que não é usada pela interface.
+ * O recorte visual abaixo exibe somente o nome e o elemento gráfico da marca,
+ * preservando a imagem original sem alterar o arquivo-fonte.
+ */
+.brand-signature-mark {
+  position: relative;
+  display: block;
+  width: 108px;
+  height: 48px;
   flex: 0 0 auto;
+  overflow: hidden;
 }
 
-/* A mesma assinatura aparece no rodapé como elemento visual, mantendo o texto do FISCALIZE legível. */
-footer > div > div:first-child::before {
-  content: "";
-  display: block;
-  width: 100px;
-  height: 62px;
-  flex: 0 0 auto;
-  background: url('/brand/gilmar-nascimento-oficial.png') center / contain no-repeat;
+.brand-signature-mark img {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 108px;
+  max-width: none;
+  height: auto;
+}
+
+.brand-signature-mark--footer {
+  width: 150px;
+  height: 66px;
+}
+
+.brand-signature-mark--footer img {
+  width: 150px;
+}
+
+.brand-signature-mark--login {
+  width: 220px;
+  height: 98px;
+  margin-inline: auto;
+}
+
+.brand-signature-mark--login img {
+  width: 220px;
+}
+
+.brand-accent-bar {
+  height: 3px;
+  background: linear-gradient(90deg, var(--brand-blue) 0 72%, var(--brand-orange) 72% 100%);
 }
 
 /* Migração suave dos verdes históricos do tema para o azul institucional. */
@@ -152,9 +175,23 @@ footer > div > div:first-child::before {
   color: #33466f !important;
 }
 
-@media (min-width: 640px) {
-  header a[aria-label^="FISCALIZE"]::after {
-    display: block;
+@media (max-width: 639px) {
+  .brand-signature-mark {
+    width: 82px;
+    height: 37px;
+  }
+
+  .brand-signature-mark img {
+    width: 82px;
+  }
+
+  .brand-signature-mark--login {
+    width: 190px;
+    height: 86px;
+  }
+
+  .brand-signature-mark--login img {
+    width: 190px;
   }
 }
 
