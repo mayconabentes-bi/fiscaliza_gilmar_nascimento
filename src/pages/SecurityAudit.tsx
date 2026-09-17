@@ -58,10 +58,10 @@ export default function SecurityAudit() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "PASS": return <CheckCircle className="w-5 h-5 text-emerald-500" />;
-      case "FAIL": return <XCircle className="w-5 h-5 text-rose-500" />;
-      case "WARNING": return <AlertTriangle className="w-5 h-5 text-amber-500" />;
-      default: return <div className="w-5 h-5" />;
+      case "PASS": return <CheckCircle className="h-5 w-5 text-emerald-500" />;
+      case "FAIL": return <XCircle className="h-5 w-5 text-rose-500" />;
+      case "WARNING": return <AlertTriangle className="h-5 w-5 text-amber-500" />;
+      default: return <div className="h-5 w-5" />;
     }
   };
 
@@ -107,40 +107,37 @@ export default function SecurityAudit() {
         : "text-slate-600";
 
   return (
-    <div className="max-w-7xl mx-auto py-12 px-4">
-      <header className="mb-12 flex flex-col gap-5 lg:flex-row lg:justify-between lg:items-center">
-        <div>
-          <h1 className="text-3xl sm:text-4xl font-serif font-bold text-slate-900 flex items-center gap-3">
-            <ShieldCheck className="w-9 h-9 sm:w-10 sm:h-10 text-emerald-600" />
-            Auditoria de Segurança & Conformidade LGPD
-          </h1>
-          <p className="mt-2 text-slate-600 text-base sm:text-lg">
-            Relatório técnico de configurações de segurança, integridade e proteção de dados.
-          </p>
+    <div className="mx-auto max-w-7xl space-y-8 py-2 sm:py-6">
+      <header className="surface-card relative overflow-hidden p-6 sm:p-8">
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#1f2e6e] via-[#1f2e6e] to-[#f36a10]" aria-hidden="true" />
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <div className="section-kicker"><ShieldCheck className="h-4 w-4" /> FISCALIZE · Auditoria</div>
+            <h1 className="mt-3 flex items-center gap-3 text-3xl font-extrabold tracking-[-0.04em] text-[#18255c] sm:text-4xl">
+              Auditoria de segurança e conformidade LGPD
+            </h1>
+            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#657089] sm:text-base">Verificações técnicas de segurança, integridade, acesso e proteção de dados do ambiente privado.</p>
+          </div>
+          <button onClick={fetchAudit} disabled={loading} className="primary-button min-h-12 shrink-0 px-5">
+            <RefreshCw className={`h-5 w-5 ${loading ? "animate-spin" : ""}`} />
+            {loading ? "Auditando..." : "Reexecutar auditoria"}
+          </button>
         </div>
-        <button
-          onClick={fetchAudit}
-          disabled={loading}
-          className="flex min-h-11 items-center justify-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 disabled:opacity-50 transition-all"
-        >
-          <RefreshCw className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />
-          {loading ? "Auditando..." : "Reexecutar Auditoria"}
-        </button>
       </header>
 
       {error && (
-        <div className="mb-8 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800" role="alert">
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800" role="alert">
           <strong>Auditoria indisponível:</strong> {error}
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-        <div className={`p-8 rounded-2xl border-2 flex flex-col items-center justify-center text-center ${statusBoxClass}`}>
-          <div className={`p-4 rounded-full mb-4 ${statusIconClass}`}>
-            <ShieldCheck className="w-12 h-12" />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className={`flex flex-col items-center justify-center rounded-2xl border-2 p-7 text-center ${statusBoxClass}`}>
+          <div className={`mb-4 rounded-full p-4 ${statusIconClass}`}>
+            <ShieldCheck className="h-11 w-11" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-1">Status Geral</h2>
-          <p className={`text-lg font-bold ${statusTextClass}`}>
+          <h2 className="mb-1 text-xl font-extrabold text-[#172033]">Status geral</h2>
+          <p className={`text-sm font-extrabold ${statusTextClass}`}>
             {loading && "EM VERIFICAÇÃO"}
             {!loading && overallStatus === "SECURE" && "SEM FALHAS CRÍTICAS DETECTADAS"}
             {!loading && overallStatus === "AT_RISK" && "FALHAS ALTAS DETECTADAS"}
@@ -149,35 +146,35 @@ export default function SecurityAudit() {
           </p>
         </div>
 
-        <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center">
-          <div className="flex items-center gap-3 mb-2 text-slate-500 font-medium uppercase text-xs tracking-wider">
-            <Lock className="w-4 h-4" /> Criptografia & Acesso
+        <div className="surface-card flex flex-col justify-center p-7">
+          <div className="mb-2 flex items-center gap-3 text-xs font-bold uppercase tracking-[0.12em] text-[#657089]">
+            <Lock className="h-4 w-4 text-[#1f2e6e]" /> Criptografia e acesso
           </div>
-          <div className="text-4xl font-light text-slate-900 mb-2">{securityPass} / {securityChecks.length}</div>
-          <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-            <div className="bg-emerald-500 h-full" style={{ width: `${securityPercent}%` }} />
+          <div className="mb-2 text-4xl font-extrabold tracking-[-0.04em] text-[#172033]">{securityPass} / {securityChecks.length}</div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-[#eef2fb]">
+            <div className="h-full bg-emerald-500" style={{ width: `${securityPercent}%` }} />
           </div>
         </div>
 
-        <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center">
-          <div className="flex items-center gap-3 mb-2 text-slate-500 font-medium uppercase text-xs tracking-wider">
-            <UserCheck className="w-4 h-4" /> Conformidade LGPD
+        <div className="surface-card flex flex-col justify-center p-7">
+          <div className="mb-2 flex items-center gap-3 text-xs font-bold uppercase tracking-[0.12em] text-[#657089]">
+            <UserCheck className="h-4 w-4 text-[#1f2e6e]" /> Conformidade LGPD
           </div>
-          <div className="text-4xl font-light text-slate-900 mb-2">{lgpdPass} / {lgpdChecks.length}</div>
-          <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-            <div className="bg-blue-500 h-full" style={{ width: `${lgpdPercent}%` }} />
+          <div className="mb-2 text-4xl font-extrabold tracking-[-0.04em] text-[#172033]">{lgpdPass} / {lgpdChecks.length}</div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-[#eef2fb]">
+            <div className="h-full bg-blue-500" style={{ width: `${lgpdPercent}%` }} />
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-6 sm:px-8 py-6 border-b border-slate-100 bg-slate-50">
-          <h3 className="font-bold text-slate-800 text-lg">Relatório detalhado de auditoria</h3>
+      <div className="surface-card overflow-hidden">
+        <div className="border-b border-[#dde4ef] bg-[#f8faff] px-6 py-5 sm:px-8">
+          <h3 className="text-lg font-extrabold text-[#172033]">Relatório detalhado de auditoria</h3>
         </div>
 
-        <div className="divide-y divide-slate-100">
+        <div className="divide-y divide-[#eef2fb]">
           {!loading && !error && results.length === 0 && (
-            <div className="p-6 text-sm text-slate-500">Nenhum resultado de auditoria foi retornado.</div>
+            <div className="p-6 text-sm text-[#657089]">Nenhum resultado de auditoria foi retornado.</div>
           )}
           {results.map((result, index) => (
             <motion.div
@@ -185,18 +182,18 @@ export default function SecurityAudit() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: index * 0.05 }}
-              className="p-6 hover:bg-slate-50 transition-colors flex flex-col md:flex-row gap-6"
+              className="flex flex-col gap-6 p-6 transition-colors hover:bg-[#fbfcff] md:flex-row"
             >
-              <div className="flex-shrink-0 pt-1">{getStatusIcon(result.status)}</div>
+              <div className="shrink-0 pt-1">{getStatusIcon(result.status)}</div>
               <div className="flex-1">
-                <div className="flex flex-wrap items-center gap-3 mb-2">
-                  <h4 className="font-bold text-slate-900 text-lg">{result.check}</h4>
-                  <span className={`text-xs px-2 py-0.5 rounded border font-bold ${getSeverityColor(result.severity)}`}>{result.severity}</span>
-                  <span className="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 font-mono">{result.category}</span>
+                <div className="mb-2 flex flex-wrap items-center gap-3">
+                  <h4 className="text-lg font-extrabold text-[#172033]">{result.check}</h4>
+                  <span className={`rounded border px-2 py-0.5 text-xs font-bold ${getSeverityColor(result.severity)}`}>{result.severity}</span>
+                  <span className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-600">{result.category}</span>
                 </div>
-                <p className="text-slate-600 mb-3">{result.details}</p>
+                <p className="mb-3 text-[#657089]">{result.details}</p>
                 {result.recommendation && (
-                  <div className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded-r text-sm text-amber-800">
+                  <div className="rounded-r border-l-4 border-amber-400 bg-amber-50 p-3 text-sm text-amber-800">
                     <strong>Recomendação:</strong> {result.recommendation}
                   </div>
                 )}
