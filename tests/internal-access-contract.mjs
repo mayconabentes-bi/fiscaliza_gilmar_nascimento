@@ -35,7 +35,7 @@ for (const route of ['/dashboard', '/admin', '/admin/demandas', '/admin/audit', 
 expect(access.includes('user.type !== "admin"'), 'Middleware deve aceitar somente token type=admin.');
 expect(access.includes('value === "ADMIN" || value === "SUPER_ADMIN"'), 'Middleware deve aceitar somente perfis ADMIN e SUPER_ADMIN.');
 expect(access.includes('if (!token) return res.status(401)'), 'Visitante sem token deve receber 401.');
-expect(access.includes('getPostgres()') && access.includes('from private.admins'), 'Em produção, middleware deve revalidar o administrador no Postgres privado.');
+expect((access.includes('getPostgres()') || access.includes('getHealthyPostgres()')) && access.includes('from private.admins'), 'Em produção, middleware deve revalidar o administrador no Postgres privado.');
 expect(access.includes('process.env.NODE_ENV === "production"'), 'Revalidação Postgres deve ser restrita ao ambiente de produção.');
 expect(access.includes('const db = getDb()'), 'Ambiente local deve preservar revalidação SQLite.');
 expect(access.includes('perfil_acesso: persistedProfile'), 'Perfil persistido deve prevalecer sobre o papel carregado apenas no JWT.');
