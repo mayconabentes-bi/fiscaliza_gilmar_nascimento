@@ -3,6 +3,11 @@ import fs from 'node:fs';
 const css = fs.readFileSync('src/index.css', 'utf8');
 const app = fs.readFileSync('src/App.tsx', 'utf8');
 const login = fs.readFileSync('src/pages/Login.tsx', 'utf8');
+const home = fs.readFileSync('src/pages/Home.tsx', 'utf8');
+const register = fs.readFileSync('src/pages/NovaDemanda.tsx', 'utf8');
+const tracking = fs.readFileSync('src/pages/ConsultaProtocolo.tsx', 'utf8');
+const methodology = fs.readFileSync('src/pages/Metodologia.tsx', 'utf8');
+const about = fs.readFileSync('src/pages/Transparencia.tsx', 'utf8');
 const html = fs.readFileSync('index.html', 'utf8');
 
 function expect(condition, message) {
@@ -17,4 +22,10 @@ expect(login.includes('brand-signature-mark--login') && login.includes('bg-[#f36
 expect(html.includes('name="theme-color" content="#1f2e6e"'), 'Theme color do navegador deve acompanhar a identidade.');
 expect(!app.includes('Deputado Estadual') && !login.includes('Deputado Estadual'), 'A interface não deve inserir cargo político como texto de UI.');
 
-console.log('Brand UI contract OK: paleta, marca, shell, login e ausência de cargo em texto de interface.');
+expect(home.includes('Você cuidando da cidade') && home.includes('Registrar ocorrência'), 'Home deve preservar a personalização pública e o CTA principal.');
+expect(register.includes('FISCALIZE · Registrar') && register.includes('/api/demandas'), 'Registrar deve preservar identidade pública e endpoint de envio.');
+expect(tracking.includes('FISCALIZE · Acompanhar') && tracking.includes('/api/demandas/protocolo/'), 'Acompanhar deve preservar identidade pública e consulta por protocolo.');
+expect(methodology.includes('FISCALIZE · Como funciona') && methodology.includes('não substitui protocolo'), 'Como funciona deve preservar identidade e limite do protocolo interno.');
+expect(about.includes('Sobre o FISCALIZE') && about.includes('Participar não significa apoiar'), 'Sobre deve preservar identidade e independência da participação.');
+
+console.log('Brand UI contract OK: paleta, marca, shell, login, páginas públicas e salvaguardas de interface.');
