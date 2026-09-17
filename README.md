@@ -1,12 +1,12 @@
-# Pulso
+# FISCALIZE - VOCÊ CUIDANDO DA CIDADE
 
 Plataforma cívica independente para registrar problemas dos bairros, acompanhar demandas por protocolo e produzir leitura territorial agregada de Manaus.
 
-O projeto é privado, desenvolvido por um cidadão e não representa, integra ou presta acesso administrativo a órgãos públicos, gabinetes ou instituições governamentais.
+O projeto é privado, desenvolvido de forma independente e não representa, integra ou presta acesso administrativo a órgãos públicos, gabinetes ou instituições governamentais.
 
 ## Arquitetura de acesso
 
-O Pulso possui dois contextos claramente separados:
+O FISCALIZE possui dois contextos claramente separados:
 
 - **Experiência pública:** cidadãos podem registrar demandas, acompanhar protocolos e consultar as informações públicas disponibilizadas pela plataforma.
 - **Núcleo privado:** somente a conta `ADMIN` criada diretamente no ambiente do projeto pode acessar triagem, Radar Territorial, Estratégia, Governança, Auditoria e Relatórios.
@@ -106,4 +106,4 @@ O contrato `test:internal-access` existe para impedir regressões que permitam a
 
 ## Independência
 
-O Pulso é uma iniciativa cívica independente. O uso da plataforma não significa apoio a candidatura, partido, governo, órgão público ou instituição.
+O FISCALIZE é uma iniciativa cívica independente. O uso da plataforma não significa apoio a candidatura, partido, governo, órgão público ou instituição.
