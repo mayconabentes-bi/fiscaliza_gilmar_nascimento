@@ -85,7 +85,7 @@ export function createApp() {
     setupProductionIntelligenceRoutes(app);
 
     app.post("/api/auth/logout", (_req, res) => {
-      res.clearCookie("token", { httpOnly: true, secure: true, sameSite: "lax" });
+      res.clearCookie("token", { httpOnly: true, secure: true, sameSite: "lax", path: "/" });
       res.json({ success: true });
     });
 
