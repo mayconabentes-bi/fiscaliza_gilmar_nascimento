@@ -51,3 +51,20 @@ Diretrizes aplicadas:
 - Triagem, Radar e Estratégia harmonizados com estilos escopados por rota, reduzindo o risco de regressão em módulos extensos;
 - nenhuma alteração de autenticação, autorização, endpoints, persistência, moderação, evidências ou inteligência territorial;
 - contrato de CI ampliado para verificar shell privado e preservar os principais endpoints funcionais de cada módulo.
+
+## Bloco 4 — Favicon e app icon
+
+Assets adicionados:
+
+- `public/favicon.svg` para navegadores modernos;
+- `public/app-icon-192.png` e `public/app-icon-512.png` para instalação/web app;
+- `public/apple-touch-icon.png` para atalhos em dispositivos Apple;
+- `public/site.webmanifest` com nome, cores, escopo e suporte a ícone `maskable`.
+
+Diretrizes aplicadas:
+
+- símbolo simplificado do FISCALIZE: radar branco sobre azul institucional, com ponto e varredura em laranja;
+- ausência de texto, nome pessoal ou cargo dentro do ícone, preservando legibilidade em tamanhos pequenos;
+- área útil central respeitada para recortes de launcher em diferentes formatos;
+- `index.html` passa a declarar favicon, touch icon, manifest e título para instalação;
+- contrato de CI ampliado para verificar referências, paleta, manifest e presença dos PNGs.

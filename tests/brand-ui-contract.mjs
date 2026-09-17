@@ -15,6 +15,8 @@ const radar = fs.readFileSync('src/pages/RadarTerritorial.tsx', 'utf8');
 const strategy = fs.readFileSync('src/pages/Estrategia2028.tsx', 'utf8');
 const audit = fs.readFileSync('src/pages/SecurityAudit.tsx', 'utf8');
 const html = fs.readFileSync('index.html', 'utf8');
+const manifest = fs.readFileSync('public/site.webmanifest', 'utf8');
+const favicon = fs.readFileSync('public/favicon.svg', 'utf8');
 
 function expect(condition, message) {
   if (!condition) throw new Error(message);
@@ -43,4 +45,9 @@ expect(triage.includes('/api/admin/demandas') && triage.includes('/api/admin/evi
 expect(radar.includes('/api/radar/manaus/resumo') && radar.includes('/api/radar/manaus/territorios'), 'Radar deve preservar fontes privadas territoriais.');
 expect(strategy.includes('/api/admin/strategy/2028') && strategy.includes('/api/intelligence/works'), 'Estratégia deve preservar acesso autenticado e fontes de inteligência.');
 
-console.log('Brand UI contract OK: base, páginas públicas, área privada e salvaguardas funcionais de interface.');
+expect(html.includes('href="/favicon.svg"') && html.includes('href="/apple-touch-icon.png"') && html.includes('href="/site.webmanifest"'), 'HTML deve registrar favicon, touch icon e web manifest.');
+expect(favicon.includes('#1f2e6e') && favicon.includes('#f36a10'), 'Favicon vetorial deve usar azul e laranja institucionais.');
+expect(manifest.includes('"short_name":"FISCALIZE"') && manifest.includes('"purpose":"any maskable"') && manifest.includes('"theme_color":"#1f2e6e"'), 'Web manifest deve preservar nome, cor e suporte maskable.');
+expect(fs.existsSync('public/app-icon-192.png') && fs.existsSync('public/app-icon-512.png') && fs.existsSync('public/apple-touch-icon.png'), 'Ícones PNG para instalação e Apple touch devem existir.');
+
+console.log('Brand UI contract OK: base, páginas públicas, área privada, favicon/app icons e salvaguardas funcionais de interface.');

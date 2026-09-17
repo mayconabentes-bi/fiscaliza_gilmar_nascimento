@@ -28,7 +28,15 @@
 - [x] Separação entre cor de marca e cores semânticas
 - [x] Contrato de CI da área privada
 
+## Bloco 4 — Favicon e app icon
+- [x] Favicon SVG
+- [x] App icon 192×192
+- [x] App icon 512×512 com zona segura maskable
+- [x] Apple touch icon 180×180
+- [x] Web manifest
+- [x] Metadados no HTML
+- [x] Contrato de CI dos assets de instalação
+
 ## Próximos blocos
-- [ ] Favicon/app icon
 - [ ] Relatórios/PDFs
 - [ ] Validação visual desktop/mobile
