@@ -5,7 +5,7 @@ import { fetchWithTimeout } from "../lib/request";
 type Resumo = {
   municipio: string;
   geradoEm: string;
-  indicadores: { bairros: number; obras: number; unidadesSaude: number; escolasMunicipais: number; demandasRegistradas: number };
+  indicadores: { bairros: number | null; obras: number | null; unidadesSaude: number | null; escolasMunicipais: number | null; demandasRegistradas: number };
   demandasPorBairro: Array<{ bairro: string; total: number }>;
   demandasPorTema: Array<{ categoria: string; total: number }>;
   disponibilidade: Array<{ name: string; available: boolean; error?: string | null }>;
@@ -191,15 +191,16 @@ export default function RadarTerritorial() {
 
   const maxBairro = useMemo(() => Math.max(1, ...(resumo?.demandasPorBairro || []).map((item) => Number(item.total) || 0)), [resumo]);
   const territorioSelecionado = useMemo(() => territorios.find((item) => normalize(item.bairro) === normalize(bairroSelecionado)) || null, [territorios, bairroSelecionado]);
+  const externalObserved = (needle: string) => indicadoresExternos.find((item) => normalize(item.nome).includes(needle))?.registrosObservados ?? null;
 
   if (loading && !resumo) return <div className="py-16 text-center text-sm text-slate-500">Carregando Radar Territorial…</div>;
   if (!hasAccess) return <div className="max-w-3xl mx-auto bg-white border border-slate-200 rounded-2xl p-8 text-center shadow-sm"><ShieldCheck className="w-12 h-12 text-slate-400 mx-auto mb-4" /><h1 className="text-2xl font-bold text-slate-900">Radar territorial restrito</h1><p className="mt-3 text-slate-600">Este módulo pertence ao núcleo privado e é exclusivo do administrador.</p></div>;
 
   const cards = [
-    { label: "Bairros mapeados", value: resumo?.indicadores.bairros ?? 0, icon: MapPinned },
-    { label: "Obras municipais", value: resumo?.indicadores.obras ?? 0, icon: Wrench },
-    { label: "Unidades de saúde", value: resumo?.indicadores.unidadesSaude ?? 0, icon: HeartPulse },
-    { label: "Escolas municipais", value: resumo?.indicadores.escolasMunicipais ?? 0, icon: GraduationCap },
+    { label: "Bairros mapeados", value: resumo?.indicadores.bairros ?? mapa?.retornados ?? externalObserved("BAIRROS"), icon: MapPinned },
+    { label: "Obras municipais", value: resumo?.indicadores.obras ?? externalObserved("OBRAS"), icon: Wrench },
+    { label: "Unidades de saúde", value: resumo?.indicadores.unidadesSaude ?? externalObserved("SAUDE"), icon: HeartPulse },
+    { label: "Escolas municipais", value: resumo?.indicadores.escolasMunicipais ?? externalObserved("ESCOLAS"), icon: GraduationCap },
     { label: "Demandas registradas", value: resumo?.indicadores.demandasRegistradas ?? 0, icon: BarChart3 },
   ];
 
@@ -211,7 +212,7 @@ export default function RadarTerritorial() {
 
       {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
 
-      <section className="grid grid-cols-2 xl:grid-cols-5 gap-3 sm:gap-4">{cards.map((card) => { const Icon = card.icon; return <div key={card.label} className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm"><Icon className="w-5 h-5 text-indigo-600 mb-3" /><p className="text-xs sm:text-sm text-slate-500">{card.label}</p><p className="mt-1 text-xl sm:text-2xl font-bold text-slate-900">{Number(card.value).toLocaleString("pt-BR")}</p></div>; })}</section>
+      <section className="grid grid-cols-2 xl:grid-cols-5 gap-3 sm:gap-4">{cards.map((card) => { const Icon = card.icon; return <div key={card.label} className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm"><Icon className="w-5 h-5 text-indigo-600 mb-3" /><p className="text-xs sm:text-sm text-slate-500">{card.label}</p><p className="mt-1 text-xl sm:text-2xl font-bold text-slate-900">{card.value == null ? "—" : Number(card.value).toLocaleString("pt-BR")}</p></div>; })}</section>
 
       {quality?.dimensions?.length ? <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm"><h2 className="text-lg font-bold text-slate-900">Qualidade da territorialização</h2><p className="mt-1 text-sm text-slate-500">Mostra quantos registros recebidos das fontes puderam ser associados a um território.</p><div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-3">{quality.dimensions.map((item) => <div key={item.key} className="rounded-xl border border-slate-200 p-4"><p className="font-semibold text-slate-900">{qualityLabel(item.key)}</p><p className="mt-2 text-sm text-slate-600">Recebidos: {item.received.toLocaleString("pt-BR")}</p><p className="text-sm text-slate-600">Territorializados: {item.classified.toLocaleString("pt-BR")}</p><p className="text-sm text-slate-600">Sem classificação: {item.unclassified.toLocaleString("pt-BR")}</p><p className="mt-2 text-lg font-bold text-indigo-700">{(item.coverage * 100).toFixed(1)}%</p></div>)}</div><p className="mt-3 text-xs text-slate-500">{quality.methodology}</p></section> : null}
 

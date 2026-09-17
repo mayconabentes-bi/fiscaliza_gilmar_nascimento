@@ -129,10 +129,6 @@ async function verifyPncp() {
   const source = await retry(() => pncpManaus.loadPncpManausContracts(CURRENT_YEAR), 2);
   report("PNCP Manaus multi-CNPJ", source, { registry: registry.map((item) => ({ sigla: item.sigla, cnpj: item.cnpj })) });
 
-  // Disponibilidade de uma API pública externa não deve transformar indisponibilidade
-  // transitória em regressão de código. O contrato de retry/deduplicação do PNCP é
-  // validado separadamente em test:pncp-resilience. Erros não transitórios continuam
-  // bloqueando este QA profundo.
   if (isTransientExternalFailure(source)) {
     const warning = `PNCP temporariamente indisponível; QA de conteúdo real adiado: ${source.error || "sem detalhe"}`;
     warnings.push(warning);
@@ -203,7 +199,14 @@ async function verifyObrasGov() {
 }
 
 async function verifySapl() {
-  const source = await retry(() => sources.loadSapl(STABLE_YEAR));
+  let source;
+  try {
+    source = await retry(() => sources.loadSapl(STABLE_YEAR));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    source = { availability: "unavailable", data: [], quality: null, provenance: null, error: message };
+  }
+
   report("CMM SAPL", source);
   if (isTransientExternalFailure(source)) {
     const warning = `SAPL temporariamente indisponível; QA de conteúdo real adiado: ${source.error || "sem detalhe"}`;
