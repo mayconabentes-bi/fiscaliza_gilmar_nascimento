@@ -10,6 +10,17 @@ type PrivateAdmin = {
   perfil_acesso?: string;
 };
 
+type PersistedAdminValidation = {
+  state: "allowed" | "inactive" | "forbidden_profile";
+  perfil_acesso?: string;
+};
+
+type CachedAdminValidation = PersistedAdminValidation & { expiresAt: number };
+
+const ADMIN_REVALIDATION_TTL_MS = 10_000;
+const adminValidationCache = new Map<string, CachedAdminValidation>();
+const adminValidationInFlight = new Map<string, Promise<PersistedAdminValidation>>();
+
 function jwtSecret() {
   const secret = process.env.JWT_SECRET;
   if (secret) return secret;
@@ -19,6 +30,44 @@ function jwtSecret() {
 
 function isAllowedAdminProfile(value?: string) {
   return value === "ADMIN" || value === "SUPER_ADMIN";
+}
+
+async function revalidateProductionAdmin(id: string): Promise<PersistedAdminValidation> {
+  const cached = adminValidationCache.get(id);
+  if (cached && cached.expiresAt > Date.now()) {
+    return { state: cached.state, perfil_acesso: cached.perfil_acesso };
+  }
+
+  const existing = adminValidationInFlight.get(id);
+  if (existing) return existing;
+
+  const validation = (async () => {
+    const sql = getPostgres();
+    const [admin] = await sql`
+      select id, ativo, perfil_acesso
+      from private.admins
+      where id = ${id}
+      limit 1
+    `;
+
+    let result: PersistedAdminValidation;
+    if (!admin || admin.ativo !== true) {
+      result = { state: "inactive" };
+    } else {
+      const persistedProfile = String(admin.perfil_acesso || "ADMIN");
+      result = isAllowedAdminProfile(persistedProfile)
+        ? { state: "allowed", perfil_acesso: persistedProfile }
+        : { state: "forbidden_profile", perfil_acesso: persistedProfile };
+    }
+
+    adminValidationCache.set(id, { ...result, expiresAt: Date.now() + ADMIN_REVALIDATION_TTL_MS });
+    return result;
+  })().finally(() => {
+    adminValidationInFlight.delete(id);
+  });
+
+  adminValidationInFlight.set(id, validation);
+  return validation;
 }
 
 export function requireInternalAccess() {
@@ -42,24 +91,17 @@ export function requireInternalAccess() {
 
     try {
       if (process.env.NODE_ENV === "production") {
-        const sql = getPostgres();
-        const [admin] = await sql`
-          select id, ativo, perfil_acesso
-          from private.admins
-          where id = ${user.id}
-          limit 1
-        `;
+        const persisted = await revalidateProductionAdmin(user.id);
 
-        if (!admin || admin.ativo !== true) {
+        if (persisted.state === "inactive") {
           return res.status(403).json({ error: "Acesso administrativo desativado." });
         }
 
-        const persistedProfile = String(admin.perfil_acesso || "ADMIN");
-        if (!isAllowedAdminProfile(persistedProfile)) {
+        if (persisted.state === "forbidden_profile") {
           return res.status(403).json({ error: "Perfil administrativo sem permissão para este núcleo." });
         }
 
-        req.user = { ...user, perfil_acesso: persistedProfile };
+        req.user = { ...user, perfil_acesso: persisted.perfil_acesso || user.perfil_acesso };
         return next();
       }
 
