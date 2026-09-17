@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { loadHealthUnits, loadMunicipalWorks, loadNeighborhoods, loadSchools } from "../intelligence/sources.js";
-import { getPostgres } from "./postgres.js";
+import { getHealthyPostgres } from "./postgres.js";
 
 function normalize(value: unknown) {
   return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
@@ -29,13 +29,25 @@ function countByNeighborhood(items: any[]) {
   return { counts, unclassified };
 }
 
-async function safeLoad(loader: () => Promise<any>, name: string) {
-  try { return { name, available: true, source: await loader(), error: null }; }
-  catch (error: any) { return { name, available: false, source: { data: [], quality: { total: 0 } }, error: error?.message || "Falha ao consultar fonte" }; }
+async function safeLoad(loader: () => Promise<any>, name: string, timeoutMs = 4_500) {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  try {
+    const source = await Promise.race([
+      loader(),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`Timeout ao consultar ${name}`)), timeoutMs);
+      }),
+    ]);
+    return { name, available: true, source, error: null };
+  } catch (error: any) {
+    return { name, available: false, source: { data: [], quality: { total: 0 } }, error: error?.message || "Falha ao consultar fonte" };
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 async function demandAggregates() {
-  const sql = getPostgres();
+  const sql = await getHealthyPostgres();
   const [porBairro, porTema] = await Promise.all([
     sql`
       select coalesce(nullif(trim(bairro), ''), 'Não informado') as bairro,
@@ -61,7 +73,7 @@ async function demandAggregates() {
 
 export function setupProductionRadarRoutes(app: Express) {
   app.get("/api/radar/manaus/fontes", (_req, res) => {
-    res.setHeader("Cache-Control", "no-store, private");
+    res.setHeader("Cache-Control", "private, max-age=60");
     res.json({
       municipio: "Manaus",
       atualizacao: new Date().toISOString(),
@@ -78,7 +90,17 @@ export function setupProductionRadarRoutes(app: Express) {
   app.get("/api/radar/manaus/mapa/bairros", async (_req, res) => {
     const bairros = await safeLoad(loadNeighborhoods, "bairros");
     if (!bairros.available || !Array.isArray(bairros.source?.data) || !bairros.source.data.length) {
-      return res.status(502).json({ error: "Camada geoespacial de bairros temporariamente indisponível.", detail: bairros.error });
+      return res.status(200).json({
+        municipio: "Manaus",
+        total: 0,
+        retornados: 0,
+        truncated: false,
+        geometryType: "esriGeometryPolygon",
+        spatialReference: { wkid: 4326 },
+        features: [],
+        degraded: true,
+        error: bairros.error,
+      });
     }
     res.setHeader("Cache-Control", "private, max-age=300");
     return res.json({
@@ -104,7 +126,7 @@ export function setupProductionRadarRoutes(app: Express) {
       nome: item.name,
       configurado: true,
       disponibilidade: item.available ? "disponivel" : "indisponivel",
-      registrosObservados: Array.isArray(item.source?.data) ? item.source.data.length : 0,
+      registrosObservados: item.available && Array.isArray(item.source?.data) ? item.source.data.length : null,
       tipo: "colecao",
       erro: item.error,
     }));
@@ -149,25 +171,32 @@ export function setupProductionRadarRoutes(app: Express) {
     });
   });
 
+  // O resumo é o fast path do Radar. Ele depende apenas do Postgres interno e
+  // nunca espera APIs externas. As fontes públicas enriquecem a tela em chamadas
+  // progressivas separadas.
   app.get("/api/radar/manaus/resumo", async (_req, res) => {
-    const [bairros, obras, saude, escolas, demandas] = await Promise.all([
-      safeLoad(loadNeighborhoods, "bairros"),
-      safeLoad(loadMunicipalWorks, "obras"),
-      safeLoad(loadHealthUnits, "saude"),
-      safeLoad(loadSchools, "escolas"),
-      demandAggregates(),
-    ]);
-    const totalOf = (item: any) => Number(item.source?.quality?.total ?? (Array.isArray(item.source?.data) ? item.source.data.length : 0));
-    const demandasTotal = (demandas.porBairro as any[]).reduce((sum, item) => sum + Number(item.total || 0), 0);
-    res.setHeader("Cache-Control", "no-store, private");
-    res.json({
-      municipio: "Manaus",
-      geradoEm: new Date().toISOString(),
-      indicadores: { bairros: totalOf(bairros), obras: totalOf(obras), unidadesSaude: totalOf(saude), escolasMunicipais: totalOf(escolas), demandasRegistradas: demandasTotal },
-      demandasPorBairro: (demandas.porBairro as any[]).slice(0, 20),
-      demandasPorTema: (demandas.porTema as any[]).slice(0, 20),
-      disponibilidade: [bairros, obras, saude, escolas].map(({ name, available, error }) => ({ name, available, error })),
-      fontesExternas: [],
-    });
+    try {
+      const demandas = await demandAggregates();
+      const demandasTotal = (demandas.porBairro as any[]).reduce((sum, item) => sum + Number(item.total || 0), 0);
+      res.setHeader("Cache-Control", "no-store, private");
+      return res.json({
+        municipio: "Manaus",
+        geradoEm: new Date().toISOString(),
+        indicadores: {
+          bairros: null,
+          obras: null,
+          unidadesSaude: null,
+          escolasMunicipais: null,
+          demandasRegistradas: demandasTotal,
+        },
+        demandasPorBairro: (demandas.porBairro as any[]).slice(0, 20),
+        demandasPorTema: (demandas.porTema as any[]).slice(0, 20),
+        disponibilidade: [],
+        fontesExternas: [],
+      });
+    } catch (error) {
+      console.error("Falha ao carregar resumo territorial:", error);
+      return res.status(500).json({ error: "Não foi possível carregar o resumo territorial." });
+    }
   });
 }
