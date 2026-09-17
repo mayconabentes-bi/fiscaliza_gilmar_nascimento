@@ -11,9 +11,9 @@ export default function Privacidade() {
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) setUser(JSON.parse(storedUser));
-    fetch('/api/public-config').then(r => r.json()).then(data => {
-      setPrivacyContact(String(data.privacyContact || ''));
-      setPrivacyNoticeVersion(String(data.privacyNoticeVersion || '2026-09-v2'));
+    fetch("/api/public-config").then(r => r.json()).then(data => {
+      setPrivacyContact(String(data.privacyContact || ""));
+      setPrivacyNoticeVersion(String(data.privacyNoticeVersion || "2026-09-v2"));
     }).catch(() => undefined);
   }, []);
 
@@ -27,7 +27,7 @@ export default function Privacidade() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "meus-dados-pulso.json";
+      a.download = "meus-dados-fiscalize.json";
       a.click();
       window.URL.revokeObjectURL(url);
       setMessage("Seus dados foram exportados.");
@@ -37,7 +37,7 @@ export default function Privacidade() {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm("Quer solicitar a exclusão da sua conta? Alguns dados podem precisar ser mantidos quando houver obrigação legal ou necessidade de preservação de registros.") ) return;
+    if (!window.confirm("Quer solicitar a exclusão da sua conta? Alguns dados podem precisar ser mantidos quando houver obrigação legal ou necessidade de preservação de registros.")) return;
     setLoading(true);
     try {
       const res = await fetch("/api/compliance/excluir", { method: "POST" });
@@ -61,8 +61,10 @@ export default function Privacidade() {
           <section className="bg-white border border-slate-200 rounded-3xl p-7 shadow-sm">
             <h2 className="text-2xl font-bold text-slate-950 mb-5 flex items-center gap-2"><Lock className="w-5 h-5 text-emerald-700" /> Quem trata seus dados</h2>
             <div className="space-y-3 text-slate-600 leading-relaxed">
-              <p>O FISCALIZE é uma iniciativa cívica privada e independente de Maycon Bentes. Para a operação desta plataforma, Maycon Bentes atua como responsável pelas decisões sobre as finalidades e os meios de tratamento dos dados pessoais.</p>
-              <p>O FISCALIZE não integra nem representa Prefeitura de Manaus, Câmara Municipal de Manaus, Governo do Amazonas, partido político, mandato ou órgão público.</p>
+              <p><strong>Fundador/Criador:</strong> Maycon A. Bentes. <strong>Co-Fundador/Criador:</strong> Thauã Malinowski. <strong>Apoio:</strong> Arthur Azevedo.</p>
+              <p>A plataforma é disponibilizada para uso do vereador Gilmar Nascimento. Para os dados das demandas, <strong>Gilmar Nascimento atua como controlador</strong>, responsável pelas principais decisões sobre as finalidades e os elementos essenciais do tratamento.</p>
+              <p>As funções de fundador, co-fundador e apoio não significam, por si só, que essas pessoas sejam controladores ou operadores dos dados pessoais.</p>
+              <p>O FISCALIZE não é um canal oficial da Prefeitura de Manaus, do Governo do Amazonas ou da Câmara Municipal de Manaus. O uso pelo vereador não transforma a plataforma em sistema oficial desses órgãos.</p>
               {privacyContact ? <p><strong>Canal de privacidade:</strong> <a className="font-bold underline" href={`mailto:${privacyContact}`}>{privacyContact}</a>.</p> : <p className="text-amber-800"><strong>Canal de privacidade ainda não configurado.</strong> A abertura pública ampla não deve ocorrer enquanto esse canal não estiver definido no ambiente de produção.</p>}
             </div>
           </section>
@@ -72,7 +74,7 @@ export default function Privacidade() {
             <div className="space-y-3 text-slate-600 leading-relaxed">
               <p><strong>Demandas:</strong> nome, bairro/localidade, município, categoria, descrição, contato opcional, protocolo e histórico do acompanhamento.</p>
               <p><strong>Faixa etária:</strong> para participação ativa, tratamos apenas uma declaração de faixa etária: menos de 16 anos, 16 a 17 anos ou 18 anos ou mais. Não solicitamos, como padrão, data completa de nascimento, documento de identidade ou biometria para essa finalidade.</p>
-              <p><strong>Evidências:</strong> quando você optar por enviar foto, o arquivo pode ser armazenado para documentar o problema. Evite fotografar pessoas identificáveis, crianças, documentos, placas de veículos ou outros dados pessoais desnecessários.</p>
+              <p><strong>Evidências:</strong> quando você optar por enviar foto, o arquivo é armazenado de forma privada para documentar e analisar o problema. A foto não aparece na consulta pública por protocolo. Evite fotografar pessoas identificáveis, crianças, documentos, placas de veículos ou outros dados pessoais desnecessários.</p>
               <p><strong>Conta:</strong> quando o cadastro estiver habilitado, podemos tratar nome, e-mail, município, bairro, faixa etária, status da conta e credenciais protegidas por hash.</p>
               <p><strong>Métricas agregadas:</strong> o sistema mede eventos de uso, origem e ação de acesso de forma agregada. Infraestrutura e provedores também podem gerar logs técnicos de segurança e operação.</p>
             </div>
@@ -118,7 +120,7 @@ export default function Privacidade() {
 
           <section className="bg-indigo-50 border border-indigo-100 rounded-3xl p-7">
             <h2 className="font-bold text-indigo-950">Participar não significa apoiar</h2>
-            <p className="mt-2 text-sm leading-relaxed text-indigo-900">Usar o FISCALIZE ou enviar uma demanda não significa apoiar Maycon Bentes, partido ou candidatura. Eventual atividade político-eleitoral futura deverá utilizar finalidade, base e controles próprios, separados da base cívica.</p>
+            <p className="mt-2 text-sm leading-relaxed text-indigo-900">Usar o FISCALIZE ou enviar uma demanda não significa apoiar qualquer pessoa, partido ou candidatura. Os dados das demandas não devem ser usados para inferir preferência política nem para criar perfil eleitoral individual.</p>
           </section>
         </div>
 

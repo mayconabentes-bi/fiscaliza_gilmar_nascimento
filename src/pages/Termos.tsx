@@ -6,14 +6,14 @@ export default function Termos() {
       <header className="mb-8">
         <span className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-700">Termos de uso · versão 2026-09-P0E</span>
         <h1 className="mt-3 text-4xl font-bold text-slate-950">Regras para usar o FISCALIZE.</h1>
-        <p className="mt-4 text-slate-600">O FISCALIZE é uma iniciativa cívica privada e independente de Maycon Bentes. Estes termos explicam sua finalidade, seus limites e as responsabilidades de quem utiliza o serviço.</p>
+        <p className="mt-4 text-slate-600">O FISCALIZE foi criado por Maycon A. Bentes, com Co-Fundação/Criação de Thauã Malinowski e apoio de Arthur Azevedo, e é disponibilizado para uso do vereador Gilmar Nascimento. Estes termos explicam a finalidade do serviço, seus limites e as responsabilidades de quem o utiliza.</p>
       </header>
 
       <section className="rounded-3xl border border-slate-200 bg-white p-7">
-        <h2 className="text-xl font-bold flex items-center gap-2"><FileText className="w-5 h-5 text-emerald-700" /> Natureza independente</h2>
+        <h2 className="text-xl font-bold flex items-center gap-2"><FileText className="w-5 h-5 text-emerald-700" /> Natureza do serviço</h2>
         <div className="mt-3 space-y-3 text-slate-600 leading-relaxed">
           <p>O FISCALIZE recebe e organiza relatos sobre problemas urbanos e permite acompanhar registros por um código interno.</p>
-          <p>O FISCALIZE não integra nem representa a Prefeitura de Manaus, a Câmara Municipal de Manaus, o Governo do Amazonas, partido político, mandato parlamentar ou outro órgão público.</p>
+          <p>O FISCALIZE não é um canal oficial da Prefeitura de Manaus, da Câmara Municipal de Manaus ou do Governo do Amazonas. O uso pelo vereador Gilmar Nascimento não transforma a plataforma em sistema oficial desses órgãos.</p>
           <p>O protocolo emitido pelo FISCALIZE é interno e não substitui protocolo, denúncia, chamado ou requerimento feito perante órgão público competente.</p>
         </div>
       </section>
@@ -55,16 +55,19 @@ export default function Termos() {
       <section className="rounded-3xl border border-slate-200 bg-white p-7">
         <h2 className="text-xl font-bold flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-emerald-700" /> Participação cívica e política</h2>
         <div className="mt-3 space-y-3 text-slate-600 leading-relaxed">
-          <p>Usar o FISCALIZE, registrar uma demanda, fornecer informação ou consultar um protocolo não significa apoiar Maycon Bentes, partido ou candidatura.</p>
+          <p>Usar o FISCALIZE, registrar uma demanda, fornecer informação ou consultar um protocolo não significa apoiar qualquer pessoa, partido ou candidatura.</p>
           <p>Dados fornecidos para finalidade cívica não devem ser reutilizados automaticamente para propaganda eleitoral, lista de campanha, classificação individual de preferência política ou inferência de intenção de voto.</p>
           <p>Dados de adolescentes têm proteção reforçada e não podem ser utilizados para segmentação eleitoral ou construção de perfis políticos.</p>
-          <p>Eventual operação político-eleitoral futura deverá utilizar base, finalidade e controles próprios, observando a legislação aplicável no respectivo período eleitoral.</p>
+          <p>Qualquer tratamento de dados para finalidade diferente da finalidade cívica deverá ter fundamento, finalidade e controles próprios, observando a legislação aplicável.</p>
         </div>
       </section>
 
       <section className="rounded-3xl border border-slate-200 bg-white p-7">
         <h2 className="text-xl font-bold">Privacidade e segurança</h2>
-        <p className="mt-3 text-slate-600 leading-relaxed">O tratamento de dados pessoais é detalhado na Política de Privacidade. O usuário pode consultar os canais e direitos disponíveis naquela página. Medidas técnicas e administrativas são adotadas de forma proporcional aos riscos, sem promessa de segurança absoluta.</p>
+        <div className="mt-3 space-y-3 text-slate-600 leading-relaxed">
+          <p>O tratamento de dados pessoais é detalhado na Política de Privacidade. Para os dados das demandas, Gilmar Nascimento atua como controlador.</p>
+          <p>O usuário pode consultar os canais e direitos disponíveis naquela página. Medidas técnicas e administrativas são adotadas de forma proporcional aos riscos, sem promessa de segurança absoluta.</p>
+        </div>
       </section>
 
       <section className="rounded-3xl border border-amber-200 bg-amber-50 p-7">

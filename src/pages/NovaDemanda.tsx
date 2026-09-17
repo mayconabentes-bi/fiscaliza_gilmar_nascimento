@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Camera, Check, CheckCircle2, Clock3, Copy, FileText, MapPin, Share2, ShieldCheck } from "lucide-react";
+import { ArrowRight, Camera, Check, CheckCircle2, Clock3, Copy, FileText, MapPin, RefreshCw, Share2, ShieldCheck } from "lucide-react";
 import { getPulsoAttribution, trackPulsoEvent } from "../lib/mobileAnalytics";
 import { prepareMobileEvidence } from "../lib/mobileImage";
 
@@ -9,6 +9,7 @@ const categorias = ["Infraestrutura","Saúde","Educação","Mobilidade","Seguran
 export default function NovaDemanda() {
   const attribution = getPulsoAttribution();
   const [publicIntake, setPublicIntake] = useState<boolean | null>(null);
+  const [configError, setConfigError] = useState("");
   const [form, setForm] = useState({ nome_solicitante: "", contato: "", municipio: "Manaus", bairro: "", categoria: "Infraestrutura", prioridade: "MEDIA", descricao: "", faixa_etaria: "", aviso_privacidade_aceito: false });
   const [photoData, setPhotoData] = useState("");
   const [photoName, setPhotoName] = useState("");
@@ -19,15 +20,29 @@ export default function NovaDemanda() {
   const [copied, setCopied] = useState(false);
   const started = useRef(false);
 
+  const loadPublicConfig = async () => {
+    setConfigError("");
+    setPublicIntake(null);
+    try {
+      const response = await fetch("/api/public-config", { cache: "no-store" });
+      if (!response.ok) throw new Error("Configuração pública indisponível.");
+      const data = await response.json();
+      setPublicIntake(Boolean(data.publicDemandIntake));
+    } catch {
+      setConfigError("Não foi possível confirmar agora se o recebimento de demandas está disponível.");
+    }
+  };
+
   useEffect(() => {
-    fetch('/api/public-config').then(r => r.json()).then(data => setPublicIntake(Boolean(data.publicDemandIntake))).catch(() => setPublicIntake(false));
-    trackPulsoEvent('form_view', attribution);
+    void loadPublicConfig();
+    trackPulsoEvent("form_view", attribution);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attribution.src, attribution.acao]);
 
   const markStarted = () => {
     if (started.current) return;
     started.current = true;
-    trackPulsoEvent('form_start', attribution);
+    trackPulsoEvent("form_start", attribution);
   };
 
   const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -46,7 +61,7 @@ export default function NovaDemanda() {
       const prepared = await prepareMobileEvidence(file);
       setPhotoData(prepared.dataUrl);
       setPhotoName(`${file.name} · ${Math.round(prepared.bytes / 1024)} KB`);
-    } catch (err: any) { setError(err.message || 'Não foi possível preparar a foto.'); }
+    } catch (err: any) { setError(err.message || "Não foi possível preparar a foto."); }
     finally { setPhotoBusy(false); }
   };
 
@@ -59,8 +74,8 @@ export default function NovaDemanda() {
       const response = await fetch("/api/demandas", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, ...attribution, foto_evidencia_base64: photoData || undefined }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Não foi possível enviar seu registro.");
-      setProtocolo(data.protocolo); trackPulsoEvent('protocolo_view', attribution);
-      setForm(prev => ({ ...prev, descricao: "", aviso_privacidade_aceito: false })); setPhotoData(''); setPhotoName('');
+      setProtocolo(data.protocolo); trackPulsoEvent("protocolo_view", attribution);
+      setForm(prev => ({ ...prev, descricao: "", aviso_privacidade_aceito: false })); setPhotoData(""); setPhotoName("");
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err: any) { setError(err.message || "Não foi possível enviar seu registro."); }
     finally { setLoading(false); }
@@ -76,17 +91,25 @@ export default function NovaDemanda() {
     if (!protocolo) return;
     const url = `${window.location.origin}/protocolo?codigo=${encodeURIComponent(protocolo)}`;
     const text = `Meu registro no FISCALIZE. Protocolo: ${protocolo}`;
-    trackPulsoEvent('protocolo_share', attribution);
-    if (navigator.share) await navigator.share({ title: 'FISCALIZE Manaus', text, url });
+    trackPulsoEvent("protocolo_share", attribution);
+    if (navigator.share) await navigator.share({ title: "FISCALIZE Manaus", text, url });
     else await navigator.clipboard?.writeText(`${text}\n${url}`);
   };
 
+  if (publicIntake === null && !configError) {
+    return <div className="mx-auto max-w-xl py-8 sm:py-14"><div className="surface-card p-6 text-center sm:p-8"><span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eaf8f3] text-[#0f766e]"><RefreshCw className="h-5 w-5 animate-spin" /></span><h1 className="mt-5 text-2xl font-extrabold tracking-[-0.04em] text-[#0b1f33]">Confirmando disponibilidade.</h1><p className="mt-3 text-sm leading-relaxed text-slate-600">Estamos verificando se o recebimento público de demandas está ativo.</p></div></div>;
+  }
+
+  if (publicIntake === null && configError) {
+    return <div className="mx-auto max-w-xl py-8 sm:py-14"><div className="surface-card p-6 sm:p-8"><span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-amber-800">Não foi possível confirmar o serviço</span><h1 className="mt-5 text-3xl font-extrabold tracking-[-0.04em] text-[#0b1f33]">Tente novamente antes de preencher o formulário.</h1><p className="mt-3 text-sm leading-relaxed text-slate-600">{configError} Isso não significa que os registros estejam fechados.</p><div className="mt-6 grid gap-3 sm:grid-cols-2"><button onClick={() => void loadPublicConfig()} className="primary-button w-full"><RefreshCw className="h-4 w-4" /> Tentar novamente</button><Link to="/protocolo" className="secondary-button w-full">Acompanhar protocolo</Link></div></div></div>;
+  }
+
   if (publicIntake === false) {
-    return <div className="mx-auto max-w-xl py-8 sm:py-14"><div className="surface-card p-6 sm:p-8"><span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-amber-800">Registros ainda não estão abertos</span><h1 className="mt-5 text-3xl font-extrabold tracking-[-0.04em] text-[#0b1f33]">Em breve você poderá registrar problemas por aqui.</h1><p className="mt-3 text-sm leading-relaxed text-slate-600">Estamos terminando os testes antes de abrir o formulário ao público. Se você já recebeu um protocolo, pode acompanhar normalmente.</p><Link to="/protocolo" className="secondary-button mt-6 w-full">Acompanhar protocolo</Link></div></div>;
+    return <div className="mx-auto max-w-xl py-8 sm:py-14"><div className="surface-card p-6 sm:p-8"><span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-amber-800">Registros indisponíveis neste momento</span><h1 className="mt-5 text-3xl font-extrabold tracking-[-0.04em] text-[#0b1f33]">O recebimento público está desativado.</h1><p className="mt-3 text-sm leading-relaxed text-slate-600">Protocolos já emitidos continuam disponíveis para consulta. A indisponibilidade do formulário não altera o histórico dos registros existentes.</p><Link to="/protocolo" className="secondary-button mt-6 w-full">Acompanhar protocolo</Link></div></div>;
   }
 
   if (protocolo) {
-    return <div className="mx-auto max-w-2xl py-5 sm:py-10"><div className="surface-card overflow-hidden p-6 text-center sm:p-9"><span className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-[#eaf8f3] text-[#15956f]"><CheckCircle2 className="h-8 w-8" /></span><h1 className="mt-5 text-3xl font-extrabold tracking-[-0.04em] text-[#0b1f33]">Pronto. Seu registro foi enviado.</h1><p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-slate-600 sm:text-base">Guarde este protocolo. Você vai usar esse código para acompanhar as atualizações.</p><div className="mt-6 rounded-2xl bg-[#0b1f33] px-4 py-5 font-mono text-xl font-bold tracking-wide text-white break-all sm:text-2xl">{protocolo}</div><div className="mt-3 grid grid-cols-2 gap-2"><button onClick={copyProtocol} className="secondary-button px-3">{copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}{copied ? 'Copiado' : 'Copiar código'}</button><button onClick={shareProtocol} className="secondary-button px-3"><Share2 className="h-4 w-4" />Compartilhar</button></div><div className="mt-5 grid gap-3 sm:flex sm:justify-center"><Link to={`/protocolo?codigo=${encodeURIComponent(protocolo)}`} className="primary-button min-h-14 px-6 text-base">Ver andamento <ArrowRight className="h-4 w-4" /></Link><button onClick={() => setProtocolo(null)} className="secondary-button min-h-14 px-6 text-base">Registrar outro</button></div></div></div>;
+    return <div className="mx-auto max-w-2xl py-5 sm:py-10"><div className="surface-card overflow-hidden p-6 text-center sm:p-9"><span className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-[#eaf8f3] text-[#15956f]"><CheckCircle2 className="h-8 w-8" /></span><h1 className="mt-5 text-3xl font-extrabold tracking-[-0.04em] text-[#0b1f33]">Pronto. Seu registro foi enviado.</h1><p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-slate-600 sm:text-base">Guarde este protocolo. Você vai usar esse código para acompanhar as atualizações.</p><div className="mt-6 rounded-2xl bg-[#0b1f33] px-4 py-5 font-mono text-xl font-bold tracking-wide text-white break-all sm:text-2xl">{protocolo}</div><div className="mt-3 grid grid-cols-2 gap-2"><button onClick={copyProtocol} className="secondary-button px-3">{copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}{copied ? "Copiado" : "Copiar código"}</button><button onClick={shareProtocol} className="secondary-button px-3"><Share2 className="h-4 w-4" />Compartilhar</button></div><div className="mt-5 grid gap-3 sm:flex sm:justify-center"><Link to={`/protocolo?codigo=${encodeURIComponent(protocolo)}`} className="primary-button min-h-14 px-6 text-base">Ver andamento <ArrowRight className="h-4 w-4" /></Link><button onClick={() => setProtocolo(null)} className="secondary-button min-h-14 px-6 text-base">Registrar outro</button></div></div></div>;
   }
 
   return (
@@ -117,12 +140,12 @@ export default function NovaDemanda() {
         </div>
         <label className="block"><span className="text-sm font-bold text-[#0b1f33]">Que tipo de problema é?</span><select name="categoria" value={form.categoria} onChange={handleChange} required className="field">{categorias.map(c => <option key={c}>{c}</option>)}</select></label>
         <label className="block"><span className="text-sm font-bold text-[#0b1f33]">O que aconteceu?</span><textarea name="descricao" value={form.descricao} onChange={handleChange} required rows={5} className="field min-h-36 leading-relaxed" placeholder="Explique o problema e diga onde ele está. Se puder, informe há quanto tempo acontece." /></label>
-        <div><span className="text-sm font-bold text-[#0b1f33]">Foto <span className="font-normal text-slate-500">(opcional)</span></span><label className="mt-2 flex min-h-16 cursor-pointer items-center justify-center gap-3 rounded-2xl border border-dashed border-[#b7cad7] bg-[#f6f9fb] px-4 py-4 text-sm font-bold text-slate-700 transition hover:border-[#65a8a1] hover:bg-[#eef8f5]"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-[#0f766e] shadow-sm"><Camera className="h-4.5 w-4.5" /></span>{photoBusy ? 'Preparando foto...' : photoName || 'Tirar foto ou escolher da galeria'}<input type="file" accept="image/*" capture="environment" onChange={handlePhoto} disabled={photoBusy || form.faixa_etaria === "UNDER_16"} className="sr-only" /></label>{photoName && <p className="mt-2 text-xs font-semibold text-[#0f766e]">Foto pronta para envio.</p>}</div>
+        <div><span className="text-sm font-bold text-[#0b1f33]">Foto <span className="font-normal text-slate-500">(opcional)</span></span><label className="mt-2 flex min-h-16 cursor-pointer items-center justify-center gap-3 rounded-2xl border border-dashed border-[#b7cad7] bg-[#f6f9fb] px-4 py-4 text-sm font-bold text-slate-700 transition hover:border-[#65a8a1] hover:bg-[#eef8f5]"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-[#0f766e] shadow-sm"><Camera className="h-4.5 w-4.5" /></span>{photoBusy ? "Preparando foto..." : photoName || "Tirar foto ou escolher da galeria"}<input type="file" accept="image/*" capture="environment" onChange={handlePhoto} disabled={photoBusy || form.faixa_etaria === "UNDER_16"} className="sr-only" /></label>{photoName && <p className="mt-2 text-xs font-semibold text-[#0f766e]">Foto pronta para envio.</p>}<p className="mt-2 text-xs leading-relaxed text-slate-500"><strong>Privacidade da foto:</strong> se enviada, ela fica em armazenamento privado para análise administrativa e não aparece na consulta pública por protocolo. Evite fotografar pessoas, documentos ou placas quando isso não for necessário.</p></div>
         <label className="block"><span className="text-sm font-bold text-[#0b1f33]">Contato <span className="font-normal text-slate-500">(opcional)</span></span><input name="contato" value={form.contato} onChange={handleChange} autoComplete="tel" placeholder="Telefone ou e-mail, se quiser receber retorno" className="field" /></label>
         <input type="hidden" name="municipio" value={form.municipio} /><input type="hidden" name="prioridade" value={form.prioridade} />
-        <div className="rounded-2xl border border-[#cfeee2] bg-[#eaf8f3] p-4 sm:p-5"><div className="flex gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#0f766e]" /><div className="space-y-3"><p className="text-xs leading-relaxed text-[#285e59] sm:text-sm">Evite colocar na descrição informações pessoais que não sejam necessárias para explicar o problema.</p><label className="flex cursor-pointer items-start gap-3 text-sm text-[#164e49]"><input type="checkbox" name="aviso_privacidade_aceito" checked={form.aviso_privacidade_aceito} onChange={handleChange} className="mt-0.5 h-5 w-5 shrink-0 rounded border-[#65a8a1]" required /><span>Entendi que meus dados serão usados para registrar e acompanhar este caso. <Link to="/privacidade" className="font-extrabold underline">Ver privacidade</Link>.</span></label></div></div></div>
+        <div className="rounded-2xl border border-[#cfeee2] bg-[#eaf8f3] p-4 sm:p-5"><div className="flex gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#0f766e]" /><div className="space-y-3"><p className="text-xs leading-relaxed text-[#285e59] sm:text-sm">Evite colocar na descrição informações pessoais que não sejam necessárias para explicar o problema.</p><label className="flex cursor-pointer items-start gap-3 text-sm text-[#164e49]"><input type="checkbox" name="aviso_privacidade_aceito" checked={form.aviso_privacidade_aceito} onChange={handleChange} className="mt-0.5 h-5 w-5 shrink-0 rounded border-[#65a8a1]" required /><span>Entendi que meus dados serão tratados no FISCALIZE para registrar e acompanhar este caso. Gilmar Nascimento é o controlador dos dados das demandas. <Link to="/privacidade" className="font-extrabold underline">Ver privacidade</Link>.</span></label></div></div></div>
         <button disabled={loading || photoBusy || form.faixa_etaria === "UNDER_16"} className="primary-button min-h-14 w-full text-base disabled:cursor-not-allowed disabled:opacity-50">{loading ? "Enviando..." : "Enviar e gerar protocolo"}<ArrowRight className="h-5 w-5" /></button>
-        <p className="text-center text-xs leading-relaxed text-slate-500">O FISCALIZE é uma iniciativa independente para registrar, organizar e acompanhar problemas relatados por moradores.</p>
+        <p className="text-center text-xs leading-relaxed text-slate-500">O FISCALIZE registra, organiza e acompanha demandas por protocolo. A plataforma não substitui canais oficiais nem garante, por si só, a solução de um problema.</p>
       </form>
     </div>
   );
