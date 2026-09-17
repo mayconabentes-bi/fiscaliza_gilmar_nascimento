@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Entregar o fluxo mínimo operacional do MVP Amazonas +Participativa:
+Entregar o fluxo mínimo operacional do MVP FISCALIZE - VOCÊ CUIDANDO DA CIDADE:
 
 1. cidadão registra uma demanda pública;
 2. sistema gera protocolo único;

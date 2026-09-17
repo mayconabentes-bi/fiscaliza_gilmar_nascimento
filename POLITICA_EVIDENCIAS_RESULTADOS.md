@@ -1,4 +1,4 @@
-# Política de Evidências e Atribuição de Resultados — Pulso
+# Política de Evidências e Atribuição de Resultados — FISCALIZE
 
 ## Objetivo
 Garantir que demandas, encaminhamentos e resultados possam ser auditados e não sejam apresentados de forma mais favorável do que as evidências permitem.
@@ -19,7 +19,7 @@ Garantir que demandas, encaminhamentos e resultados possam ser auditados e não 
 - registrar correções relevantes no histórico.
 
 ## Atribuição
-O Pulso pode registrar sua participação em diagnóstico, organização, encaminhamento, cobrança, acompanhamento e verificação. Não deve declarar que “resolveu” uma demanda quando a execução material foi realizada por Prefeitura, órgão, concessionária, associação, empresa ou outro terceiro.
+O FISCALIZE pode registrar sua participação em diagnóstico, organização, encaminhamento, cobrança, acompanhamento e verificação. Não deve declarar que “resolveu” uma demanda quando a execução material foi realizada por Prefeitura, órgão, concessionária, associação, empresa ou outro terceiro.
 
 ## Publicação
 Relatórios e telas públicas futuras devem mostrar, quando disponível: fonte, período, status, responsável pela execução e última verificação.

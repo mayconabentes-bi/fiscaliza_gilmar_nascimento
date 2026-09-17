@@ -1,0 +1,132 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+      - feat/intelligence-api-core
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  p0-validate:
+    name: P0 jurídico — build, lint, legal, persistência, mobile, go-live e segurança
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DPO_CONTACT_EMAIL: privacidade-ci@fiscalize.local
+      LGPD_CONSENT_VERSION: 2026-09-v2
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: TypeScript validation
+        run: npm run lint
+      - name: Production build
+        run: npm run build
+      - name: Legal P0 contract
+        run: npm run test:legal-p0
+      - name: Legal P0-C boundary
+        run: npm run test:legal-p0c
+      - name: Legal P0-E readiness
+        run: npm run test:legal-p0e
+      - name: P0-E age policy technical contract
+        run: npm run test:p0e-tech
+      - name: P0-E age flow runtime
+        run: npm run test:p0e-age-flow
+      - name: P0-E data boundary
+        run: npm run test:p0e-boundary
+      - name: P0-D production persistence
+        run: npm run test:p0d
+      - name: Mobile UI contract
+        run: npm run test:mobile-ui
+      - name: Responsive device matrix
+        run: npm run test:devices
+      - name: Mobile performance budget
+        run: npm run test:performance
+      - name: Go-live readiness smoke tests
+        run: npm run test:go-live
+      - name: Mobile conversion and public intake test
+        run: npm run test:mobile
+      - name: Private intelligence access attack contract
+        run: npm run test:internal-access
+      - name: Audit high and critical vulnerabilities
+        run: npm run audit:high
+
+  validate:
+    name: Full QA, intelligence, backup and dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      DPO_CONTACT_EMAIL: privacidade-ci@fiscalize.local
+      LGPD_CONSENT_VERSION: 2026-09-v2
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: TypeScript validation
+        run: npm run lint
+      - name: Production build
+        run: npm run build
+      - name: Legal P0-E readiness
+        run: npm run test:legal-p0e
+      - name: P0-E age policy technical contract
+        run: npm run test:p0e-tech
+      - name: P0-E age flow runtime
+        run: npm run test:p0e-age-flow
+      - name: P0-E data boundary
+        run: npm run test:p0e-boundary
+      - name: P0-D production persistence
+        run: npm run test:p0d
+      - name: Mobile UI contract
+        run: npm run test:mobile-ui
+      - name: Responsive device matrix
+        run: npm run test:devices
+      - name: Mobile performance budget
+        run: npm run test:performance
+      - name: Private admin bootstrap test
+        run: npm run test:admin-bootstrap
+      - name: Radar attack smoke tests
+        run: npm run test:smoke
+      - name: Intelligence API smoke tests
+        run: npm run test:intelligence
+      - name: Multi-source intelligence engine
+        run: npm run test:intelligence-multisource
+      - name: Advanced intelligence P9-P17
+        run: npm run test:intelligence-advanced
+      - name: PNCP retry and deduplication contract
+        run: npm run test:pncp-resilience
+      - name: Official data source activation discovery
+        run: npm run test:source-activation
+      - name: Go-live readiness smoke tests
+        run: npm run test:go-live
+      - name: Real backup and restore test
+        run: npm run test:backup
+      - name: Mobile conversion and public intake test
+        run: npm run test:mobile
+      - name: Private intelligence access attack contract
+        run: npm run test:internal-access
+      - name: Audit high and critical vulnerabilities
+        run: npm run audit:high
+      - name: Deep QA with real public data
+        run: npm run test:real-data

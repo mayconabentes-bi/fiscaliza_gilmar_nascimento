@@ -1,8 +1,7 @@
 # FISCALIZE - VOCÊ CUIDANDO DA CIDADE
-
 Plataforma cívica independente para registrar problemas dos bairros, acompanhar demandas por protocolo e produzir leitura territorial agregada de Manaus.
 
-O projeto é privado, desenvolvido de forma independente e não representa, integra ou presta acesso administrativo a órgãos públicos, gabinetes ou instituições governamentais.
+O projeto é privado, desenvolvido por um cidadão e não representa, integra ou presta acesso administrativo a órgãos públicos, gabinetes ou instituições governamentais.
 
 ## Arquitetura de acesso
 

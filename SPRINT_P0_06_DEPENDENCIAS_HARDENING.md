@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Eliminar vulnerabilidades críticas e altas identificadas pelo CI do P0-05 sem introduzir regressões funcionais no Amazonas +Participativa.
+Eliminar vulnerabilidades críticas e altas identificadas pelo CI do P0-05 sem introduzir regressões funcionais no FISCALIZE - VOCÊ CUIDANDO DA CIDADE.
 
 ## Alterações realizadas
 

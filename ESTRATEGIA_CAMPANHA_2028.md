@@ -1,6 +1,6 @@
 # Estratégia 2028 — Núcleo Operacional
 
-Este documento orienta a evolução do Amazonas +Participativa para apoiar uma futura candidatura a vereador em 2028, preservando a separação entre participação pública e operação política.
+Este documento orienta a evolução do FISCALIZE - VOCÊ CUIDANDO DA CIDADE para apoiar uma futura candidatura a vereador em 2028, preservando a separação entre participação pública e operação política.
 
 ## Princípio estrutural
 

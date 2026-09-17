@@ -27,5 +27,5 @@ tmp/
 supabase/.temp/
 
 # Artefatos de transporte/importação
-.fiscalize-import/
 *.zip
+.fiscalize-import/

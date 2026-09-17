@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Estabelecer uma barreira mínima e automática de qualidade para proteger a branch `main` e dar segurança aos próximos blocos de evolução do Amazonas +Participativa.
+Estabelecer uma barreira mínima e automática de qualidade para proteger a branch `main` e dar segurança aos próximos blocos de evolução do FISCALIZE - VOCÊ CUIDANDO DA CIDADE.
 
 ## Entregas deste bloco
 
