@@ -15,6 +15,17 @@ const columns = [
   { key: "created_at", label: "Data" },
 ];
 
+const pdfColumnWidths: Record<string, number> = {
+  protocolo: 37,
+  descricao: 74,
+  municipio: 21,
+  prioridade: 19,
+  bairro: 27,
+  categoria: 30,
+  created_at: 30,
+  status: 25,
+};
+
 export default function Relatorios() {
   const [filters, setFilters] = useState({ dataInicio: "", dataFim: "", municipio: "", tema: "" });
   const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
@@ -41,15 +52,38 @@ export default function Relatorios() {
 
   const activeColumns = selectedColumns.length ? selectedColumns : columns.filter((column) => column.key !== "descricao").map((column) => column.key);
   const columnLabel = (key: string) => columns.find((column) => column.key === key)?.label || key;
+
   const exportPDF = () => {
-    const doc = new jsPDF();
-    doc.text("Relatório privado de demandas", 14, 15);
-    autoTable(doc, { head: [activeColumns.map(columnLabel)], body: reportData.map((row) => activeColumns.map((column) => String(row[column] ?? ""))), startY: 24 });
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    doc.setFontSize(14);
+    doc.text("Relatório privado de demandas", 8, 11);
+
+    const columnStyles = Object.fromEntries(
+      activeColumns.map((key, index) => [index, { cellWidth: pdfColumnWidths[key] || 24 }]),
+    );
+
+    autoTable(doc, {
+      head: [activeColumns.map(columnLabel)],
+      body: reportData.map((row) => activeColumns.map((column) => String(row[column] ?? ""))),
+      startY: 16,
+      margin: { left: 8, right: 8, bottom: 8 },
+      styles: { fontSize: 7, cellPadding: 1.4, overflow: "linebreak", valign: "top" },
+      headStyles: { fontSize: 7.5, fontStyle: "bold" },
+      columnStyles,
+      rowPageBreak: "avoid",
+      showHead: "everyPage",
+    });
+
     doc.save(`relatorio_demandas_${new Date().toISOString().slice(0, 10)}.pdf`);
   };
+
   const exportCSV = () => {
     const escape = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
-    const csv = [activeColumns.map((column) => escape(columnLabel(column))).join(','), ...reportData.map((row) => activeColumns.map((column) => escape(row[column])).join(','))].join('\n');
+    const rows = [
+      activeColumns.map((column) => escape(columnLabel(column))).join(";"),
+      ...reportData.map((row) => activeColumns.map((column) => escape(row[column])).join(";")),
+    ];
+    const csv = rows.join("\r\n");
     saveAs(new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }), `relatorio_demandas_${new Date().toISOString().slice(0, 10)}.csv`);
   };
 
