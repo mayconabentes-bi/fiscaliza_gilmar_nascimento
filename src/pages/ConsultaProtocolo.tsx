@@ -4,7 +4,7 @@ import { Search, Clock, MapPin, Tag, Radar, CheckCircle2 } from "lucide-react";
 
 const statusLabel: Record<string, string> = {
   RECEBIDA: "Recebido",
-  EM_TRIAGEM: "Em análise",
+  EM_TRIAGEM: "Em triagem",
   ENCAMINHADA: "Encaminhado",
   EM_ANALISE: "Em análise",
   EM_EXECUCAO: "Em andamento",
