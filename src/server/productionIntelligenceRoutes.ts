@@ -3,7 +3,7 @@ import { loadHealthUnits, loadMunicipalWorks, loadNeighborhoods, loadObrasGov, l
 import { fiscalOverview } from "../intelligence/fiscalEngine.js";
 import { manausPublicEntities } from "../intelligence/manausPublicEntities.js";
 import { territorialQuality } from "../intelligence/advancedIntelligence.js";
-import { getPostgres } from "./postgres.js";
+import { getHealthyPostgres } from "./postgres.js";
 
 function now() { return new Date().toISOString(); }
 
@@ -13,8 +13,22 @@ function safeTotal(source: any) {
   return 0;
 }
 
-async function safeLoad(loader: () => Promise<any>, source: string) {
-  try { return await loader(); }
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`Timeout ao consultar ${label}`)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+async function safeLoad(loader: () => Promise<any>, source: string, timeoutMs = 4_500) {
+  try { return await withTimeout(loader(), timeoutMs, source); }
   catch (error: any) {
     return {
       source,
@@ -48,7 +62,7 @@ async function loadExternal() {
 }
 
 async function demandSummary() {
-  const sql = getPostgres();
+  const sql = await getHealthyPostgres();
   const [row] = await sql`
     select
       count(*)::int as total,
@@ -68,28 +82,29 @@ export function setupProductionIntelligenceRoutes(app: Express) {
       safeLoad(loadMunicipalWorks, "seminf_obras"),
       safeLoad(loadObrasGov, "obrasgov"),
     ]);
-    res.setHeader("Cache-Control", "no-store, private");
+    res.setHeader("Cache-Control", "private, max-age=120");
     res.json({ generatedAt: now(), municipal, federal });
   });
 
   app.get("/api/intelligence/sources/health", async (_req, res) => {
     const [core, external] = await Promise.all([loadCore(), loadExternal()]);
     const all = [core.neighborhoods, core.works, core.health, core.schools, external.sapl, external.obrasgov, external.tce, external.transparency];
-    res.setHeader("Cache-Control", "no-store, private");
+    res.setHeader("Cache-Control", "private, max-age=120");
     res.json({ generatedAt: now(), live: all.map(({ data, ...source }: any) => ({ ...source, recordsReturned: Array.isArray(data) ? data.length : 0 })), persisted: [] });
   });
 
   app.get("/api/intelligence/institutions", (_req, res) => {
     const institutions = manausPublicEntities();
-    res.setHeader("Cache-Control", "no-store, private");
+    res.setHeader("Cache-Control", "private, max-age=300");
     res.json({ generatedAt: now(), total: institutions.length, institutions, methodology: "Cadastro auditável de CNPJs públicos usados nas consultas institucionais." });
   });
 
   app.get("/api/intelligence/fiscal/overview", async (req, res) => {
     const requested = /^20\d{2}$/.test(String(req.query.year || "")) ? Number(req.query.year) : new Date().getFullYear() - 1;
     try {
-      res.setHeader("Cache-Control", "no-store, private");
-      res.json(await fiscalOverview(requested));
+      const data = await withTimeout(fiscalOverview(requested), 5_000, "visão fiscal");
+      res.setHeader("Cache-Control", "private, max-age=300");
+      res.json(data);
     } catch (error: any) {
       res.status(502).json({ error: "Fonte fiscal temporariamente indisponível.", detail: error?.message || "Falha de fonte externa" });
     }
@@ -101,7 +116,7 @@ export function setupProductionIntelligenceRoutes(app: Express) {
       raw: { works: core.works.data || [], health: core.health.data || [], schools: core.schools.data || [] },
       territories: [],
     });
-    res.setHeader("Cache-Control", "no-store, private");
+    res.setHeader("Cache-Control", "private, max-age=120");
     res.json({ generatedAt: now(), ...quality });
   });
 
@@ -113,7 +128,7 @@ export function setupProductionIntelligenceRoutes(app: Express) {
       { key: "saude_observada", label: "Unidades de saúde observadas", value: safeTotal(core.health), unit: "count", methodology: "Registros retornados pela camada pública de saúde.", sourceKeys: ["geomanaus_saude"] },
       { key: "escolas_observadas", label: "Escolas municipais observadas", value: safeTotal(core.schools), unit: "count", methodology: "Registros retornados pela camada pública de educação.", sourceKeys: ["geomanaus_escolas"] },
     ];
-    res.setHeader("Cache-Control", "no-store, private");
+    res.setHeader("Cache-Control", "private, max-age=120");
     res.json({
       generatedAt: now(),
       population: null,
@@ -133,7 +148,7 @@ export function setupProductionIntelligenceRoutes(app: Express) {
       { metric: "unidades_saude", label: "Unidades de saúde observadas", unit: "count", current: safeTotal(core.health), sourceKeys: ["geomanaus_saude"], methodology: "Registros disponíveis na camada pública de saúde." },
       { metric: "escolas_municipais", label: "Escolas municipais observadas", unit: "count", current: safeTotal(core.schools), sourceKeys: ["geomanaus_escolas"], methodology: "Registros disponíveis na camada pública de educação." },
     ];
-    res.setHeader("Cache-Control", "no-store, private");
+    res.setHeader("Cache-Control", "private, max-age=120");
     res.json({
       generatedAt: collectedAt,
       territory: "MANAUS",

@@ -2,7 +2,7 @@ import type { Express } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
-import { getPostgres } from "./postgres.js";
+import { getHealthyPostgres } from "./postgres.js";
 import { cleanEmail, cleanText } from "./requestValidation.js";
 import { AgePolicyError, ageBandForActiveParticipation } from "./agePolicy.js";
 
@@ -49,7 +49,7 @@ export function setupCitizenAuthPostgres(app: Express) {
     }
 
     try {
-      const sql = getPostgres();
+      const sql = await getHealthyPostgres();
       const id = uuidv4();
       const passwordHash = await bcrypt.hash(password, 12);
       const consentimento = req.body?.aceite_lgpd === true;
@@ -86,7 +86,7 @@ export function setupCitizenAuthPostgres(app: Express) {
     }
 
     try {
-      const sql = getPostgres();
+      const sql = await getHealthyPostgres();
       const [user] = await sql`
         select id, nome_completo, email, municipio, bairro, status, password_hash, faixa_etaria, protecao_reforcada
         from public.usuarios where lower(email) = lower(${normalizedEmail}) limit 1
@@ -112,7 +112,7 @@ export function setupCitizenAuthPostgres(app: Express) {
     try { claims = jwt.verify(token, jwtSecret()) as any; } catch { return next(); }
     if (claims.type !== "cidadao") return next();
     try {
-      const sql = getPostgres();
+      const sql = await getHealthyPostgres();
       const [user] = await sql`
         select id, nome_completo, email, municipio, bairro, status, faixa_etaria, protecao_reforcada
         from public.usuarios where id = ${claims.id} limit 1

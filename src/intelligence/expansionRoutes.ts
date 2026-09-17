@@ -121,14 +121,43 @@ function persistedEnvelope(key: string, rows: any[]): SourceEnvelope<any[]> {
   };
 }
 
+function unavailableCoreSource(key: string, error: unknown): SourceEnvelope<any[]> {
+  return {
+    source: key,
+    availability: "unavailable",
+    provenance: {
+      source: key,
+      sourceUrl: sourceEndpoint(key) || "",
+      fetchedAt: new Date().toISOString(),
+      sourceUpdatedAt: null,
+    },
+    quality: { total: 0, classified: 0, unclassified: 0, coverage: 0 },
+    data: [],
+    error: error instanceof Error ? error.message : "Fonte externa temporariamente indisponível.",
+  };
+}
+
+async function safeCoreLoad(key: string, loader: () => Promise<SourceEnvelope<any[]>>) {
+  try {
+    return await loader();
+  } catch (error) {
+    return unavailableCoreSource(key, error);
+  }
+}
+
 async function loadRadarBundle() {
   const persisted = sourceHealth() as any[];
   const revision = persistedRevision(persisted);
   if (radarBundleCache && radarBundleCache.expiresAt > Date.now() && radarBundleCache.revision === revision) return radarBundleCache.promise;
   const promise = (async () => {
-    const [neighborhoods, works, health, schools] = await Promise.all([loadNeighborhoods(), loadMunicipalWorks(), loadHealthUnits(), loadSchools()]);
+    const [neighborhoods, works, health, schools] = await Promise.all([
+      safeCoreLoad("geomanaus_bairros", loadNeighborhoods),
+      safeCoreLoad("seminf_obras", loadMunicipalWorks),
+      safeCoreLoad("geomanaus_saude", loadHealthUnits),
+      safeCoreLoad("geomanaus_escolas", loadSchools),
+    ]);
     [neighborhoods, works, health, schools].forEach(recordSourceHealth);
-    const territories = neighborhoods.data.length ? aggregateTerritories({ neighborhoods: neighborhoods.data, works: works.data, health: health.data, schools: schools.data }) : [];
+    const territories = aggregateTerritories({ neighborhoods: neighborhoods.data, works: works.data, health: health.data, schools: schools.data });
     const db = getDb();
     let porTema: Array<{ categoria: string; total: number }> = [];
     try {

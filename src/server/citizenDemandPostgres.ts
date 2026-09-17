@@ -2,7 +2,7 @@ import type { Express, Request } from "express";
 import crypto from "node:crypto";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
-import { getPostgres } from "./postgres.js";
+import { getHealthyPostgres } from "./postgres.js";
 import { removeDemandEvidence, uploadDemandEvidence } from "./evidenceStorage.js";
 import { cleanEnum, cleanProtocol, cleanText } from "./requestValidation.js";
 import { AgePolicyError, ageBandForActiveParticipation, type AgeBand } from "./agePolicy.js";
@@ -67,7 +67,7 @@ export function setupCitizenDemandPostgres(app: Express) {
     }
 
     try {
-      const sql = getPostgres();
+      const sql = await getHealthyPostgres();
       let usuarioId: string | null = null;
       let faixaEtaria: AgeBand | null = null;
       let revisaoReforcada = false;
@@ -149,7 +149,7 @@ export function setupCitizenDemandPostgres(app: Express) {
     let protocolo: string;
     try { protocolo = cleanProtocol(req.params.protocolo); } catch { return res.status(404).json({ error: "Protocolo não encontrado." }); }
     try {
-      const sql = getPostgres();
+      const sql = await getHealthyPostgres();
       const [demanda] = await sql`
         select protocolo, municipio, categoria, status, created_at, updated_at
         from public.demandas where protocolo = ${protocolo} limit 1

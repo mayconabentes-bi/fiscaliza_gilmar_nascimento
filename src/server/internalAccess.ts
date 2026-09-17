@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { getDb } from "./db.js";
-import { getPostgres } from "./postgres.js";
+import { getHealthyPostgres } from "./postgres.js";
 
 type PrivateAdmin = {
   id?: string;
@@ -42,7 +42,7 @@ async function revalidateProductionAdmin(id: string): Promise<PersistedAdminVali
   if (existing) return existing;
 
   const validation = (async () => {
-    const sql = getPostgres();
+    const sql = await getHealthyPostgres();
     const [admin] = await sql`
       select id, ativo, perfil_acesso
       from private.admins
