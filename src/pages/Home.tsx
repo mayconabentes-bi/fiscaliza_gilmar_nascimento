@@ -45,7 +45,7 @@ export default function Home() {
             <span className="icon-tile"><Radar className="h-4.5 w-4.5" /></span>
           </div>
           <div className="mt-6 space-y-1">
-            {["Registro recebido", "Informações organizadas", "Encaminhamento registrado", "Histórico atualizado"].map((item, index) => (
+            {["Registro recebido", "Triagem e análise", "Andamento atualizado", "Histórico consultável"].map((item, index) => (
               <div key={item} className="flex items-center gap-4 rounded-xl px-1 py-3.5">
                 <span className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-extrabold ${index === 0 ? 'bg-[#157a55] text-white' : 'border border-[#dfe5e1] bg-white text-[#69736d]'}`}>{index + 1}</span>
                 <span className="flex-1 text-sm font-semibold text-[#37413c]">{item}</span>
