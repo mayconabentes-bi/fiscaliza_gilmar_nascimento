@@ -34,6 +34,7 @@ export default defineConfig({
     timeout: 120_000,
     env: {
       PORT: String(PORT),
+      APP_ORIGIN: baseURL,
       ENABLE_PUBLIC_DEMAND_INTAKE: 'true',
       ENABLE_PUBLIC_REGISTRATION: 'false',
       INTERNAL_PILOT_MODE: 'false',

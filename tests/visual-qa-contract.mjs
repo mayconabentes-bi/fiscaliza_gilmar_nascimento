@@ -16,6 +16,7 @@ expect(config.includes("timezoneId: 'America/Manaus'"), 'QA visual deve fixar ti
 expect(config.includes("reducedMotion: 'reduce'"), 'QA visual deve reduzir movimento para capturas determinísticas.');
 expect(config.includes("serviceWorkers: 'block'"), 'QA visual deve evitar interferência de service worker/cache.');
 expect(config.includes("workers: 1"), 'Capturas devem rodar serialmente para reduzir flutuação.');
+expect(config.includes('APP_ORIGIN: baseURL'), 'QA visual deve autorizar somente a própria origem local no CORS.');
 expect(spec.includes("page.route('**/api/mobile-events'"), 'Telemetria deve ser interceptada em QA visual.');
 expect(spec.includes("page.route('**/api/public-config'"), 'Config pública deve ser determinística em QA visual.');
 expect(spec.includes("page.route('**/api/demandas/protocolo/**'"), 'Consulta de protocolo deve usar fixture determinística.');
@@ -28,4 +29,4 @@ expect(workflow.includes('npx playwright install --with-deps chromium'), 'Workfl
 expect(workflow.includes('actions/upload-artifact@v4'), 'Workflow deve publicar screenshots como artefato revisável.');
 expect(workflow.includes('test-results/visual/*.png'), 'Workflow deve enviar apenas PNGs de QA visual.');
 
-console.log('Visual QA contract OK: 3 viewports, APIs mockadas, screenshots como artefato e zero dependência de Vercel.');
+console.log('Visual QA contract OK: 3 viewports, origem CORS local restrita, APIs mockadas, screenshots como artefato e zero dependência de Vercel.');
