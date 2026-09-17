@@ -35,6 +35,13 @@ type HealthData = {
   live: SourceEnvelope[];
 };
 
+type DemandMetrics = {
+  resumo: { total: number; concluidas: number; pendentes: number; criticas: number };
+  porStatus: Array<{ status: string; total: number }>;
+  porMunicipio: Array<{ municipio: string; total: number }>;
+  porCategoria: Array<{ categoria: string; total: number }>;
+};
+
 type LoadError = "forbidden" | "unavailable" | null;
 
 function sourceLabel(source: string) {
@@ -67,6 +74,19 @@ function availabilityLabel(value: string) {
   return labels[value] || value;
 }
 
+function demandStatusLabel(value: string) {
+  const labels: Record<string, string> = {
+    RECEBIDA: "Recebida",
+    EM_TRIAGEM: "Em triagem",
+    ENCAMINHADA: "Encaminhada",
+    EM_ANALISE: "Em análise",
+    EM_EXECUCAO: "Em execução",
+    CONCLUIDA: "Concluída",
+    INDEFERIDA: "Indeferida",
+  };
+  return labels[value] || value.replaceAll("_", " ");
+}
+
 function totalFrom(source?: SourceEnvelope & { data?: unknown[] }) {
   if (!source) return null;
   if (typeof source.quality?.total === "number") return source.quality.total;
@@ -79,9 +99,23 @@ export default function Estrategia2028() {
   const [data, setData] = useState<StrategyData | null>(null);
   const [works, setWorks] = useState<WorksData | null>(null);
   const [health, setHealth] = useState<HealthData | null>(null);
+  const [demandMetrics, setDemandMetrics] = useState<DemandMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<LoadError>(null);
   const controllerRef = useRef<AbortController | null>(null);
+
+  const loadDemandMetrics = async (signal?: AbortSignal) => {
+    try {
+      const response = await fetchWithTimeout(
+        "/api/demandas/metricas",
+        { credentials: "same-origin", cache: "no-store", signal },
+        5000
+      );
+      if (response.ok && !signal?.aborted) setDemandMetrics(await response.json());
+    } catch (error: any) {
+      if (signal?.aborted || error?.name === "AbortError") return;
+    }
+  };
 
   const loadIntelligence = async (signal?: AbortSignal) => {
     try {
@@ -130,6 +164,7 @@ export default function Estrategia2028() {
         if (controller.signal.aborted) return;
         setData(strategy);
         setLoading(false);
+        await loadDemandMetrics(controller.signal);
         await loadIntelligence(controller.signal);
       } catch (error: any) {
         if (controller.signal.aborted || error?.name === "AbortError") return;
@@ -178,6 +213,40 @@ export default function Estrategia2028() {
           </div>
           <span className="shrink-0 rounded-full border border-[#dbe8e0] bg-[#eef7f2] px-3 py-1 text-xs font-bold text-[#157a55]">Horizonte {data.horizonte}</span>
         </div>
+      </section>
+
+      <section className="rounded-2xl border border-[#dbe8e0] bg-[#f7fbf9] p-6 shadow-sm">
+        <div className="flex items-start gap-2">
+          <BarChart3 className="mt-0.5 h-5 w-5 shrink-0 text-[#157a55]" />
+          <div>
+            <p className="text-sm font-extrabold uppercase tracking-wide text-[#157a55]">Sinais operacionais das demandas registradas</p>
+            <p className="mt-1 text-sm text-[#69736d]">Resumo descritivo do canal FISCALIZE, alimentado diretamente pela persistência de produção.</p>
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="rounded-xl border border-[#e5e9e6] bg-white p-4"><p className="text-xs font-bold uppercase tracking-wide text-[#69736d]">Total</p><p className="mt-2 text-2xl font-extrabold text-[#101513]">{demandMetrics?.resumo.total ?? "—"}</p></div>
+          <div className="rounded-xl border border-[#e5e9e6] bg-white p-4"><p className="text-xs font-bold uppercase tracking-wide text-[#69736d]">Pendentes</p><p className="mt-2 text-2xl font-extrabold text-[#101513]">{demandMetrics?.resumo.pendentes ?? "—"}</p></div>
+          <div className="rounded-xl border border-[#e5e9e6] bg-white p-4"><p className="text-xs font-bold uppercase tracking-wide text-[#69736d]">Concluídas</p><p className="mt-2 text-2xl font-extrabold text-[#101513]">{demandMetrics?.resumo.concluidas ?? "—"}</p></div>
+          <div className="rounded-xl border border-[#e5e9e6] bg-white p-4"><p className="text-xs font-bold uppercase tracking-wide text-[#69736d]">Críticas</p><p className="mt-2 text-2xl font-extrabold text-[#101513]">{demandMetrics?.resumo.criticas ?? "—"}</p></div>
+        </div>
+
+        {demandMetrics && (
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <div className="rounded-xl border border-[#e5e9e6] bg-white p-4">
+              <p className="text-sm font-extrabold text-[#101513]">Por andamento</p>
+              <div className="mt-3 space-y-2">
+                {demandMetrics.porStatus.map((item) => <div key={item.status} className="flex items-center justify-between gap-3 text-sm"><span className="text-[#69736d]">{demandStatusLabel(item.status)}</span><strong className="text-[#101513]">{item.total}</strong></div>)}
+              </div>
+            </div>
+            <div className="rounded-xl border border-[#e5e9e6] bg-white p-4">
+              <p className="text-sm font-extrabold text-[#101513]">Por categoria</p>
+              <div className="mt-3 space-y-2">
+                {demandMetrics.porCategoria.slice(0, 8).map((item) => <div key={item.categoria} className="flex items-center justify-between gap-3 text-sm"><span className="text-[#69736d]">{item.categoria}</span><strong className="text-[#101513]">{item.total}</strong></div>)}
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="rounded-2xl border border-[#dbe8e0] bg-[#f7fbf9] p-6 shadow-sm">
