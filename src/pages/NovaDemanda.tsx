@@ -1,19 +1,30 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Camera, Check, CheckCircle2, Clock3, Copy, FileText, MapPin, RefreshCw, Share2, ShieldCheck } from "lucide-react";
+import { ArrowRight, Camera, Check, CheckCircle2, Clock3, Copy, FileText, MapPin, RefreshCw, Search, Share2, ShieldCheck } from "lucide-react";
 import { getPulsoAttribution, trackPulsoEvent } from "../lib/mobileAnalytics";
 import { prepareMobileEvidence } from "../lib/mobileImage";
 
 const categorias = ["Infraestrutura","Saúde","Educação","Mobilidade","Segurança Pública","Assistência Social","Meio Ambiente","Outro"];
 
+function formatCep(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 8);
+  return digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
+}
+
 export default function NovaDemanda() {
   const attribution = getPulsoAttribution();
   const [publicIntake, setPublicIntake] = useState<boolean | null>(null);
   const [configError, setConfigError] = useState("");
-  const [form, setForm] = useState({ nome_solicitante: "", contato: "", municipio: "Manaus", bairro: "", categoria: "Infraestrutura", prioridade: "MEDIA", descricao: "", faixa_etaria: "", aviso_privacidade_aceito: false });
+  const [form, setForm] = useState({
+    nome_solicitante: "", contato: "", municipio: "Manaus", bairro: "", cep: "", logradouro: "", numero: "", complemento: "", uf: "AM", codigo_ibge: "",
+    categoria: "Infraestrutura", prioridade: "MEDIA", descricao: "", faixa_etaria: "", aviso_privacidade_aceito: false
+  });
   const [photoData, setPhotoData] = useState("");
   const [photoName, setPhotoName] = useState("");
   const [photoBusy, setPhotoBusy] = useState(false);
+  const [cepBusy, setCepBusy] = useState(false);
+  const [cepError, setCepError] = useState("");
+  const [cepResolved, setCepResolved] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [protocolo, setProtocolo] = useState<string | null>(null);
@@ -52,6 +63,49 @@ export default function NovaDemanda() {
     setForm(prev => ({ ...prev, [name]: nextValue }));
   };
 
+  const handleCepChange = (event: ChangeEvent<HTMLInputElement>) => {
+    markStarted();
+    setCepError("");
+    setCepResolved(false);
+    const value = formatCep(event.target.value);
+    setForm(prev => ({ ...prev, cep: value, codigo_ibge: "" }));
+  };
+
+  const lookupCep = async () => {
+    const cep = form.cep.replace(/\D/g, "");
+    setCepError("");
+    setCepResolved(false);
+    if (!cep) return;
+    if (cep.length !== 8) {
+      setCepError("Informe um CEP com 8 dígitos.");
+      return;
+    }
+    setCepBusy(true);
+    try {
+      const response = await fetch(`/api/localizacao/cep/${cep}`, { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Não foi possível consultar o CEP.");
+      if (String(data.municipio || "").toLowerCase() !== "manaus" || String(data.uf || "").toUpperCase() !== "AM") {
+        setCepError("Este formulário recebe ocorrências de Manaus. Informe um CEP de Manaus ou preencha a localização manualmente sem o CEP.");
+        return;
+      }
+      setForm(prev => ({
+        ...prev,
+        cep: String(data.cep || prev.cep),
+        logradouro: String(data.logradouro || prev.logradouro),
+        bairro: String(data.bairro || prev.bairro),
+        municipio: "Manaus",
+        uf: "AM",
+        codigo_ibge: String(data.codigo_ibge || ""),
+      }));
+      setCepResolved(true);
+    } catch (err: any) {
+      setCepError(err.message || "Não foi possível consultar o CEP. Preencha a localização manualmente.");
+    } finally {
+      setCepBusy(false);
+    }
+  };
+
   const handlePhoto = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -69,9 +123,11 @@ export default function NovaDemanda() {
     event.preventDefault(); setLoading(true); setError(""); setProtocolo(null);
     if (!form.faixa_etaria) { setError("Informe sua faixa etária para continuar."); setLoading(false); return; }
     if (form.faixa_etaria === "UNDER_16") { setError("O envio autônomo de demandas no FISCALIZE está disponível a partir de 16 anos."); setLoading(false); return; }
+    if (form.cep && form.cep.replace(/\D/g, "").length !== 8) { setError("Revise o CEP do local do problema."); setLoading(false); return; }
+    if (!form.logradouro.trim() || !form.bairro.trim()) { setError("Informe o logradouro e o bairro da ocorrência."); setLoading(false); return; }
     if (!form.aviso_privacidade_aceito) { setError("Marque a opção de privacidade para continuar."); setLoading(false); return; }
     try {
-      const response = await fetch("/api/demandas", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, ...attribution, foto_evidencia_base64: photoData || undefined }) });
+      const response = await fetch("/api/demandas", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, cep: form.cep.replace(/\D/g, ""), ...attribution, foto_evidencia_base64: photoData || undefined }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Não foi possível enviar seu registro.");
       setProtocolo(data.protocolo); trackPulsoEvent("protocolo_view", attribution);
@@ -134,16 +190,33 @@ export default function NovaDemanda() {
         </label>
         {form.faixa_etaria === "UNDER_16" && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-amber-900">Você pode consultar o conteúdo público do FISCALIZE, mas o envio autônomo de demandas está disponível a partir de 16 anos.</div>}
         {form.faixa_etaria === "AGE_16_17" && <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 text-sm leading-relaxed text-indigo-900"><strong>Proteção reforçada:</strong> seu registro terá tratamento mais restrito. Evite informar escola, endereço residencial, dados de saúde, documentos ou outras informações pessoais que não sejam necessárias.</div>}
-        <div className="grid gap-5 sm:grid-cols-2">
-          <label className="block"><span className="text-sm font-bold text-[#0b1f33]">Seu nome</span><input name="nome_solicitante" value={form.nome_solicitante} onChange={handleChange} autoComplete="name" required className="field" placeholder="Digite seu nome" /></label>
-          <label className="block"><span className="text-sm font-bold text-[#0b1f33]">Bairro ou localidade</span><input name="bairro" value={form.bairro} onChange={handleChange} autoComplete="address-level3" required className="field" placeholder="Ex.: Cidade Nova" /><span className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-500"><MapPin className="h-3.5 w-3.5" /> Manaus</span></label>
-        </div>
-        <label className="block"><span className="text-sm font-bold text-[#0b1f33]">Que tipo de problema é?</span><select name="categoria" value={form.categoria} onChange={handleChange} required className="field">{categorias.map(c => <option key={c}>{c}</option>)}</select></label>
-        <label className="block"><span className="text-sm font-bold text-[#0b1f33]">O que aconteceu?</span><textarea name="descricao" value={form.descricao} onChange={handleChange} required rows={5} className="field min-h-36 leading-relaxed" placeholder="Explique o problema e diga onde ele está. Se puder, informe há quanto tempo acontece." /></label>
+
+        <section className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
+          <div className="flex items-start gap-3"><MapPin className="mt-0.5 h-5 w-5 shrink-0 text-[#0f766e]" /><div><h2 className="font-extrabold text-[#0b1f33]">Local da ocorrência</h2><p className="mt-1 text-xs leading-relaxed text-slate-500">Informe o endereço do problema, não seu endereço residencial. O CEP é opcional, mas ajuda a preencher e padronizar a localização.</p></div></div>
+          <div className="mt-5 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+            <label className="block"><span className="text-sm font-bold text-[#0b1f33]">CEP do local do problema <span className="font-normal text-slate-500">(opcional)</span></span><input name="cep" inputMode="numeric" autoComplete="postal-code" value={form.cep} onChange={handleCepChange} onBlur={() => { if (form.cep.replace(/\D/g, "").length === 8 && !cepResolved) void lookupCep(); }} className="field text-base" placeholder="69000-000" /></label>
+            <button type="button" onClick={() => void lookupCep()} disabled={cepBusy || !form.cep} className="secondary-button min-h-12 px-5 disabled:opacity-50">{cepBusy ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}{cepBusy ? "Consultando" : "Buscar CEP"}</button>
+          </div>
+          {cepError && <p className="mt-2 text-xs leading-relaxed text-amber-700">{cepError}</p>}
+          {cepResolved && <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-[#0f766e]"><Check className="h-3.5 w-3.5" /> CEP localizado. Revise o endereço antes de enviar.</p>}
+          <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_11rem]">
+            <label className="block"><span className="text-sm font-bold text-[#0b1f33]">Logradouro ou via</span><input name="logradouro" value={form.logradouro} onChange={handleChange} required className="field text-base" placeholder="Ex.: Av. Torquato Tapajós" /></label>
+            <label className="block"><span className="text-sm font-bold text-[#0b1f33]">Número ou referência <span className="font-normal text-slate-500">(opcional)</span></span><input name="numero" value={form.numero} onChange={handleChange} className="field text-base" placeholder="Ex.: 1200 ou s/n" /></label>
+          </div>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <label className="block"><span className="text-sm font-bold text-[#0b1f33]">Bairro ou localidade</span><input name="bairro" value={form.bairro} onChange={handleChange} autoComplete="address-level3" required className="field text-base" placeholder="Ex.: Cidade Nova" /></label>
+            <label className="block"><span className="text-sm font-bold text-[#0b1f33]">Complemento / ponto de referência <span className="font-normal text-slate-500">(opcional)</span></span><input name="complemento" value={form.complemento} onChange={handleChange} className="field text-base" placeholder="Ex.: em frente à escola" /></label>
+          </div>
+          <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-500"><MapPin className="h-3.5 w-3.5" /> Manaus / AM</p>
+        </section>
+
+        <label className="block"><span className="text-sm font-bold text-[#0b1f33]">Seu nome</span><input name="nome_solicitante" value={form.nome_solicitante} onChange={handleChange} autoComplete="name" required className="field text-base" placeholder="Digite seu nome" /></label>
+        <label className="block"><span className="text-sm font-bold text-[#0b1f33]">Que tipo de problema é?</span><select name="categoria" value={form.categoria} onChange={handleChange} required className="field text-base">{categorias.map(c => <option key={c}>{c}</option>)}</select></label>
+        <label className="block"><span className="text-sm font-bold text-[#0b1f33]">O que aconteceu?</span><textarea name="descricao" value={form.descricao} onChange={handleChange} required rows={5} className="field min-h-36 text-base leading-relaxed" placeholder="Explique o problema. Se puder, informe há quanto tempo acontece e algum detalhe que ajude a localizar o ponto." /></label>
         <div><span className="text-sm font-bold text-[#0b1f33]">Foto <span className="font-normal text-slate-500">(opcional)</span></span><label className="mt-2 flex min-h-16 cursor-pointer items-center justify-center gap-3 rounded-2xl border border-dashed border-[#b7cad7] bg-[#f6f9fb] px-4 py-4 text-sm font-bold text-slate-700 transition hover:border-[#65a8a1] hover:bg-[#eef8f5]"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-[#0f766e] shadow-sm"><Camera className="h-4.5 w-4.5" /></span>{photoBusy ? "Preparando foto..." : photoName || "Tirar foto ou escolher da galeria"}<input type="file" accept="image/*" capture="environment" onChange={handlePhoto} disabled={photoBusy || form.faixa_etaria === "UNDER_16"} className="sr-only" /></label>{photoName && <p className="mt-2 text-xs font-semibold text-[#0f766e]">Foto pronta para envio.</p>}<p className="mt-2 text-xs leading-relaxed text-slate-500"><strong>Privacidade da foto:</strong> se enviada, ela fica em armazenamento privado para análise administrativa e não aparece na consulta pública por protocolo. Evite fotografar pessoas, documentos ou placas quando isso não for necessário.</p></div>
-        <label className="block"><span className="text-sm font-bold text-[#0b1f33]">Contato <span className="font-normal text-slate-500">(opcional)</span></span><input name="contato" value={form.contato} onChange={handleChange} autoComplete="tel" placeholder="Telefone ou e-mail, se quiser receber retorno" className="field" /></label>
-        <input type="hidden" name="municipio" value={form.municipio} /><input type="hidden" name="prioridade" value={form.prioridade} />
-        <div className="rounded-2xl border border-[#cfeee2] bg-[#eaf8f3] p-4 sm:p-5"><div className="flex gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#0f766e]" /><div className="space-y-3"><p className="text-xs leading-relaxed text-[#285e59] sm:text-sm">Evite colocar na descrição informações pessoais que não sejam necessárias para explicar o problema.</p><label className="flex cursor-pointer items-start gap-3 text-sm text-[#164e49]"><input type="checkbox" name="aviso_privacidade_aceito" checked={form.aviso_privacidade_aceito} onChange={handleChange} className="mt-0.5 h-5 w-5 shrink-0 rounded border-[#65a8a1]" required /><span>Entendi que meus dados serão tratados no FISCALIZE para registrar e acompanhar este caso. Gilmar Nascimento é o controlador dos dados das demandas. <Link to="/privacidade" className="font-extrabold underline">Ver privacidade</Link>.</span></label></div></div></div>
+        <label className="block"><span className="text-sm font-bold text-[#0b1f33]">Contato <span className="font-normal text-slate-500">(opcional)</span></span><input name="contato" value={form.contato} onChange={handleChange} autoComplete="tel" placeholder="Telefone ou e-mail, se quiser receber retorno" className="field text-base" /></label>
+        <input type="hidden" name="municipio" value={form.municipio} /><input type="hidden" name="uf" value={form.uf} /><input type="hidden" name="codigo_ibge" value={form.codigo_ibge} /><input type="hidden" name="prioridade" value={form.prioridade} />
+        <div className="rounded-2xl border border-[#cfeee2] bg-[#eaf8f3] p-4 sm:p-5"><div className="flex gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#0f766e]" /><div className="space-y-3"><p className="text-xs leading-relaxed text-[#285e59] sm:text-sm">A localização detalhada é usada para identificar o ponto da ocorrência e permanece restrita ao fluxo administrativo. Evite informar endereço residencial se ele não for o local do problema.</p><label className="flex cursor-pointer items-start gap-3 text-sm text-[#164e49]"><input type="checkbox" name="aviso_privacidade_aceito" checked={form.aviso_privacidade_aceito} onChange={handleChange} className="mt-0.5 h-5 w-5 shrink-0 rounded border-[#65a8a1]" required /><span>Entendi que meus dados serão tratados no FISCALIZE para registrar e acompanhar este caso. Gilmar Nascimento é o controlador dos dados das demandas. <Link to="/privacidade" className="font-extrabold underline">Ver privacidade</Link>.</span></label></div></div></div>
         <button disabled={loading || photoBusy || form.faixa_etaria === "UNDER_16"} className="primary-button min-h-14 w-full text-base disabled:cursor-not-allowed disabled:opacity-50">{loading ? "Enviando..." : "Enviar e gerar protocolo"}<ArrowRight className="h-5 w-5" /></button>
         <p className="text-center text-xs leading-relaxed text-slate-500">O FISCALIZE registra, organiza e acompanha demandas por protocolo. A plataforma não substitui canais oficiais nem garante, por si só, a solução de um problema.</p>
       </form>
