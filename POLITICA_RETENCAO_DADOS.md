@@ -1,7 +1,7 @@
-# Política de Retenção de Dados — Pulso
+# Política de Retenção de Dados — FISCALIZE
 
 ## Princípio
-O Pulso deve reter dados pessoais somente pelo tempo necessário às finalidades declaradas, à integridade do histórico cívico e ao cumprimento de obrigações aplicáveis.
+O FISCALIZE deve reter dados pessoais somente pelo tempo necessário às finalidades declaradas, à integridade do histórico cívico e ao cumprimento de obrigações aplicáveis.
 
 ## Diretrizes
 - não adotar retenção permanente por padrão para nome, contato ou identificadores pessoais;
