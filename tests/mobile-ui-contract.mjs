@@ -25,7 +25,9 @@ expect(app.includes('to="/login"') && app.includes('<span>Entrar</span>'), 'Visi
 expect(home.includes('min-h-14') && form.includes('min-h-14') && protocol.includes('min-h-14'), 'CTAs críticos devem manter área de toque confortável.');
 expect(form.includes('text-base') && protocol.includes('text-base'), 'Campos críticos devem usar fonte de 16px para evitar zoom involuntário no iOS.');
 expect(form.includes('capture="environment"'), 'Captura de evidência deve favorecer a câmera traseira no celular.');
+expect(form.includes('data-engagement-progress="transparent"') && form.includes('role="progressbar"'), 'O formulário deve mostrar progresso transparente, sem urgência artificial.');
+expect(form.includes('form_step_location') && form.includes('form_step_details') && form.includes('form_step_review'), 'O funil deve medir apenas conclusão agregada das etapas cívicas.');
 expect(html.includes('width=device-width'), 'Viewport mobile deve estar configurado.');
 
 const targetViewports = ['344x882', '375x667', '393x852', '412x915', '440x956', '744x1133', '768x968', '800x1080', '1032x1376'];
-console.log(`Mobile/touch UI contract OK para ${targetViewports.join(', ')}: safe area, toque, navegação pública e núcleo privado isolado.`);
+console.log(`Mobile/touch UI contract OK para ${targetViewports.join(', ')}: safe area, toque, progresso transparente, navegação pública e núcleo privado isolado.`);
