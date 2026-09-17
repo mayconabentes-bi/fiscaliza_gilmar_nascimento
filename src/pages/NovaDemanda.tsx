@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Camera, Check, CheckCircle2, Clock3, Copy, FileText, MapPin, RefreshCw, Search, Share2, ShieldCheck } from "lucide-react";
+import { ArrowRight, Bookmark, Camera, Check, CheckCircle2, Clock3, Copy, FileText, MapPin, RefreshCw, Search, Share2, ShieldCheck, Trash2 } from "lucide-react";
 import { getPulsoAttribution, trackPulsoEvent } from "../lib/mobileAnalytics";
 import { prepareMobileEvidence } from "../lib/mobileImage";
+import { clearSafeDemandDraft, readSafeDemandDraft, saveSafeDemandDraft } from "../lib/safeDemandDraft";
 
 const categorias = ["Infraestrutura","Saúde","Educação","Mobilidade","Segurança Pública","Assistência Social","Meio Ambiente","Outro"];
 
@@ -29,6 +30,8 @@ export default function NovaDemanda() {
   const [error, setError] = useState("");
   const [protocolo, setProtocolo] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [draftAvailable, setDraftAvailable] = useState(false);
+  const [draftMessage, setDraftMessage] = useState("");
   const started = useRef(false);
   const trackedSteps = useRef(new Set<string>());
 
@@ -66,6 +69,10 @@ export default function NovaDemanda() {
     trackPulsoEvent("form_view", attribution);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attribution.src, attribution.acao]);
+
+  useEffect(() => {
+    setDraftAvailable(Boolean(readSafeDemandDraft()));
+  }, []);
 
   useEffect(() => {
     const milestones = [
@@ -150,6 +157,33 @@ export default function NovaDemanda() {
     finally { setPhotoBusy(false); }
   };
 
+  const saveDraft = () => {
+    saveSafeDemandDraft({
+      bairro: form.bairro,
+      categoria: form.categoria,
+    });
+    setDraftAvailable(true);
+    setDraftMessage("Rascunho seguro salvo neste dispositivo por até 6 horas.");
+  };
+
+  const restoreDraft = () => {
+    const draft = readSafeDemandDraft();
+    if (!draft) {
+      setDraftAvailable(false);
+      setDraftMessage("O rascunho não está mais disponível.");
+      return;
+    }
+    setForm(prev => ({ ...prev, ...draft.values }));
+    setDraftMessage("Bairro/localidade e categoria restaurados.");
+    markStarted();
+  };
+
+  const deleteDraft = () => {
+    clearSafeDemandDraft();
+    setDraftAvailable(false);
+    setDraftMessage("Rascunho apagado deste dispositivo.");
+  };
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault(); setLoading(true); setError(""); setProtocolo(null);
     if (!form.faixa_etaria) { setError("Informe sua faixa etária para continuar."); setLoading(false); return; }
@@ -162,6 +196,7 @@ export default function NovaDemanda() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Não foi possível enviar seu registro.");
       setProtocolo(data.protocolo); trackPulsoEvent("protocolo_view", attribution);
+      clearSafeDemandDraft(); setDraftAvailable(false);
       setForm(prev => ({ ...prev, descricao: "", aviso_privacidade_aceito: false })); setPhotoData(""); setPhotoName("");
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err: any) { setError(err.message || "Não foi possível enviar seu registro."); }
@@ -226,8 +261,26 @@ export default function NovaDemanda() {
         </div>
       </div>
 
+      <section data-safe-draft="explicit" className="mb-6 rounded-2xl border border-[#d7e0f2] bg-white p-4 sm:p-5">
+        <div className="flex items-start gap-3">
+          <span className="icon-tile"><Bookmark className="h-4 w-4" /></span>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-sm font-extrabold text-[#172033]">Rascunho seguro neste dispositivo</h2>
+            <p className="mt-1 text-xs leading-relaxed text-[#657089]">
+              Se você quiser, salve somente bairro/localidade e categoria por até 6 horas. CEP, rua, número, complemento, nome, contato, descrição, foto, faixa etária e aceite de privacidade não são salvos.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {draftAvailable && <button type="button" onClick={restoreDraft} className="secondary-button min-h-11 px-4 text-sm">Restaurar rascunho</button>}
+              <button type="button" onClick={saveDraft} className="secondary-button min-h-11 px-4 text-sm"><Bookmark className="h-4 w-4" /> {draftAvailable ? "Atualizar rascunho" : "Salvar rascunho"}</button>
+              {draftAvailable && <button type="button" onClick={deleteDraft} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold text-[#657089] hover:bg-[#f7f9fd]"><Trash2 className="h-4 w-4" /> Apagar</button>}
+            </div>
+            {draftMessage && <p aria-live="polite" className="mt-2 text-xs font-semibold text-[#1f2e6e]">{draftMessage}</p>}
+          </div>
+        </div>
+      </section>
+
       <form onSubmit={handleSubmit} className="surface-card space-y-6 p-5 sm:p-8">
-        {error && <div role="alert" className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm leading-relaxed text-red-700">{error}</div>}
+           {error && <div role="alert" className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm leading-relaxed text-red-700">{error}</div>}
         <label className="block">
           <span className="text-sm font-bold text-[#172033]">Faixa etária</span>
           <select name="faixa_etaria" value={form.faixa_etaria} onChange={handleChange} required className="field">

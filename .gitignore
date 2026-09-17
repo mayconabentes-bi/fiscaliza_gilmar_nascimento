@@ -22,6 +22,10 @@ coverage/
 tmp/
 .vite/
 
+# QA visual local
+playwright-report/
+test-results/
+
 # Artefatos locais de deploy e Supabase
 .vercel/
 supabase/.temp/

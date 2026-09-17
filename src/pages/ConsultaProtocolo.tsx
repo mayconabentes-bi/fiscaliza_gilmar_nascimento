@@ -1,125 +1,50 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Search, Clock, MapPin, Tag, Radar, CheckCircle2, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Clock, Copy, Info, MapPin, Radar, RefreshCw, Search, Share2, ShieldCheck, Tag } from "lucide-react";
 
-const statusLabel: Record<string, string> = {
-  RECEBIDA: "Recebido",
-  EM_TRIAGEM: "Em triagem",
-  ENCAMINHADA: "Encaminhado",
-  EM_ANALISE: "Em análise",
-  EM_EXECUCAO: "Em andamento",
-  CONCLUIDA: "Concluído",
-  INDEFERIDA: "Encerrado"
+const statusLabel: Record<string,string> = { RECEBIDA:"Recebido", EM_TRIAGEM:"Em triagem", ENCAMINHADA:"Encaminhado", EM_ANALISE:"Em análise", EM_EXECUCAO:"Em andamento", CONCLUIDA:"Concluído", INDEFERIDA:"Encerrado" };
+const statusGuidance: Record<string,{title:string;text:string}> = {
+  RECEBIDA:{title:"Registro recebido",text:"Seu registro entrou no sistema. Consulte este protocolo novamente para acompanhar qualquer mudança de status."},
+  EM_TRIAGEM:{title:"Registro em triagem",text:"O registro está em triagem. Novas mudanças aparecem neste histórico quando forem registradas no sistema."},
+  ENCAMINHADA:{title:"Registro encaminhado",text:"O sistema registra que a demanda foi encaminhada. O histórico abaixo mostra as mudanças já registradas, sem prometer prazo de conclusão."},
+  EM_ANALISE:{title:"Registro em análise",text:"O registro está em análise. Consulte o protocolo para verificar futuras atualizações lançadas no sistema."},
+  EM_EXECUCAO:{title:"Registro em andamento",text:"O sistema registra o caso como em andamento. O histórico público é a referência para acompanhar novas atualizações."},
+  CONCLUIDA:{title:"Registro marcado como concluído",text:"O status atual do registro é concluído. O histórico abaixo preserva as mudanças registradas até este momento."},
+  INDEFERIDA:{title:"Registro encerrado",text:"O status atual do registro é encerrado. O histórico abaixo preserva as mudanças registradas no sistema."},
 };
+const dateOpts = { timeZone:"America/Manaus", day:"2-digit", month:"2-digit", year:"numeric" } as const;
+const formatDate = (v:string) => new Date(v).toLocaleDateString("pt-BR",dateOpts);
+const formatDateTime = (v:string) => new Date(v).toLocaleString("pt-BR",{...dateOpts,hour:"2-digit",minute:"2-digit"});
 
-const formatDate = (value: string) => new Date(value).toLocaleDateString("pt-BR", {
-  timeZone: "America/Manaus",
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric"
-});
-
-const formatDateTime = (value: string) => new Date(value).toLocaleString("pt-BR", {
-  timeZone: "America/Manaus",
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit"
-});
-
-export default function ConsultaProtocolo() {
+export default function ConsultaProtocolo(){
   const [params] = useSearchParams();
-  const [codigo, setCodigo] = useState(params.get("codigo") || "");
-  const [resultado, setResultado] = useState<any>(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [codigo,setCodigo] = useState(params.get("codigo")||"");
+  const [resultado,setResultado] = useState<any>(null);
+  const [error,setError] = useState("");
+  const [loading,setLoading] = useState(false);
+  const [actionFeedback,setActionFeedback] = useState("");
+  const guidance = useMemo(()=>statusGuidance[resultado?.demanda?.status]||{title:statusLabel[resultado?.demanda?.status]||"Situação atual",text:"Consulte o histórico público abaixo para acompanhar as mudanças registradas no sistema."},[resultado]);
+  const latestUpdate = useMemo(()=>{ const h=Array.isArray(resultado?.historico)?resultado.historico:[]; return h.at(-1)?.created_at||resultado?.demanda?.updated_at||resultado?.demanda?.created_at||""; },[resultado]);
 
-  const consultar = async (event?: FormEvent) => {
-    event?.preventDefault();
-    if (!codigo.trim()) return;
-    setLoading(true);
-    setError("");
-    setResultado(null);
-
-    try {
-      const response = await fetch(`/api/demandas/protocolo/${encodeURIComponent(codigo.trim())}`, { cache: "no-store" });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Não encontramos esse protocolo.");
-      setResultado(data);
-    } catch (err: any) {
-      setError(err.message || "Não foi possível consultar agora. Tente novamente.");
-    } finally {
-      setLoading(false);
-    }
+  const consultar = async (event?:FormEvent) => {
+    event?.preventDefault(); if(!codigo.trim()) return; setLoading(true); setError(""); setActionFeedback(""); setResultado(null);
+    try { const r=await fetch(`/api/demandas/protocolo/${encodeURIComponent(codigo.trim())}`,{cache:"no-store"}); const d=await r.json(); if(!r.ok) throw new Error(d.error||"Não encontramos esse protocolo."); setResultado(d); }
+    catch(e:any){ setError(e.message||"Não foi possível consultar agora. Tente novamente."); }
+    finally{ setLoading(false); }
   };
+  const copyProtocol = async()=>{ const protocol=resultado?.demanda?.protocolo; if(!protocol)return; try{await navigator.clipboard.writeText(protocol);setActionFeedback("Protocolo copiado.");}catch{setActionFeedback("Não foi possível copiar automaticamente. Selecione o protocolo na tela.");} };
+  const shareProtocol = async()=>{ const protocol=resultado?.demanda?.protocolo; if(!protocol)return; const url=`${window.location.origin}/protocolo?codigo=${encodeURIComponent(protocol)}`; try{if(navigator.share){await navigator.share({title:"Acompanhar protocolo FISCALIZE",text:`Protocolo ${protocol}`,url});setActionFeedback("Acompanhamento compartilhado.");return;}await navigator.clipboard.writeText(url);setActionFeedback("Link de acompanhamento copiado.");}catch(e:any){if(e?.name!=="AbortError")setActionFeedback("Não foi possível compartilhar agora.");} };
+  useEffect(()=>{if(params.get("codigo")) void consultar();/* eslint-disable-next-line react-hooks/exhaustive-deps */},[]);
 
-  useEffect(() => {
-    if (params.get("codigo")) consultar();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  return (
-    <div className="mx-auto max-w-5xl py-2 sm:py-8">
-      <section className="grid gap-7 lg:grid-cols-[1fr_0.72fr] lg:items-end">
-        <div className="max-w-2xl">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="section-kicker rounded-full border border-[#d7e0f2] bg-white px-3 py-1.5"><Radar className="h-4 w-4" /> FISCALIZE · Acompanhar</span>
-            <span className="inline-flex rounded-full bg-[#fff0e5] px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#b84405]">Seu protocolo, seu histórico</span>
-          </div>
-          <h1 className="mt-5 text-3xl font-extrabold tracking-[-0.045em] text-[#172033] sm:text-4xl">Veja o andamento do seu registro.</h1>
-          <p className="mt-3 text-sm leading-relaxed text-[#657089] sm:text-base">Digite o protocolo recebido no envio para consultar status, datas e as mudanças registradas no histórico público do caso.</p>
-        </div>
-
-        <div className="grid grid-cols-3 gap-2 rounded-2xl border border-[#d7e0f2] bg-[#eef2fb] p-3 sm:p-4">
-          {["Status", "Datas", "Histórico"].map((item, index) => <div key={item} className="rounded-xl bg-white px-2 py-3 text-center shadow-sm"><span className="block text-[10px] font-extrabold text-[#f36a10]">0{index + 1}</span><span className="mt-1 block text-xs font-bold text-[#526078] sm:text-sm">{item}</span></div>)}
-        </div>
-      </section>
-
-      <div className="mt-6 flex gap-3 rounded-2xl border border-[#d7e0f2] bg-[#eef2fb] p-4 text-xs leading-relaxed text-[#526078] sm:text-sm"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#1f2e6e]" /><p>A consulta pública mostra apenas protocolo, município, categoria, status, datas e histórico de status. Descrição, contato, foto e observações internas não são exibidos aqui.</p></div>
-
-      <form onSubmit={consultar} className="surface-card mt-7 overflow-hidden">
-        <div className="h-1.5 bg-[#f36a10]" aria-hidden="true" />
-        <div className="grid gap-3 p-4 sm:flex sm:p-5">
-          <input value={codigo} onChange={e => setCodigo(e.target.value.toUpperCase())} placeholder="Ex.: AM-20260917-A1B2C3" autoCapitalize="characters" spellCheck={false} aria-label="Número do protocolo" className="field mt-0 min-h-14 flex-1 font-mono" />
-          <button disabled={loading} className="primary-button min-h-14 px-6 text-base"><Search className="h-5 w-5" /> {loading ? "Buscando..." : "Ver andamento"}</button>
-        </div>
-      </form>
-
-      {error && <div role="alert" className="mt-5 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm leading-relaxed text-red-700">{error}</div>}
-
-      {resultado && (
-        <div className="mt-7 grid gap-5 lg:grid-cols-[1.4fr_0.6fr]">
-          <section className="surface-card overflow-hidden">
-            <div className="h-1 bg-[#1f2e6e]" aria-hidden="true" />
-            <div className="p-5 sm:p-7">
-              <div className="flex flex-col gap-4 border-b border-[#edf0f6] pb-5 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0"><span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#7c879d]">Seu protocolo</span><h2 className="mt-1 break-all font-mono text-xl font-bold text-[#1f2e6e] sm:text-2xl">{resultado.demanda.protocolo}</h2></div>
-                <span className="inline-flex self-start items-center gap-2 rounded-full border border-[#ffd7bc] bg-[#fff0e5] px-3 py-1.5 text-sm font-extrabold text-[#b84405]"><CheckCircle2 className="h-4 w-4" />{statusLabel[resultado.demanda.status] || resultado.demanda.status}</span>
-              </div>
-              <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl bg-[#f7f9fd] p-4"><MapPin className="mb-2 h-4 w-4 text-[#1f2e6e]" /><span className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#7c879d]">Município</span><span className="mt-1 block text-sm font-semibold text-[#34425b]">{resultado.demanda.municipio}</span></div>
-                <div className="rounded-2xl bg-[#f7f9fd] p-4"><Tag className="mb-2 h-4 w-4 text-[#1f2e6e]" /><span className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#7c879d]">Categoria</span><span className="mt-1 block text-sm font-semibold text-[#34425b]">{resultado.demanda.categoria}</span></div>
-                <div className="rounded-2xl bg-[#f7f9fd] p-4"><Clock className="mb-2 h-4 w-4 text-[#1f2e6e]" /><span className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#7c879d]">Registrado</span><span className="mt-1 block text-sm font-semibold text-[#34425b]">{formatDate(resultado.demanda.created_at)}</span></div>
-              </div>
-            </div>
-          </section>
-
-          <aside className="surface-card p-5 sm:p-6">
-            <div className="flex items-center justify-between gap-3"><div><p className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-[#f36a10]">Acompanhamento</p><h3 className="mt-1 text-lg font-extrabold text-[#172033]">Histórico público</h3></div><span className="icon-tile"><Radar className="h-4 w-4" /></span></div>
-            <p className="mt-2 text-xs leading-relaxed text-[#657089]">As mudanças de status ficam registradas em ordem cronológica.</p>
-            <div className="mt-5 space-y-5">
-              {resultado.historico.map((item: any, index: number) => (
-                <div key={index} className="relative pl-6 before:absolute before:left-[7px] before:top-5 before:h-[calc(100%+0.5rem)] before:w-px before:bg-[#d7e0f2] last:before:hidden">
-                  <span className="absolute left-0 top-1.5 h-3.5 w-3.5 rounded-full border-[3px] border-white bg-[#f36a10] ring-1 ring-[#ffc79f]" />
-                  <div className="text-sm font-extrabold text-[#172033]">{statusLabel[item.status_novo] || item.status_novo}</div>
-                  <div className="mt-0.5 text-xs text-[#7c879d]">{formatDateTime(item.created_at)}</div>
-                </div>
-              ))}
-            </div>
-          </aside>
-        </div>
-      )}
-    </div>
-  );
+  return <div className="mx-auto max-w-5xl py-2 sm:py-8">
+    <section className="grid gap-7 lg:grid-cols-[1fr_0.72fr] lg:items-end"><div className="max-w-2xl"><div className="flex flex-wrap items-center gap-2"><span className="section-kicker rounded-full border border-[#d7e0f2] bg-white px-3 py-1.5"><Radar className="h-4 w-4"/> FISCALIZE · Acompanhar</span><span className="inline-flex rounded-full bg-[#fff0e5] px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#b84405]">Seu protocolo, seu histórico</span></div><h1 className="mt-5 text-3xl font-extrabold tracking-[-0.045em] text-[#172033] sm:text-4xl">Veja o andamento do seu registro.</h1><p className="mt-3 text-sm leading-relaxed text-[#657089] sm:text-base">Digite o protocolo recebido no envio para consultar o status atual, a última atualização e as mudanças registradas no histórico público.</p></div>
+      <div className="grid grid-cols-3 gap-2 rounded-2xl border border-[#d7e0f2] bg-[#eef2fb] p-3 sm:p-4">{["Status atual","Última atualização","Histórico"].map((x,i)=><div key={x} className="rounded-xl bg-white px-2 py-3 text-center shadow-sm"><span className="block text-[10px] font-extrabold text-[#f36a10]">0{i+1}</span><span className="mt-1 block text-xs font-bold text-[#526078] sm:text-sm">{x}</span></div>)}</div></section>
+    <div className="mt-6 flex gap-3 rounded-2xl border border-[#d7e0f2] bg-[#eef2fb] p-4 text-xs leading-relaxed text-[#526078] sm:text-sm"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#1f2e6e]"/><p>A consulta pública mostra apenas protocolo, município, categoria, status, datas e histórico de status. Descrição, contato, foto e observações internas não são exibidos aqui.</p></div>
+    <form onSubmit={consultar} className="surface-card mt-7 overflow-hidden"><div className="h-1.5 bg-[#f36a10]"/><div className="grid gap-3 p-4 sm:flex sm:p-5"><input value={codigo} onChange={e=>setCodigo(e.target.value.toUpperCase())} placeholder="Ex.: AM-20260917-A1B2C3" autoCapitalize="characters" spellCheck={false} aria-label="Número do protocolo" className="field mt-0 min-h-14 flex-1 font-mono text-base"/><button disabled={loading} className="primary-button min-h-14 px-6 text-base"><Search className="h-5 w-5"/> {loading?"Buscando...":"Ver andamento"}</button></div></form>
+    {error&&<div role="alert" className="mt-5 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+    {resultado&&<><section className="mt-7 grid gap-4 lg:grid-cols-[1.25fr_0.75fr]"><div className="surface-card p-5 sm:p-7"><div className="flex items-start gap-3"><span className="icon-tile shrink-0"><Info className="h-4 w-4"/></span><div><p className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-[#f36a10]">Situação atual</p><h2 className="mt-1 text-xl font-extrabold text-[#172033] sm:text-2xl">{guidance.title}</h2><p className="mt-2 text-sm leading-7 text-[#657089]">{guidance.text}</p></div></div><div className="mt-5 rounded-2xl bg-[#f7f9fd] px-4 py-3 text-xs text-[#526078] sm:text-sm">O FISCALIZE não exibe prazo automático de solução. O histórico abaixo reflete somente atualizações efetivamente registradas no sistema.</div></div>
+      <aside className="surface-card p-5 sm:p-6"><p className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-[#7c879d]">Próximo passo</p><h3 className="mt-1 text-lg font-extrabold text-[#172033]">Guarde o protocolo e volte quando quiser.</h3><p className="mt-2 text-xs text-[#657089]">Você pode copiar ou compartilhar o link de acompanhamento. O compartilhamento é opcional.</p><div className="mt-5 grid gap-2"><button type="button" onClick={copyProtocol} className="secondary-button min-h-12 justify-center px-4 text-sm"><Copy className="h-4 w-4"/> Copiar protocolo</button><button type="button" onClick={shareProtocol} className="secondary-button min-h-12 justify-center px-4 text-sm"><Share2 className="h-4 w-4"/> Compartilhar</button><button type="button" onClick={()=>void consultar()} disabled={loading} className="secondary-button min-h-12 justify-center px-4 text-sm"><RefreshCw className={`h-4 w-4 ${loading?"animate-spin":""}`}/> Atualizar consulta</button></div><p aria-live="polite" className="mt-3 min-h-5 text-xs font-semibold text-[#1f2e6e]">{actionFeedback}</p></aside></section>
+      <div className="mt-5 grid gap-5 lg:grid-cols-[1.4fr_0.6fr]"><section className="surface-card p-5 sm:p-7"><div className="flex flex-col gap-4 border-b border-[#edf0f6] pb-5 sm:flex-row sm:justify-between"><div><span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#7c879d]">Seu protocolo</span><h2 className="mt-1 break-all font-mono text-xl font-bold text-[#1f2e6e] sm:text-2xl">{resultado.demanda.protocolo}</h2></div><span className="inline-flex self-start items-center gap-2 rounded-full border border-[#ffd7bc] bg-[#fff0e5] px-3 py-1.5 text-sm font-extrabold text-[#b84405]"><CheckCircle2 className="h-4 w-4"/>{statusLabel[resultado.demanda.status]||resultado.demanda.status}</span></div><div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{[[MapPin,"Município",resultado.demanda.municipio],[Tag,"Categoria",resultado.demanda.categoria],[Clock,"Registrado",formatDate(resultado.demanda.created_at)],[RefreshCw,"Última atualização",latestUpdate?formatDateTime(latestUpdate):"—"]].map(([Icon,label,value]:any)=><div key={label} className="rounded-2xl bg-[#f7f9fd] p-4"><Icon className="mb-2 h-4 w-4 text-[#1f2e6e]"/><span className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#7c879d]">{label}</span><span className="mt-1 block text-sm font-semibold text-[#34425b]">{value}</span></div>)}</div></section>
+      <aside className="surface-card p-5 sm:p-6"><div className="flex items-center justify-between"><div><p className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-[#f36a10]">Acompanhamento</p><h3 className="mt-1 text-lg font-extrabold text-[#172033]">Histórico público</h3></div><span className="icon-tile"><Radar className="h-4 w-4"/></span></div><p className="mt-2 text-xs text-[#657089]">{resultado.historico.length===1?"1 atualização registrada até agora.":`${resultado.historico.length} atualizações registradas até agora.`}</p><div className="mt-5 space-y-5">{resultado.historico.map((item:any,index:number)=><div key={`${item.status_novo}-${item.created_at}-${index}`} className="relative pl-6 before:absolute before:left-[7px] before:top-5 before:h-[calc(100%+0.5rem)] before:w-px before:bg-[#d7e0f2] last:before:hidden"><span className="absolute left-0 top-1.5 h-3.5 w-3.5 rounded-full border-[3px] border-white bg-[#f36a10] ring-1 ring-[#ffc79f]"/><div className="text-sm font-extrabold text-[#172033]">{statusLabel[item.status_novo]||item.status_novo}</div><div className="mt-0.5 text-xs text-[#7c879d]">{formatDateTime(item.created_at)}</div></div>)}</div></aside></div></>}
+  </div>;
 }

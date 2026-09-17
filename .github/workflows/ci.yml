@@ -58,6 +58,12 @@ jobs:
         run: npm run test:mobile-ui
       - name: Brand UI contract
         run: npm run test:brand-ui
+      - name: Public journey refinement contracts
+        run: |
+          node tests/home-refinement-contract.mjs
+          node tests/protocol-followup-contract.mjs
+          node tests/safe-draft-contract.mjs
+          node tests/visual-qa-contract.mjs
       - name: Responsive device matrix
         run: npm run test:devices
       - name: Mobile performance budget
