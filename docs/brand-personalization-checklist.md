@@ -17,8 +17,18 @@
 - [x] Como funciona
 - [x] Sobre
 
+## Bloco 3 — Área privada
+- [x] Shell privado e contexto do módulo
+- [x] Painel
+- [x] Triagem
+- [x] Radar Territorial
+- [x] Estratégia
+- [x] Governança
+- [x] Auditoria e segurança
+- [x] Separação entre cor de marca e cores semânticas
+- [x] Contrato de CI da área privada
+
 ## Próximos blocos
-- [ ] Área privada
 - [ ] Favicon/app icon
 - [ ] Relatórios/PDFs
 - [ ] Validação visual desktop/mobile
