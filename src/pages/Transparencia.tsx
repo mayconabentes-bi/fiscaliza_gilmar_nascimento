@@ -13,7 +13,7 @@ export default function Transparencia() {
         <section className="rounded-3xl border border-slate-200 bg-white p-7">
           <UserRound className="w-6 h-6 text-emerald-700" />
           <h2 className="mt-4 text-xl font-bold">Origem e uso</h2>
-          <p className="mt-3 text-slate-600 leading-relaxed">O FISCALIZE foi criado por Maycon A. Bentes e é disponibilizado para uso do vereador Gilmar Nascimento no registro e acompanhamento de demandas. A plataforma não substitui canais oficiais nem garante, por si só, a solução de um problema.</p>
+          <p className="mt-3 text-slate-600 leading-relaxed">O FISCALIZE tem como Fundador/Criador Mayco A. Bentes e como Co-Fundador/Criador Thauã Malinowski. A plataforma é disponibilizada para uso do vereador Gilmar Nascimento no registro e acompanhamento de demandas. O FISCALIZE não substitui canais oficiais nem garante, por si só, a solução de um problema.</p>
         </section>
         <section className="rounded-3xl border border-slate-200 bg-white p-7">
           <Waypoints className="w-6 h-6 text-emerald-700" />
