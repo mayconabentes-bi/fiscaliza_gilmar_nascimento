@@ -29,6 +29,25 @@ function publicDemandIntakeEnabled() {
   return process.env.NODE_ENV !== "production" || process.env.ENABLE_PUBLIC_DEMAND_INTAKE === "true";
 }
 
+function cleanCep(value: unknown) {
+  const cep = String(value || "").replace(/\D/g, "");
+  if (!cep) return "";
+  if (!/^\d{8}$/.test(cep)) throw new Error("invalid_cep");
+  return cep;
+}
+
+function cleanUf(value: unknown) {
+  const uf = cleanText(value, 2).toUpperCase();
+  if (uf && !/^[A-Z]{2}$/.test(uf)) throw new Error("invalid_uf");
+  return uf;
+}
+
+function cleanIbge(value: unknown) {
+  const code = cleanText(value, 16);
+  if (code && !/^\d{6,16}$/.test(code)) throw new Error("invalid_ibge");
+  return code;
+}
+
 function citizenClaims(req: Request) {
   const token = req.cookies?.token;
   if (!token) return null;
@@ -52,6 +71,7 @@ export function setupCitizenDemandPostgres(app: Express) {
 
     const claims = citizenClaims(req);
     let nome: string, contato: string, municipio: string, bairro: string, categoria: string, descricao: string, prioridade: string;
+    let cep: string, logradouro: string, numero: string, complemento: string, uf: string, codigoIbge: string;
     const fotoEvidenciaBase64 = typeof req.body?.foto_evidencia_base64 === "string" ? req.body.foto_evidencia_base64.trim() : "";
 
     try {
@@ -59,6 +79,12 @@ export function setupCitizenDemandPostgres(app: Express) {
       contato = cleanText(req.body?.contato, 200);
       municipio = cleanText(req.body?.municipio, 120, true);
       bairro = cleanText(req.body?.bairro, 160);
+      cep = cleanCep(req.body?.cep);
+      logradouro = cleanText(req.body?.logradouro, 180);
+      numero = cleanText(req.body?.numero, 80);
+      complemento = cleanText(req.body?.complemento, 180);
+      uf = cleanUf(req.body?.uf);
+      codigoIbge = cleanIbge(req.body?.codigo_ibge);
       categoria = cleanText(req.body?.categoria, 120, true);
       descricao = cleanText(req.body?.descricao, 5000, true);
       prioridade = cleanEnum(req.body?.prioridade, PRIORITIES, "MEDIA");
@@ -102,12 +128,13 @@ export function setupCitizenDemandPostgres(app: Express) {
           await sql.begin(async (transaction) => {
             await transaction`
               insert into public.demandas (
-                id, protocolo, nome_solicitante, contato, municipio, bairro, categoria, descricao,
-                prioridade, status, usuario_id, evidencia_foto_path, evidencia_foto_mime,
+                id, protocolo, nome_solicitante, contato, municipio, bairro, cep, logradouro, numero, complemento, uf, codigo_ibge,
+                categoria, descricao, prioridade, status, usuario_id, evidencia_foto_path, evidencia_foto_mime,
                 evidencia_moderacao_status, aviso_privacidade_versao, aviso_privacidade_data,
                 faixa_etaria, revisao_reforcada, revisao_reforcada_motivo
               ) values (
-                ${id}, ${protocolo}, ${nome}, ${contato || null}, ${municipio}, ${bairro || null}, ${categoria}, ${descricao},
+                ${id}, ${protocolo}, ${nome}, ${contato || null}, ${municipio}, ${bairro || null}, ${cep || null}, ${logradouro || null},
+                ${numero || null}, ${complemento || null}, ${uf || null}, ${codigoIbge || null}, ${categoria}, ${descricao},
                 ${prioridade}, 'RECEBIDA', ${usuarioId}, ${uploadedEvidence?.path || null}, ${uploadedEvidence?.mime || null},
                 ${uploadedEvidence ? "PENDENTE" : "NAO_ENVIADA"}, ${privacyVersion()}, ${new Date().toISOString()},
                 ${faixaEtaria}, ${revisaoReforcada}, ${revisaoMotivo}
