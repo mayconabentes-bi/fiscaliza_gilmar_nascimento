@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle2, RefreshCw, ShieldCheck, X } from "lucide-react";
+import { CheckCircle2, Eye, Image as ImageIcon, RefreshCw, ShieldCheck, X } from "lucide-react";
 import { fetchWithTimeout } from "../lib/request";
 
 const statusOptions = [
@@ -13,6 +13,7 @@ const statusOptions = [
 ] as const;
 
 type StatusValue = typeof statusOptions[number]["value"];
+type EvidenciaDecisao = "APROVAR_PRIVADA" | "REQUER_ANONIMIZACAO" | "REJEITAR";
 
 const prioridadeClass: Record<string, string> = {
   BAIXA: "bg-slate-100 text-slate-700",
@@ -21,8 +22,28 @@ const prioridadeClass: Record<string, string> = {
   CRITICA: "bg-red-50 text-red-700"
 };
 
+const evidenciaStatusLabel: Record<string, string> = {
+  PENDENTE: "Pendente",
+  APROVADA_PRIVADA: "Aprovada privada",
+  REQUER_ANONIMIZACAO: "Requer anonimização",
+  REJEITADA: "Rejeitada",
+  NAO_ENVIADA: "Sem foto"
+};
+
+const evidenciaStatusClass: Record<string, string> = {
+  PENDENTE: "bg-amber-50 text-amber-700",
+  APROVADA_PRIVADA: "bg-emerald-50 text-emerald-700",
+  REQUER_ANONIMIZACAO: "bg-violet-50 text-violet-700",
+  REJEITADA: "bg-red-50 text-red-700",
+  NAO_ENVIADA: "bg-slate-100 text-slate-500"
+};
+
 function statusLabel(value: string) {
   return statusOptions.find(option => option.value === value)?.label || value;
+}
+
+function evidenciaLabel(value: string) {
+  return evidenciaStatusLabel[value] || value || "Pendente";
 }
 
 export default function AdminDemandas() {
@@ -37,6 +58,13 @@ export default function AdminDemandas() {
   const [observacao, setObservacao] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [modalError, setModalError] = useState("");
+  const [evidenciaDemanda, setEvidenciaDemanda] = useState<any | null>(null);
+  const [evidenciaUrl, setEvidenciaUrl] = useState("");
+  const [evidenciaMime, setEvidenciaMime] = useState("");
+  const [evidenciaLoading, setEvidenciaLoading] = useState(false);
+  const [evidenciaError, setEvidenciaError] = useState("");
+  const [evidenciaObservacao, setEvidenciaObservacao] = useState("");
+  const [moderandoEvidencia, setModerandoEvidencia] = useState(false);
   const listControllerRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
 
@@ -126,6 +154,67 @@ export default function AdminDemandas() {
     }
   };
 
+  const abrirEvidencia = async (demanda: any) => {
+    setEvidenciaDemanda(demanda);
+    setEvidenciaUrl("");
+    setEvidenciaMime("");
+    setEvidenciaError("");
+    setEvidenciaObservacao("");
+    setEvidenciaLoading(true);
+
+    try {
+      const response = await fetchWithTimeout(
+        `/api/admin/demandas/${demanda.id}/evidencia`,
+        { credentials: "same-origin", cache: "no-store" },
+        10000
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Não foi possível carregar a evidência.");
+      setEvidenciaUrl(String(data.url || ""));
+      setEvidenciaMime(String(data.mime || ""));
+    } catch (err: any) {
+      setEvidenciaError(err?.name === "AbortError" ? "A evidência demorou além do esperado para abrir." : (err.message || "Não foi possível carregar a evidência."));
+    } finally {
+      setEvidenciaLoading(false);
+    }
+  };
+
+  const fecharEvidencia = () => {
+    if (moderandoEvidencia) return;
+    setEvidenciaDemanda(null);
+    setEvidenciaUrl("");
+    setEvidenciaMime("");
+    setEvidenciaError("");
+    setEvidenciaObservacao("");
+  };
+
+  const moderarEvidencia = async (decisao: EvidenciaDecisao) => {
+    if (!evidenciaDemanda) return;
+    if (decisao === "REJEITAR" && !window.confirm("Rejeitar esta evidência removerá a foto do armazenamento privado. Deseja continuar?")) return;
+
+    setModerandoEvidencia(true);
+    setEvidenciaError("");
+    try {
+      const response = await fetchWithTimeout(`/api/admin/evidencias/${evidenciaDemanda.id}/decisao`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decisao, observacao: evidenciaObservacao.trim() })
+      }, 12000);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Não foi possível registrar a decisão sobre a evidência.");
+      setEvidenciaDemanda(null);
+      setEvidenciaUrl("");
+      setEvidenciaMime("");
+      setEvidenciaObservacao("");
+      await fetchDemandas();
+    } catch (err: any) {
+      setEvidenciaError(err?.name === "AbortError" ? "A moderação demorou além do esperado. Tente novamente." : (err.message || "Não foi possível registrar a decisão sobre a evidência."));
+    } finally {
+      setModerandoEvidencia(false);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto py-8">
       <div className="mb-8 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
@@ -133,7 +222,7 @@ export default function AdminDemandas() {
           <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
             <ShieldCheck className="w-8 h-8 text-emerald-600" /> Triagem de demandas
           </h1>
-          <p className="mt-2 text-slate-600">Painel operacional para priorização, encaminhamento e atualização de status.</p>
+          <p className="mt-2 text-slate-600">Painel operacional para priorização, encaminhamento, evidências privadas e atualização de status.</p>
         </div>
         <button onClick={fetchDemandas} disabled={loading} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Atualizar
@@ -163,14 +252,15 @@ export default function AdminDemandas() {
                 <th className="px-4 py-3 font-semibold">Prioridade</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
                 <th className="px-4 py-3 font-semibold">Descrição</th>
+                <th className="px-4 py-3 font-semibold">Evidência</th>
                 <th className="px-4 py-3 font-semibold text-right">Ação</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-500">Carregando demandas...</td></tr>
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-500">Carregando demandas...</td></tr>
               ) : demandas.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-500">Nenhuma demanda encontrada.</td></tr>
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-500">Nenhuma demanda encontrada.</td></tr>
               ) : demandas.map(demanda => (
                 <tr key={demanda.id} className="hover:bg-slate-50 align-top">
                   <td className="px-4 py-4 font-mono font-semibold text-slate-900">{demanda.protocolo}</td>
@@ -179,6 +269,18 @@ export default function AdminDemandas() {
                   <td className="px-4 py-4"><span className={`rounded-full px-2 py-1 text-xs font-bold ${prioridadeClass[demanda.prioridade] || prioridadeClass.MEDIA}`}>{demanda.prioridade}</span></td>
                   <td className="px-4 py-4 text-slate-700 font-semibold">{statusLabel(demanda.status)}</td>
                   <td className="px-4 py-4 text-slate-600 max-w-md line-clamp-3">{demanda.descricao}</td>
+                  <td className="px-4 py-4">
+                    {demanda.tem_evidencia_foto ? (
+                      <div className="flex min-w-36 flex-col items-start gap-2">
+                        <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${evidenciaStatusClass[demanda.evidencia_moderacao_status] || evidenciaStatusClass.PENDENTE}`}>
+                          {evidenciaLabel(demanda.evidencia_moderacao_status)}
+                        </span>
+                        <button onClick={() => abrirEvidencia(demanda)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50">
+                          <Eye className="h-3.5 w-3.5" /> Ver foto
+                        </button>
+                      </div>
+                    ) : <span className="text-xs text-slate-400">Sem foto</span>}
+                  </td>
                   <td className="px-4 py-4 text-right">
                     <button onClick={() => abrirAlteracaoStatus(demanda)} className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700">Alterar status</button>
                   </td>
@@ -254,6 +356,72 @@ export default function AdminDemandas() {
               <button type="button" onClick={atualizarStatus} disabled={salvando || novoStatus === demandaSelecionada.status} className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">
                 {salvando ? "Salvando..." : `Confirmar: ${statusLabel(novoStatus)}`}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {evidenciaDemanda && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-slate-950/55 p-0 sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-labelledby="evidencia-modal-title">
+          <div className="w-full max-w-3xl rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl">
+            <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-5 sm:px-6">
+              <div>
+                <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.14em] text-emerald-700"><ImageIcon className="h-4 w-4" /> Evidência privada</p>
+                <h2 id="evidencia-modal-title" className="mt-1 text-xl font-extrabold text-slate-900">Revisar foto da demanda</h2>
+                <p className="mt-1 text-sm text-slate-500">{evidenciaDemanda.protocolo}</p>
+              </div>
+              <button type="button" onClick={fecharEvidencia} disabled={moderandoEvidencia} className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 disabled:opacity-50" aria-label="Fechar">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="max-h-[72vh] overflow-y-auto px-5 py-5 sm:px-6">
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+                <span className="text-xs font-semibold text-slate-500">Moderação:</span>
+                <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${evidenciaStatusClass[evidenciaDemanda.evidencia_moderacao_status] || evidenciaStatusClass.PENDENTE}`}>
+                  {evidenciaLabel(evidenciaDemanda.evidencia_moderacao_status)}
+                </span>
+                {evidenciaMime && <span className="text-xs text-slate-400">{evidenciaMime}</span>}
+              </div>
+
+              {evidenciaLoading && <div className="flex min-h-72 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-500">Carregando evidência privada...</div>}
+
+              {!evidenciaLoading && evidenciaUrl && (
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
+                  <img src={evidenciaUrl} alt={`Evidência da demanda ${evidenciaDemanda.protocolo}`} className="mx-auto max-h-[52vh] w-auto max-w-full object-contain" />
+                </div>
+              )}
+
+              {!evidenciaLoading && !evidenciaUrl && !evidenciaError && <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">Nenhuma imagem disponível.</div>}
+
+              {evidenciaError && <div className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{evidenciaError}</div>}
+
+              {evidenciaUrl && (
+                <label className="mt-5 block">
+                  <span className="text-sm font-bold text-slate-800">Observação da moderação</span>
+                  <span className="mt-1 block text-xs text-slate-500">Use este campo para registrar contexto sobre privacidade, anonimização ou rejeição da imagem.</span>
+                  <textarea
+                    value={evidenciaObservacao}
+                    onChange={e => setEvidenciaObservacao(e.target.value)}
+                    maxLength={1000}
+                    rows={3}
+                    placeholder="Ex.: Imagem adequada para consulta interna; sem exposição pública."
+                    className="mt-2 w-full resize-y rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  />
+                  <span className="mt-1 block text-right text-xs text-slate-400">{evidenciaObservacao.length}/1000</span>
+                </label>
+              )}
+
+              <p className="mt-4 text-xs leading-relaxed text-slate-500">A foto permanece em armazenamento privado. O acesso exibido nesta tela usa uma URL temporária e não torna a evidência pública.</p>
+            </div>
+
+            <div className="flex flex-col gap-2 border-t border-slate-200 px-5 py-4 sm:flex-row sm:flex-wrap sm:justify-end sm:px-6">
+              <button type="button" onClick={fecharEvidencia} disabled={moderandoEvidencia} className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50">Fechar</button>
+              {evidenciaUrl && <>
+                <button type="button" onClick={() => moderarEvidencia("REQUER_ANONIMIZACAO")} disabled={moderandoEvidencia || evidenciaDemanda.evidencia_moderacao_status === "REQUER_ANONIMIZACAO"} className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-bold text-violet-700 hover:bg-violet-100 disabled:opacity-50">Requer anonimização</button>
+                <button type="button" onClick={() => moderarEvidencia("REJEITAR")} disabled={moderandoEvidencia} className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 hover:bg-red-100 disabled:opacity-50">Rejeitar e remover</button>
+                <button type="button" onClick={() => moderarEvidencia("APROVAR_PRIVADA")} disabled={moderandoEvidencia || evidenciaDemanda.evidencia_moderacao_status === "APROVADA_PRIVADA"} className="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50">{moderandoEvidencia ? "Salvando..." : "Aprovar privada"}</button>
+              </>}
             </div>
           </div>
         </div>
