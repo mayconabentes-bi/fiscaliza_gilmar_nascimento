@@ -205,6 +205,12 @@ async function verifyObrasGov() {
 async function verifySapl() {
   const source = await retry(() => sources.loadSapl(STABLE_YEAR));
   report("CMM SAPL", source);
+  if (isTransientExternalFailure(source)) {
+    const warning = `SAPL temporariamente indisponível; QA de conteúdo real adiado: ${source.error || "sem detalhe"}`;
+    warnings.push(warning);
+    console.warn(`QA DEGRADED: SAPL: ${warning}`);
+    return;
+  }
   ok(["available", "degraded"].includes(source.availability), `SAPL indisponível: ${source.error || "sem detalhe"}`);
   ok(source.data.length > 0, `SAPL retornou zero matérias para ${STABLE_YEAR}`);
 }
