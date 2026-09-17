@@ -40,15 +40,16 @@ export default function Relatorios() {
   };
 
   const activeColumns = selectedColumns.length ? selectedColumns : columns.filter((column) => column.key !== "descricao").map((column) => column.key);
+  const columnLabel = (key: string) => columns.find((column) => column.key === key)?.label || key;
   const exportPDF = () => {
     const doc = new jsPDF();
     doc.text("Relatório privado de demandas", 14, 15);
-    autoTable(doc, { head: [activeColumns], body: reportData.map((row) => activeColumns.map((column) => String(row[column] ?? ""))), startY: 24 });
+    autoTable(doc, { head: [activeColumns.map(columnLabel)], body: reportData.map((row) => activeColumns.map((column) => String(row[column] ?? ""))), startY: 24 });
     doc.save(`relatorio_demandas_${new Date().toISOString().slice(0, 10)}.pdf`);
   };
   const exportCSV = () => {
     const escape = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
-    const csv = [activeColumns.map(escape).join(','), ...reportData.map((row) => activeColumns.map((column) => escape(row[column])).join(','))].join('\n');
+    const csv = [activeColumns.map((column) => escape(columnLabel(column))).join(','), ...reportData.map((row) => activeColumns.map((column) => escape(row[column])).join(','))].join('\n');
     saveAs(new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }), `relatorio_demandas_${new Date().toISOString().slice(0, 10)}.csv`);
   };
 
@@ -69,7 +70,7 @@ export default function Relatorios() {
         <button onClick={handleGenerate} disabled={loading} className="primary-button mt-6 min-h-12 px-6">{loading ? "Gerando..." : "Gerar relatório"}<Filter className="h-4 w-4" /></button>
       </section>
 
-      {reportData.length > 0 && <section className="surface-card p-5 sm:p-7"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h2 className="text-lg font-extrabold">Prévia · {reportData.length} registros</h2><div className="flex gap-2"><button onClick={exportPDF} className="secondary-button"><Download className="h-4 w-4" /> PDF</button><button onClick={exportCSV} className="secondary-button"><Download className="h-4 w-4" /> CSV</button></div></div><div className="mt-5 overflow-x-auto"><table className="w-full min-w-[720px] text-left text-sm"><thead><tr className="border-b border-[#e5e9e6]">{activeColumns.map((column) => <th key={column} className="px-3 py-3 font-extrabold">{column}</th>)}</tr></thead><tbody>{reportData.slice(0, 100).map((row, index) => <tr key={index} className="border-b border-[#eef0ee]">{activeColumns.map((column) => <td key={column} className="max-w-xs px-3 py-3 text-[#56615b]">{String(row[column] ?? "")}</td>)}</tr>)}</tbody></table></div></section>}
+      {reportData.length > 0 && <section className="surface-card p-5 sm:p-7"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h2 className="text-lg font-extrabold">Prévia · {reportData.length} registros</h2><div className="flex gap-2"><button onClick={exportPDF} className="secondary-button"><Download className="h-4 w-4" /> PDF</button><button onClick={exportCSV} className="secondary-button"><Download className="h-4 w-4" /> CSV</button></div></div><div className="mt-5 overflow-x-auto"><table className="w-full min-w-[720px] text-left text-sm"><thead><tr className="border-b border-[#e5e9e6]">{activeColumns.map((column) => <th key={column} className="px-3 py-3 font-extrabold">{columnLabel(column)}</th>)}</tr></thead><tbody>{reportData.slice(0, 100).map((row, index) => <tr key={index} className="border-b border-[#eef0ee]">{activeColumns.map((column) => <td key={column} className="max-w-xs px-3 py-3 text-[#56615b]">{String(row[column] ?? "")}</td>)}</tr>)}</tbody></table></div></section>}
     </div>
   );
 }
