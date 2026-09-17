@@ -1,0 +1,27 @@
+node_modules/
+build/
+dist/
+dist-server/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# Bancos locais e artefatos sensíveis
+*.db
+*.sqlite
+*.sqlite3
+*.db-*
+*.db.*
+*.corrupted
+
+# Cache e temporários
+.cache/
+.tmp/
+tmp/
+.vite/
+
+# Artefatos locais de deploy e Supabase
+.vercel/
+supabase/.temp/

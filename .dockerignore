@@ -1,0 +1,11 @@
+node_modules
+dist
+dist-server
+.git
+.github
+.env
+backups
+civic_platform.db
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
