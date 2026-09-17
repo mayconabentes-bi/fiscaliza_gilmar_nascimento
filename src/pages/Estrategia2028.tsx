@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BarChart3, CheckCircle2, Database, Flag, ShieldCheck, Target } from "lucide-react";
 import IntelligenceRefreshPanel from "../components/IntelligenceRefreshPanel";
 import IntelligenceInsightsPanel from "../components/IntelligenceInsightsPanel";
 import AdvancedIntelligencePanel from "../components/AdvancedIntelligencePanel";
+import { fetchWithTimeout } from "../lib/request";
 
 type StrategyData = {
   horizonte: string;
@@ -80,46 +81,65 @@ export default function Estrategia2028() {
   const [health, setHealth] = useState<HealthData | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<LoadError>(null);
+  const controllerRef = useRef<AbortController | null>(null);
 
-  const loadIntelligence = async () => {
-    const [worksResponse, healthResponse] = await Promise.all([
-      fetch("/api/intelligence/works", { credentials: "same-origin", cache: "no-store" }),
-      fetch("/api/intelligence/sources/health", { credentials: "same-origin", cache: "no-store" }),
-    ]);
-    if (worksResponse.ok) setWorks(await worksResponse.json());
-    if (healthResponse.ok) setHealth(await healthResponse.json());
+  const loadIntelligence = async (signal?: AbortSignal) => {
+    try {
+      const worksResponse = await fetchWithTimeout(
+        "/api/intelligence/works",
+        { credentials: "same-origin", cache: "no-store", signal },
+        8000
+      );
+      if (worksResponse.ok && !signal?.aborted) setWorks(await worksResponse.json());
+    } catch (error: any) {
+      if (signal?.aborted || error?.name === "AbortError") return;
+    }
+
+    try {
+      const healthResponse = await fetchWithTimeout(
+        "/api/intelligence/sources/health",
+        { credentials: "same-origin", cache: "no-store", signal },
+        8000
+      );
+      if (healthResponse.ok && !signal?.aborted) setHealth(await healthResponse.json());
+    } catch (error: any) {
+      if (signal?.aborted || error?.name === "AbortError") return;
+    }
   };
 
   useEffect(() => {
-    Promise.allSettled([
-      fetch("/api/admin/strategy/2028", { credentials: "same-origin", cache: "no-store" }),
-      fetch("/api/intelligence/works", { credentials: "same-origin", cache: "no-store" }),
-      fetch("/api/intelligence/sources/health", { credentials: "same-origin", cache: "no-store" }),
-    ])
-      .then(async ([strategyResult, worksResult, healthResult]) => {
-        if (strategyResult.status !== "fulfilled") {
-          setLoadError("unavailable");
-          return;
-        }
-        if (strategyResult.value.status === 401 || strategyResult.value.status === 403) {
+    const controller = new AbortController();
+    controllerRef.current = controller;
+
+    (async () => {
+      try {
+        const strategyResponse = await fetchWithTimeout(
+          "/api/admin/strategy/2028",
+          { credentials: "same-origin", cache: "no-store", signal: controller.signal },
+          8000
+        );
+        if (strategyResponse.status === 401 || strategyResponse.status === 403) {
           setLoadError("forbidden");
           return;
         }
-        if (strategyResult.value.status === 503) {
+        if (strategyResponse.status === 503 || !strategyResponse.ok) {
           setLoadError("unavailable");
           return;
         }
-        if (!strategyResult.value.ok) {
-          setLoadError("unavailable");
-          return;
-        }
-        setData(await strategyResult.value.json());
+        const strategy = await strategyResponse.json();
+        if (controller.signal.aborted) return;
+        setData(strategy);
+        setLoading(false);
+        await loadIntelligence(controller.signal);
+      } catch (error: any) {
+        if (controller.signal.aborted || error?.name === "AbortError") return;
+        setLoadError("unavailable");
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    })();
 
-        if (worksResult.status === "fulfilled" && worksResult.value.ok) setWorks(await worksResult.value.json());
-        if (healthResult.status === "fulfilled" && healthResult.value.ok) setHealth(await healthResult.value.json());
-      })
-      .catch(() => setLoadError("unavailable"))
-      .finally(() => setLoading(false));
+    return () => controller.abort();
   }, []);
 
   if (loading) return <div className="py-20 text-center text-sm font-semibold text-[#69736d]">Carregando núcleo de inteligência...</div>;
@@ -173,8 +193,8 @@ export default function Estrategia2028() {
         <div className="mt-5"><IntelligenceRefreshPanel onRefreshed={() => loadIntelligence().catch(() => undefined)} /></div>
 
         <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-xl border border-[#e5e9e6] bg-white p-5"><p className="text-xs font-bold uppercase tracking-wide text-[#69736d]">Obras municipais</p><p className="mt-2 text-2xl font-extrabold text-[#101513]">{municipalTotal ?? "—"}</p><p className="mt-1 text-sm text-[#69736d]">{works ? availabilityLabel(works.municipal.availability) : "Sem leitura"}</p></div>
-          <div className="rounded-xl border border-[#e5e9e6] bg-white p-5"><p className="text-xs font-bold uppercase tracking-wide text-[#69736d]">Projetos ObrasGov</p><p className="mt-2 text-2xl font-extrabold text-[#101513]">{federalTotal ?? "—"}</p><p className="mt-1 text-sm text-[#69736d]">{works ? availabilityLabel(works.federal.availability) : "Sem leitura"}</p></div>
+          <div className="rounded-xl border border-[#e5e9e6] bg-white p-5"><p className="text-xs font-bold uppercase tracking-wide text-[#69736d]">Obras municipais</p><p className="mt-2 text-2xl font-extrabold text-[#101513]">{municipalTotal ?? "—"}</p><p className="mt-1 text-sm text-[#69736d]">{works ? availabilityLabel(works.municipal.availability) : "Carregando em segundo plano"}</p></div>
+          <div className="rounded-xl border border-[#e5e9e6] bg-white p-5"><p className="text-xs font-bold uppercase tracking-wide text-[#69736d]">Projetos ObrasGov</p><p className="mt-2 text-2xl font-extrabold text-[#101513]">{federalTotal ?? "—"}</p><p className="mt-1 text-sm text-[#69736d]">{works ? availabilityLabel(works.federal.availability) : "Carregando em segundo plano"}</p></div>
           <div className="rounded-xl border border-[#e5e9e6] bg-white p-5"><p className="text-xs font-bold uppercase tracking-wide text-[#69736d]">Cobertura ObrasGov</p><p className="mt-2 text-2xl font-extrabold text-[#101513]">{typeof works?.federal.quality?.coverage === "number" ? `${Math.round(works.federal.quality.coverage * 100)}%` : "—"}</p><p className="mt-1 text-sm text-[#69736d]">Registros classificados no recorte consultado</p></div>
           <div className="rounded-xl border border-[#e5e9e6] bg-white p-5"><p className="text-xs font-bold uppercase tracking-wide text-[#69736d]">Fontes monitoradas</p><p className="mt-2 text-2xl font-extrabold text-[#101513]">{health?.live?.length ?? "—"}</p><p className="mt-1 text-sm text-[#69736d]">Estado verificado pela Intelligence API</p></div>
         </div>
