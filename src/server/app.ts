@@ -9,6 +9,7 @@ import { setupCitizenAuthPostgres } from "./citizenAuthPostgres.js";
 import { setupCitizenDemandPostgres } from "./citizenDemandPostgres.js";
 import { setupCitizenCompliancePostgres } from "./citizenCompliancePostgres.js";
 import { setupPrivateAdminPostgresRoutes } from "./privateAdminPostgresRoutes.js";
+import { setupProductionFastAdminRoutes } from "./productionFastAdminRoutes.js";
 import { setupProductionRadarRoutes } from "./productionRadarRoutes.js";
 import { setupProductionIntelligenceRoutes } from "./productionIntelligenceRoutes.js";
 import { setupProductionStrategyRoutes } from "./productionStrategyRoutes.js";
@@ -79,6 +80,9 @@ export function createApp() {
     app.use("/api/radar/manaus", requireAdmin);
     app.use("/api/intelligence", requireAdmin);
 
+    // Fast paths primeiro: Painel e Triagem não precisam passar pelas versões
+    // legadas mais pesadas quando executados em produção.
+    setupProductionFastAdminRoutes(app);
     setupPrivateAdminPostgresRoutes(app);
     setupProductionRadarRoutes(app);
     setupProductionStrategyRoutes(app);
