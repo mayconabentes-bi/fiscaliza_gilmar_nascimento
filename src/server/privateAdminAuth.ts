@@ -56,7 +56,7 @@ export function setupPrivateAdminAuth(app: Express) {
       if (!valid) return res.status(401).json({ error: "Credenciais inválidas." });
       const perfil = String(admin.perfil_acesso || "ADMIN");
       const token = jwt.sign({ id: admin.id, type: "admin", status: "ativo", perfil_acesso: perfil }, jwtSecret(), { expiresIn: "12h" });
-      res.cookie("token", token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict", maxAge: 12 * 60 * 60 * 1000 });
+      res.cookie("token", token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict", path: "/", maxAge: 12 * 60 * 60 * 1000 });
       res.setHeader("Cache-Control", "no-store, private");
       return res.json({ user: { id: admin.id, nome: admin.nome, email: admin.email, type: "admin", perfil_acesso: perfil } });
     } catch (error: any) {
