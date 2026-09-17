@@ -35,6 +35,9 @@ try {
   if (!config.publicDemandIntake || !config.photoEvidence || config.privacyNoticeVersion !== 'mobile-qa-v1') throw new Error('Config pública não refletiu flags/privacidade.');
 
   expect((await fetch(`${BASE}/api/mobile-events`, { method: 'POST', headers: { 'content-type': 'application/json', origin: BASE }, body: JSON.stringify({ event: 'qr_landing', src: 'flyer', acao: 'centro-01' }) })).status, 204, 'evento agregado local');
+  for (const event of ['form_step_location', 'form_step_details', 'form_step_review']) {
+    expect((await fetch(`${BASE}/api/mobile-events`, { method: 'POST', headers: { 'content-type': 'application/json', origin: BASE }, body: JSON.stringify({ event, src: 'flyer', acao: 'centro-01' }) })).status, 204, `evento agregado ${event}`);
+  }
 
   const noPrivacy = await fetch(`${BASE}/api/demandas`, { method: 'POST', headers: { 'content-type': 'application/json', origin: BASE }, body: JSON.stringify({ nome_solicitante: 'QA', municipio: 'Manaus', categoria: 'Infraestrutura', descricao: 'Teste' }) });
   expect(noPrivacy.status, 400, 'privacidade pública obrigatória');
@@ -49,11 +52,13 @@ try {
   const row = db.prepare('SELECT evidencia_foto_path, evidencia_moderacao_status FROM demandas WHERE id = ?').get(body.id);
   const landing = db.prepare("SELECT total FROM mobile_funil_agregado WHERE evento='qr_landing' AND src='flyer' AND acao='centro-01'").get();
   const submitted = db.prepare("SELECT total FROM mobile_funil_agregado WHERE evento='form_submit' AND src='flyer' AND acao='centro-01'").get();
+  const steps = db.prepare("SELECT evento, total FROM mobile_funil_agregado WHERE evento LIKE 'form_step_%' AND src='flyer' AND acao='centro-01' ORDER BY evento").all();
   db.close();
   if (!row?.evidencia_foto_path || !fs.existsSync(path.join(evidenceDir, row.evidencia_foto_path))) throw new Error('Evidência fotográfica local não persistida.');
   if (row.evidencia_moderacao_status !== 'PENDENTE') throw new Error('Evidência local não iniciou pendente de moderação.');
   if (landing?.total !== 1 || submitted?.total !== 1) throw new Error('Funil agregado local não persistido corretamente.');
-  console.log('Mobile local OK: config, privacidade, QR agregado, demanda e evidência pendente.');
+  if (steps.length !== 3 || steps.some(step => step.total !== 1)) throw new Error('Etapas agregadas do formulário não foram persistidas corretamente.');
+  console.log('Mobile local OK: config, privacidade, QR, progresso agregado, demanda e evidência pendente.');
 } catch (error) {
   console.error(error); console.error(output); process.exitCode = 1;
 } finally {
