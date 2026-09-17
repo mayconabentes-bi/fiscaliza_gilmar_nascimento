@@ -2,7 +2,7 @@ import type { Express } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { getDb } from "./db.js";
-import { getPostgres } from "./postgres.js";
+import { getHealthyPostgres } from "./postgres.js";
 
 function jwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -39,7 +39,7 @@ export function setupPrivateAdminAuth(app: Express) {
     try {
       let admin: any;
       if (process.env.NODE_ENV === "production") {
-        const sql = getPostgres();
+        const sql = await getHealthyPostgres();
         [admin] = await sql`
           select id, nome, email, password_hash, ativo, perfil_acesso
           from private.admins where lower(email) = lower(${email}) limit 1
@@ -83,10 +83,8 @@ export function setupPrivateAdminAuth(app: Express) {
       return res.status(401).json({ authenticated: false });
     }
 
-    // Esta rota apenas hidrata a interface. A autorização real continua sendo
-    // revalidada no Postgres por requireInternalAccess() em cada API privada.
-    // Evitamos uma consulta redundante aqui para não competir pela única
-    // conexão serverless com as chamadas de dados do painel.
+    // Esta rota hidrata apenas a interface. A autorização real das APIs privadas
+    // continua sendo revalidada pelo middleware administrativo.
     res.setHeader("Cache-Control", "no-store, private");
     return res.json({
       authenticated: true,
