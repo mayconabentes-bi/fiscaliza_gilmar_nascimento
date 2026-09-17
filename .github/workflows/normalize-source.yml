@@ -41,6 +41,9 @@ jobs:
             exit 1
           fi
 
+          # Workflows are managed separately because the GitHub Actions token
+          # is intentionally not allowed to create/update workflow files.
+          rm -rf "$SOURCE_DIR/.github"
           cp -a "$SOURCE_DIR"/. ./
           rm -rf .normalize-tmp .fiscalize-import
 
