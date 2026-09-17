@@ -68,3 +68,32 @@ Diretrizes aplicadas:
 - área útil central respeitada para recortes de launcher em diferentes formatos;
 - `index.html` passa a declarar favicon, touch icon, manifest e título para instalação;
 - contrato de CI ampliado para verificar referências, paleta, manifest e presença dos PNGs.
+
+## Bloco 5 — Relatórios e PDFs
+
+A tela autenticada de relatórios (`/relatorios`) foi alinhada ao restante do núcleo privado sem alterar o endpoint `/api/relatorios/gerar` nem a lógica de filtros e seleção de colunas.
+
+Diretrizes aplicadas:
+
+- cabeçalho da página com identidade institucional e aviso de área autenticada;
+- filtros, seleção de colunas, ações e prévia reorganizados para mobile e desktop;
+- descrição permanece fora da exportação padrão quando nenhuma seleção manual de colunas é feita;
+- prévia continua limitada visualmente aos primeiros 100 registros, enquanto PDF e CSV usam todo o conjunto retornado pelo serviço;
+- nomes de arquivos passam a usar o prefixo `fiscalize_relatorio_demandas_`;
+- PDF em A4 paisagem com cabeçalho azul, acento laranja, total de registros, filtros ativos e horário de geração;
+- tabela do PDF com cabeçalho repetido, linhas alternadas, quebra controlada e paginação;
+- rodapé do PDF identifica o documento como privado e orienta compartilhamento apenas para finalidade administrativa legítima;
+- nenhum dado novo é buscado, enriquecido ou exposto pela personalização visual.
+
+## Bloco 6 — Validação visual final desktop/mobile
+
+A validação final consolida os contratos que já acompanham o rollout inteiro:
+
+- shell público e privado preservam navegação e hierarquia responsivas;
+- páginas públicas continuam protegidas pela matriz de dispositivos e orçamento mobile existentes no CI;
+- relatórios agora possuem marcadores explícitos de layout responsivo, filtros empilháveis e tabela com rolagem horizontal controlada;
+- CTAs mantêm áreas de toque adequadas e ações de exportação se reorganizam em telas estreitas;
+- build de produção, Brand UI contract, Responsive device matrix e Mobile performance budget permanecem gates obrigatórios;
+- preview Vercel é validado antes do merge e o deployment da `main` é conferido após a integração.
+
+O rollout visual fica encerrado somente após CI completo, preview Vercel e deployment de produção concluírem com sucesso.

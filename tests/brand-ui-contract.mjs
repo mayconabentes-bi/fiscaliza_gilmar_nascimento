@@ -14,6 +14,7 @@ const governance = fs.readFileSync('src/pages/AdminDashboard.tsx', 'utf8');
 const radar = fs.readFileSync('src/pages/RadarTerritorial.tsx', 'utf8');
 const strategy = fs.readFileSync('src/pages/Estrategia2028.tsx', 'utf8');
 const audit = fs.readFileSync('src/pages/SecurityAudit.tsx', 'utf8');
+const reports = fs.readFileSync('src/pages/Relatorios.tsx', 'utf8');
 const html = fs.readFileSync('index.html', 'utf8');
 const manifest = fs.readFileSync('public/site.webmanifest', 'utf8');
 const favicon = fs.readFileSync('public/favicon.svg', 'utf8');
@@ -50,4 +51,10 @@ expect(favicon.includes('#1f2e6e') && favicon.includes('#f36a10'), 'Favicon veto
 expect(manifest.includes('"short_name":"FISCALIZE"') && manifest.includes('"purpose":"any maskable"') && manifest.includes('"theme_color":"#1f2e6e"'), 'Web manifest deve preservar nome, cor e suporte maskable.');
 expect(fs.existsSync('public/app-icon-192.png') && fs.existsSync('public/app-icon-512.png') && fs.existsSync('public/apple-touch-icon.png'), 'Ícones PNG para instalação e Apple touch devem existir.');
 
-console.log('Brand UI contract OK: base, páginas públicas, área privada, favicon/app icons e salvaguardas funcionais de interface.');
+expect(reports.includes('FISCALIZE · Relatórios') && reports.includes('/api/relatorios/gerar'), 'Relatórios devem preservar identidade e endpoint administrativo de geração.');
+expect(reports.includes('BRAND_BLUE') && reports.includes('BRAND_ORANGE') && reports.includes('Relatório privado de demandas · uso administrativo'), 'PDF deve carregar identidade institucional e contexto administrativo.');
+expect(reports.includes('Página ${page} de ${pageCount}') && reports.includes('Documento privado'), 'PDF deve preservar paginação e aviso de uso privado.');
+expect(reports.includes('data-report-layout="responsive"') && reports.includes('sm:grid-cols-2') && reports.includes('overflow-x-auto'), 'Relatórios devem manter adaptação explícita para mobile e desktop.');
+expect(reports.includes('fiscalize_relatorio_demandas_') && reports.includes('reportData.length > 100'), 'Exportações devem usar nome padronizado e a prévia deve explicitar o limite visual de 100 registros.');
+
+console.log('Brand UI contract OK: rollout visual completo, relatórios/PDFs, responsividade e salvaguardas funcionais de interface.');

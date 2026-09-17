@@ -37,6 +37,29 @@
 - [x] Metadados no HTML
 - [x] Contrato de CI dos assets de instalação
 
-## Próximos blocos
-- [ ] Relatórios/PDFs
-- [ ] Validação visual desktop/mobile
+## Bloco 5 — Relatórios e PDFs
+- [x] Identidade visual da tela de relatórios
+- [x] Filtros e seleção de colunas responsivos
+- [x] Prévia com hierarquia azul/laranja
+- [x] PDF com cabeçalho institucional
+- [x] Contexto de filtros e total de registros no PDF
+- [x] Tabela PDF com cabeçalho repetido e linhas alternadas
+- [x] Paginação e aviso de documento privado
+- [x] Nomes padronizados para PDF e CSV
+- [x] Contrato de CI de relatórios/exportações
+
+## Bloco 6 — Validação visual final desktop/mobile
+- [x] Contrato responsivo preservado no shell público
+- [x] Contrato responsivo preservado na área privada
+- [x] Relatórios adaptados para mobile e desktop
+- [x] Navegação, tabelas e CTAs com comportamento responsivo protegido por CI
+- [x] Build de produção e matriz responsiva como gates obrigatórios
+- [x] Preview Vercel antes do merge
+
+## Rollout
+- [x] Base visual
+- [x] Páginas públicas
+- [x] Área privada
+- [x] Favicon/app icon
+- [x] Relatórios/PDFs
+- [x] Validação visual desktop/mobile
