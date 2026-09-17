@@ -6,14 +6,14 @@ export default function Privacidade() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [privacyContact, setPrivacyContact] = useState("");
-  const [privacyNoticeVersion, setPrivacyNoticeVersion] = useState("2026-09-v2");
+  const [privacyNoticeVersion, setPrivacyNoticeVersion] = useState("");
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) setUser(JSON.parse(storedUser));
     fetch("/api/public-config").then(r => r.json()).then(data => {
       setPrivacyContact(String(data.privacyContact || ""));
-      setPrivacyNoticeVersion(String(data.privacyNoticeVersion || "2026-09-v2"));
+      setPrivacyNoticeVersion(String(data.privacyNoticeVersion || ""));
     }).catch(() => undefined);
   }, []);
 
@@ -53,7 +53,7 @@ export default function Privacidade() {
     <div className="max-w-5xl mx-auto py-10">
       <header className="mb-10">
         <div className="flex items-center gap-3 mb-4"><Shield className="w-9 h-9 text-emerald-700" /><h1 className="text-4xl font-bold text-slate-950">Privacidade no FISCALIZE</h1></div>
-        <p className="text-lg text-slate-600 max-w-3xl">Política de Privacidade · versão {privacyNoticeVersion}. Esta página explica quais dados tratamos, para quais finalidades e quais escolhas você tem.</p>
+        <p className="text-lg text-slate-600 max-w-3xl">Política de Privacidade{privacyNoticeVersion ? ` · versão ${privacyNoticeVersion}` : ""}. Esta página explica quais dados tratamos, para quais finalidades e quais escolhas você tem.</p>
       </header>
 
       <div className="grid lg:grid-cols-3 gap-8">
