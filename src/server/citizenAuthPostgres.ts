@@ -95,7 +95,7 @@ export function setupCitizenAuthPostgres(app: Express) {
       const passwordValid = await bcrypt.compare(password, String(user.password_hash));
       if (!passwordValid) return res.status(401).json({ error: "Credenciais inválidas." });
       const token = jwt.sign({ id: user.id, type: "cidadao", status: user.status || "ativo" }, jwtSecret(), { expiresIn: "24h" });
-      res.cookie("token", token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", maxAge: 24 * 60 * 60 * 1000 });
+      res.cookie("token", token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 24 * 60 * 60 * 1000 });
       res.setHeader("Cache-Control", "no-store, private");
       return res.json({ user: { id: user.id, nome_completo: user.nome_completo, email: user.email, municipio: user.municipio, bairro: user.bairro, faixa_etaria: user.faixa_etaria, protecao_reforcada: Boolean(user.protecao_reforcada), type: "cidadao" } });
     } catch (error: any) {
