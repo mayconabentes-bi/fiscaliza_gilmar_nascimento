@@ -10,7 +10,7 @@ function expect(condition, message) {
 }
 
 expect(css.includes('--brand-blue: #1f2e6e') && css.includes('--brand-orange: #f36a10'), 'Paleta institucional base deve permanecer definida.');
-expect(css.includes('.brand-signature-mark') && css.includes("/brand/gilmar-nascimento-oficial.png"), 'Tratamento web da marca deve existir.');
+expect(css.includes('.brand-signature-mark') && app.includes('/brand/gilmar-nascimento-oficial.png') && login.includes('/brand/gilmar-nascimento-oficial.png'), 'Tratamento web da marca deve existir no CSS e nas superfícies visuais.');
 expect(app.includes('brand-accent-bar') && app.includes('brand-signature-mark'), 'Shell público deve aplicar identidade institucional.');
 expect(app.includes('text-[#1f2e6e]') && app.includes('primary-button'), 'Navegação e CTA devem usar a nova hierarquia visual.');
 expect(login.includes('brand-signature-mark--login') && login.includes('bg-[#f36a10]'), 'Login deve carregar marca e destaque laranja.');
