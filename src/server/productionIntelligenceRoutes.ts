@@ -2,7 +2,6 @@ import type { Express } from "express";
 import { loadHealthUnits, loadMunicipalWorks, loadNeighborhoods, loadObrasGov, loadSchools, loadSapl, loadTceAm, loadManausTransparency } from "../intelligence/sources.js";
 import { fiscalOverview } from "../intelligence/fiscalEngine.js";
 import { manausPublicEntities } from "../intelligence/manausPublicEntities.js";
-import { territorialQuality } from "../intelligence/advancedIntelligence.js";
 import { getHealthyPostgres } from "./postgres.js";
 
 function now() { return new Date().toISOString(); }
@@ -11,6 +10,39 @@ function safeTotal(source: any) {
   if (typeof source?.quality?.total === "number") return source.quality.total;
   if (Array.isArray(source?.data)) return source.data.length;
   return 0;
+}
+
+function normalizeField(value: unknown) {
+  return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
+}
+
+function neighborhoodValue(item: any) {
+  const attrs = item?.attributes || item || {};
+  for (const key of ["BAIRRO", "NM_BAIRRO", "NOME_BAIRRO", "NOMEBAIRRO", "BAIRRO_NOME", "DS_BAIRRO"]) {
+    if (attrs[key] != null && String(attrs[key]).trim()) return String(attrs[key]).trim();
+  }
+  const dynamic = Object.keys(attrs).find((key) => normalizeField(key).includes("BAIRRO"));
+  return dynamic && attrs[dynamic] != null ? String(attrs[dynamic]).trim() : "";
+}
+
+function territorialQualityFromRaw(raw: { works: any[]; health: any[]; schools: any[] }) {
+  const dimensions = (Object.keys(raw) as Array<keyof typeof raw>).map((key) => {
+    const rows = Array.isArray(raw[key]) ? raw[key] : [];
+    const received = rows.length;
+    const classified = rows.filter((item) => Boolean(neighborhoodValue(item))).length;
+    return {
+      key,
+      received,
+      classified,
+      unclassified: Math.max(0, received - classified),
+      coverage: received ? classified / received : 1,
+    };
+  });
+
+  return {
+    dimensions,
+    methodology: "Cobertura territorial = registros da fonte com bairro reconhecível / registros recebidos da fonte. Registros sem bairro não são descartados do estado da fonte; apenas ficam fora dos indicadores territoriais.",
+  };
 }
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
@@ -112,9 +144,10 @@ export function setupProductionIntelligenceRoutes(app: Express) {
 
   app.get("/api/intelligence/quality/territorial", async (_req, res) => {
     const core = await loadCore();
-    const quality = territorialQuality({
-      raw: { works: core.works.data || [], health: core.health.data || [], schools: core.schools.data || [] },
-      territories: [],
+    const quality = territorialQualityFromRaw({
+      works: core.works.data || [],
+      health: core.health.data || [],
+      schools: core.schools.data || [],
     });
     res.setHeader("Cache-Control", "private, max-age=120");
     res.json({ generatedAt: now(), ...quality });
