@@ -21,15 +21,23 @@ export default function Login({ setUser }: { setUser: (user: any) => void }) {
       const endpoint = type === "admin" ? "/api/auth/admin/login" : "/api/auth/login";
       const body = type === "admin" ? { email: normalizedEmail, password } : { email: normalizedEmail, password, type: "cidadao" };
       const res = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      const data = await res.json();
-      if (!res.ok) throw new Error(res.status === 401 ? "E-mail ou senha inválidos." : data.error || "Não foi possível entrar.");
+      const contentType = res.headers.get("content-type") || "";
+      const data = contentType.includes("application/json") ? await res.json().catch(() => ({})) : {};
+      if (!res.ok) {
+        if (res.status === 401) throw new Error("E-mail ou senha inválidos.");
+        if (!contentType.includes("application/json") || res.status >= 500) {
+          throw new Error(data.error || "Serviço de autenticação temporariamente indisponível. Tente novamente em instantes.");
+        }
+        throw new Error(data.error || "Não foi possível entrar.");
+      }
+      if (!data?.user) throw new Error("Resposta inválida do serviço de autenticação.");
 
       const authenticatedUser = type === "admin" ? data.user : { ...data.user, type: "cidadao" };
       localStorage.setItem("user", JSON.stringify(authenticatedUser));
       setUser(authenticatedUser);
       navigate(type === "admin" ? "/dashboard" : "/");
     } catch (err: any) {
-      setError(err.message);
+      setError(err?.message || "Não foi possível entrar.");
     } finally {
       setLoading(false);
     }

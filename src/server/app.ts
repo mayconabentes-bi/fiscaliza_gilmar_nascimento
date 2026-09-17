@@ -16,7 +16,7 @@ import { setupProductionStrategyRoutes } from "./productionStrategyRoutes.js";
 import { setupManausRadarRoutes } from "./manausRadarRoutes.js";
 import { setupStrategyRoutes } from "./strategyRoutes.js";
 import { setupPrivateAdminRoutes } from "./privateAdminRoutes.js";
-import { allowedOrigins, citizenRegistrationGuard, csrfOriginGuard, setupHealthRoutes, validateProductionEnvironment } from "./goLiveSecurity.js";
+import { allowedOrigins, citizenRegistrationGuard, csrfOriginGuard, setupHealthRoutes } from "./goLiveSecurity.js";
 import { ensureMobileConversionSchema, setupMobileConversion } from "./mobileConversion.js";
 import { requireInternalAccess } from "./internalAccess.js";
 import { ensurePrivateAdminSchema, setupPrivateAdminAuth } from "./privateAdminAuth.js";
@@ -31,7 +31,6 @@ import { setupAdvancedIntelligenceRoutes } from "../intelligence/advancedRoutes.
 const limiter = (windowMs: number, max: number) => rateLimit({ windowMs, max, standardHeaders: "draft-8", legacyHeaders: false, message: { error: "Muitas solicitações. Tente novamente mais tarde." } });
 
 export function createApp() {
-  validateProductionEnvironment();
   const app = express();
   const production = process.env.NODE_ENV === "production";
   const origins = allowedOrigins();
