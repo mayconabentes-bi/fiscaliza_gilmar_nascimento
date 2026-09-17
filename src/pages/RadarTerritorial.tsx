@@ -161,11 +161,11 @@ export default function RadarTerritorial() {
         },
         async () => {
           const response = await fetchWithTimeout("/api/radar/manaus/indicadores-externos", { credentials: "same-origin", cache: "no-store", signal: controller.signal }, 7000);
-          if (response.ok && !controller.signal.aborted) setIndicadoresExternos((await response.json()).indicadores || []);
-        },
-        async () => {
-          const response = await fetchWithTimeout("/api/intelligence/quality/territorial", { credentials: "same-origin", cache: "no-store", signal: controller.signal }, 7000);
-          if (response.ok && !controller.signal.aborted) setQuality(await response.json());
+          if (response.ok && !controller.signal.aborted) {
+            const payload = await response.json();
+            setIndicadoresExternos(payload.indicadores || []);
+            if (payload.quality?.dimensions?.length) setQuality(payload.quality);
+          }
         },
       ];
 
