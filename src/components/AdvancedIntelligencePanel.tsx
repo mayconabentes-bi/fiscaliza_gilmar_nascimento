@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Building2, Landmark, MapPinned } from "lucide-react";
+import { fetchWithTimeout } from "../lib/request";
 
 type InstitutionResponse = { total: number; institutions: Array<{ nome: string; sigla?: string | null; cnpj: string; tipo: string }> };
 type FiscalResponse = {
@@ -37,15 +38,33 @@ export default function AdvancedIntelligencePanel() {
   const [quality, setQuality] = useState<QualityResponse | null>(null);
 
   useEffect(() => {
-    Promise.allSettled([
-      fetch("/api/intelligence/institutions", { credentials: "same-origin", cache: "no-store" }),
-      fetch("/api/intelligence/fiscal/overview", { credentials: "same-origin", cache: "no-store" }),
-      fetch("/api/intelligence/quality/territorial", { credentials: "same-origin", cache: "no-store" }),
-    ]).then(async ([institutionResult, fiscalResult, qualityResult]) => {
-      if (institutionResult.status === "fulfilled" && institutionResult.value.ok) setInstitutions(await institutionResult.value.json());
-      if (fiscalResult.status === "fulfilled" && fiscalResult.value.ok) setFiscal(await fiscalResult.value.json());
-      if (qualityResult.status === "fulfilled" && qualityResult.value.ok) setQuality(await qualityResult.value.json());
-    }).catch(() => undefined);
+    const controller = new AbortController();
+
+    (async () => {
+      const tasks: Array<() => Promise<void>> = [
+        async () => {
+          const response = await fetchWithTimeout("/api/intelligence/institutions", { credentials: "same-origin", cache: "no-store", signal: controller.signal }, 7000);
+          if (response.ok && !controller.signal.aborted) setInstitutions(await response.json());
+        },
+        async () => {
+          const response = await fetchWithTimeout("/api/intelligence/fiscal/overview", { credentials: "same-origin", cache: "no-store", signal: controller.signal }, 7000);
+          if (response.ok && !controller.signal.aborted) setFiscal(await response.json());
+        },
+        async () => {
+          const response = await fetchWithTimeout("/api/intelligence/quality/territorial", { credentials: "same-origin", cache: "no-store", signal: controller.signal }, 7000);
+          if (response.ok && !controller.signal.aborted) setQuality(await response.json());
+        },
+      ];
+
+      for (const task of tasks) {
+        if (controller.signal.aborted) break;
+        try { await task(); } catch (error: any) {
+          if (controller.signal.aborted || error?.name === "AbortError") break;
+        }
+      }
+    })();
+
+    return () => controller.abort();
   }, []);
 
   if (!institutions && !fiscal && !quality) return null;

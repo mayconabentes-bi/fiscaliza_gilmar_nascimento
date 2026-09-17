@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AlertTriangle, BarChart3, CheckCircle2, Clock, FileText, MapPinned, Radar, ShieldCheck, Tag, Flag, LockKeyhole, FileBarChart, ArrowUpRight, Activity } from "lucide-react";
+import { fetchWithTimeout } from "../lib/request";
 
 const modules = [
   { to: "/admin/demandas", title: "Triagem de demandas", description: "Analise registros, altere status e acompanhe o histórico.", icon: FileText },
@@ -17,11 +18,23 @@ export default function DashboardPrivado() {
   const [metricsError, setMetricsError] = useState(false);
 
   useEffect(() => {
-    fetch("/api/demandas/metricas")
+    const controller = new AbortController();
+    let active = true;
+
+    fetchWithTimeout("/api/demandas/metricas", { signal: controller.signal, cache: "no-store" }, 8000)
       .then((res) => { if (!res.ok) throw new Error("Erro ao carregar métricas."); return res.json(); })
-      .then(setData)
-      .catch(() => { setMetricsError(true); setData(null); })
-      .finally(() => setLoading(false));
+      .then((payload) => { if (active) setData(payload); })
+      .catch((error: any) => {
+        if (!active || error?.name === "AbortError") return;
+        setMetricsError(true);
+        setData(null);
+      })
+      .finally(() => { if (active) setLoading(false); });
+
+    return () => {
+      active = false;
+      controller.abort();
+    };
   }, []);
 
   const resumo = data?.resumo || { total: 0, concluidas: 0, pendentes: 0, criticas: 0 };

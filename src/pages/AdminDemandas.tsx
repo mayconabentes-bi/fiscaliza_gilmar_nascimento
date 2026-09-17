@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, RefreshCw, ShieldCheck, X } from "lucide-react";
+import { fetchWithTimeout } from "../lib/request";
 
 const statusOptions = [
   { value: "RECEBIDA", label: "Recebida", description: "Registro recebido e protocolado, aguardando triagem." },
@@ -36,6 +37,8 @@ export default function AdminDemandas() {
   const [observacao, setObservacao] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [modalError, setModalError] = useState("");
+  const listControllerRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(true);
 
   const statusAtualLabel = useMemo(
     () => demandaSelecionada ? statusLabel(demandaSelecionada.status) : "",
@@ -43,6 +46,10 @@ export default function AdminDemandas() {
   );
 
   const fetchDemandas = async () => {
+    listControllerRef.current?.abort();
+    const controller = new AbortController();
+    listControllerRef.current = controller;
+
     setLoading(true);
     setError("");
     const params = new URLSearchParams();
@@ -51,19 +58,29 @@ export default function AdminDemandas() {
     if (categoria) params.set("categoria", categoria);
 
     try {
-      const response = await fetch(`/api/admin/demandas?${params.toString()}`);
+      const response = await fetchWithTimeout(
+        `/api/admin/demandas?${params.toString()}`,
+        { signal: controller.signal, cache: "no-store", credentials: "same-origin" },
+        10000
+      );
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Erro ao carregar demandas.");
-      setDemandas(Array.isArray(data) ? data : []);
+      if (mountedRef.current && !controller.signal.aborted) setDemandas(Array.isArray(data) ? data : []);
     } catch (err: any) {
-      setError(err.message || "Erro ao carregar demandas.");
+      if (controller.signal.aborted || err?.name === "AbortError") return;
+      if (mountedRef.current) setError(err.message || "Erro ao carregar demandas.");
     } finally {
-      setLoading(false);
+      if (mountedRef.current && listControllerRef.current === controller) setLoading(false);
     }
   };
 
   useEffect(() => {
+    mountedRef.current = true;
     fetchDemandas();
+    return () => {
+      mountedRef.current = false;
+      listControllerRef.current?.abort();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -91,18 +108,19 @@ export default function AdminDemandas() {
     setSalvando(true);
     setModalError("");
     try {
-      const response = await fetch(`/api/admin/demandas/${demandaSelecionada.id}/status`, {
+      const response = await fetchWithTimeout(`/api/admin/demandas/${demandaSelecionada.id}/status`, {
         method: "PATCH",
+        credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: novoStatus, observacao_interna: observacao.trim() })
-      });
+      }, 12000);
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Erro ao atualizar demanda.");
       setDemandaSelecionada(null);
       setObservacao("");
       await fetchDemandas();
     } catch (err: any) {
-      setModalError(err.message || "Erro ao atualizar demanda.");
+      setModalError(err?.name === "AbortError" ? "A atualização demorou além do esperado. Tente novamente." : (err.message || "Erro ao atualizar demanda."));
     } finally {
       setSalvando(false);
     }
@@ -117,8 +135,8 @@ export default function AdminDemandas() {
           </h1>
           <p className="mt-2 text-slate-600">Painel operacional para priorização, encaminhamento e atualização de status.</p>
         </div>
-        <button onClick={fetchDemandas} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-          <RefreshCw className="w-4 h-4" /> Atualizar
+        <button onClick={fetchDemandas} disabled={loading} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Atualizar
         </button>
       </div>
 
@@ -129,7 +147,7 @@ export default function AdminDemandas() {
         </select>
         <input value={municipio} onChange={e => setMunicipio(e.target.value)} placeholder="Filtrar município" className="rounded-xl border border-slate-300 px-3 py-2 text-sm" />
         <input value={categoria} onChange={e => setCategoria(e.target.value)} placeholder="Filtrar categoria" className="rounded-xl border border-slate-300 px-3 py-2 text-sm" />
-        <button onClick={fetchDemandas} className="rounded-xl bg-slate-900 px-4 py-2 text-white text-sm font-semibold hover:bg-slate-800">Aplicar filtros</button>
+        <button onClick={fetchDemandas} disabled={loading} className="rounded-xl bg-slate-900 px-4 py-2 text-white text-sm font-semibold hover:bg-slate-800 disabled:opacity-50">Aplicar filtros</button>
       </div>
 
       {error && <div className="mb-6 rounded-xl bg-red-50 border border-red-100 text-red-700 px-4 py-3 text-sm">{error}</div>}
