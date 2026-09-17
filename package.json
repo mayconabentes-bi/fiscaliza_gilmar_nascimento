@@ -34,6 +34,7 @@
     "test:p0e-age-flow": "tsx tests/p0e-age-flow.ts",
     "test:p0e-boundary": "node tests/p0e-data-boundary.mjs",
     "test:p0d": "node tests/p0d-production-persistence.mjs",
+    "test:cep-location": "node tests/cep-location-contract.mjs",
     "backup:external": "node dist-server/src/scripts/backup_once.js",
     "create-admin": "tsx src/scripts/create_admin.ts",
     "admin:setup": "tsx src/scripts/create_admin.ts",
