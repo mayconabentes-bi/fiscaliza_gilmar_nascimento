@@ -56,6 +56,8 @@ jobs:
         run: npm run test:cep-location
       - name: Mobile UI contract
         run: npm run test:mobile-ui
+      - name: Brand UI contract
+        run: npm run test:brand-ui
       - name: Responsive device matrix
         run: npm run test:devices
       - name: Mobile performance budget
@@ -104,6 +106,8 @@ jobs:
         run: npm run test:cep-location
       - name: Mobile UI contract
         run: npm run test:mobile-ui
+      - name: Brand UI contract
+        run: npm run test:brand-ui
       - name: Responsive device matrix
         run: npm run test:devices
       - name: Mobile performance budget
