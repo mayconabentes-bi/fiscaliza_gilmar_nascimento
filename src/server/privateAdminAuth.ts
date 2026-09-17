@@ -70,18 +70,33 @@ export function setupPrivateAdminAuth(app: Express) {
     if (process.env.NODE_ENV !== "production") return next();
     const token = req.cookies?.token;
     if (!token) return next();
+
     let claims: any;
-    try { claims = jwt.verify(token, jwtSecret()) as any; } catch { return next(); }
-    if (claims.type !== "admin") return next();
     try {
-      const sql = getPostgres();
-      const [admin] = await sql`select id, nome, email, ativo, perfil_acesso from private.admins where id = ${claims.id} limit 1`;
-      if (!admin || admin.ativo !== true) return res.status(401).json({ authenticated: false });
-      res.setHeader("Cache-Control", "no-store, private");
-      return res.json({ authenticated: true, user: { id: admin.id, nome: admin.nome, email: admin.email, type: "admin", perfil_acesso: String(admin.perfil_acesso || "ADMIN") } });
-    } catch (error: any) {
-      console.error("Falha ao validar sessão administrativa:", error);
-      return res.status(error?.message === "DATABASE_URL não configurada" ? 503 : 500).json({ error: "Falha ao validar sessão administrativa." });
+      claims = jwt.verify(token, jwtSecret()) as any;
+    } catch {
+      return next();
     }
+
+    if (claims.type !== "admin") return next();
+    if (!claims.id || claims.status !== "ativo" || !["ADMIN", "SUPER_ADMIN"].includes(String(claims.perfil_acesso || ""))) {
+      return res.status(401).json({ authenticated: false });
+    }
+
+    // Esta rota apenas hidrata a interface. A autorização real continua sendo
+    // revalidada no Postgres por requireInternalAccess() em cada API privada.
+    // Evitamos uma consulta redundante aqui para não competir pela única
+    // conexão serverless com as chamadas de dados do painel.
+    res.setHeader("Cache-Control", "no-store, private");
+    return res.json({
+      authenticated: true,
+      user: {
+        id: claims.id,
+        nome: "Administrador FISCALIZE",
+        email: null,
+        type: "admin",
+        perfil_acesso: String(claims.perfil_acesso),
+      },
+    });
   });
 }
