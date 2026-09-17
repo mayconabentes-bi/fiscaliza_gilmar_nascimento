@@ -8,6 +8,12 @@ const register = fs.readFileSync('src/pages/NovaDemanda.tsx', 'utf8');
 const tracking = fs.readFileSync('src/pages/ConsultaProtocolo.tsx', 'utf8');
 const methodology = fs.readFileSync('src/pages/Metodologia.tsx', 'utf8');
 const about = fs.readFileSync('src/pages/Transparencia.tsx', 'utf8');
+const privateDashboard = fs.readFileSync('src/pages/DashboardPrivado.tsx', 'utf8');
+const triage = fs.readFileSync('src/pages/AdminDemandas.tsx', 'utf8');
+const governance = fs.readFileSync('src/pages/AdminDashboard.tsx', 'utf8');
+const radar = fs.readFileSync('src/pages/RadarTerritorial.tsx', 'utf8');
+const strategy = fs.readFileSync('src/pages/Estrategia2028.tsx', 'utf8');
+const audit = fs.readFileSync('src/pages/SecurityAudit.tsx', 'utf8');
 const html = fs.readFileSync('index.html', 'utf8');
 
 function expect(condition, message) {
@@ -28,4 +34,13 @@ expect(tracking.includes('FISCALIZE · Acompanhar') && tracking.includes('/api/d
 expect(methodology.includes('FISCALIZE · Como funciona') && methodology.includes('não substitui protocolo'), 'Como funciona deve preservar identidade e limite do protocolo interno.');
 expect(about.includes('Sobre o FISCALIZE') && about.includes('Participar não significa apoiar'), 'Sobre deve preservar identidade e independência da participação.');
 
-console.log('Brand UI contract OK: paleta, marca, shell, login, páginas públicas e salvaguardas de interface.');
+expect(app.includes('private-shell') && app.includes('private-area') && app.includes('private-context-bar') && app.includes('Acesso autenticado'), 'Shell privado deve preservar contexto visual e indicação de acesso autenticado.');
+expect(css.includes('.private-area') && css.includes('data-private-route="/admin/demandas"') && css.includes('data-private-route="/radar-manaus"'), 'Estilos privados devem permanecer escopados por área e rota.');
+expect(privateDashboard.includes('FISCALIZE · Núcleo privado') && privateDashboard.includes('/api/demandas/metricas'), 'Painel privado deve preservar identidade e fonte de métricas.');
+expect(governance.includes('FISCALIZE · Governança') && governance.includes('/api/admin/moderacao/pendentes') && governance.includes('/api/admin/auditoria/logs'), 'Governança deve preservar identidade e endpoints administrativos.');
+expect(audit.includes('FISCALIZE · Auditoria') && audit.includes('/api/admin/audit') && audit.includes('bg-emerald-500'), 'Auditoria deve preservar identidade, endpoint e cores semânticas de sucesso.');
+expect(triage.includes('/api/admin/demandas') && triage.includes('/api/admin/evidencias/'), 'Triagem deve preservar listagem, atualização e moderação de evidências.');
+expect(radar.includes('/api/radar/manaus/resumo') && radar.includes('/api/radar/manaus/territorios'), 'Radar deve preservar fontes privadas territoriais.');
+expect(strategy.includes('/api/admin/strategy/2028') && strategy.includes('/api/intelligence/works'), 'Estratégia deve preservar acesso autenticado e fontes de inteligência.');
+
+console.log('Brand UI contract OK: base, páginas públicas, área privada e salvaguardas funcionais de interface.');
