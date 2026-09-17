@@ -29,7 +29,7 @@ function Brand({ privateMode = false }: { privateMode?: boolean }) {
   return (
     <Link to={privateMode ? "/dashboard" : "/"} className="flex min-w-0 items-center gap-2.5 sm:gap-3" aria-label={privateMode ? "FISCALIZE - núcleo privado" : "FISCALIZE - início"}>
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#d7e0f2] bg-white text-[#1f2e6e] shadow-sm"><Radar className="h-[18px] w-[18px]" strokeWidth={2.2} /></span>
-      <span className="min-w-0"><span className="block text-[18px] font-extrabold tracking-[-0.045em] text-[#1f2e6e] sm:text-[19px]">FISCALIZE</span>{privateMode && <span className="hidden text-[10px] font-bold uppercase tracking-[0.12em] text-[#657089] sm:block">Privado</span>}</span>
+      <span className="min-w-0"><span className="block text-[18px] font-extrabold tracking-[-0.045em] text-[#1f2e6e] sm:text-[19px]">FISCALIZE</span>{privateMode && <span className="hidden text-[10px] font-bold uppercase tracking-[0.12em] text-[#657089] sm:block">Núcleo privado</span>}</span>
       {!privateMode && <span className="brand-signature-mark hidden sm:block" aria-hidden="true"><img src="/brand/gilmar-nascimento-oficial.png" alt="" /></span>}
     </Link>
   );
@@ -130,6 +130,7 @@ function AppShell() {
   const onDemandForm = location.pathname === "/demandas/nova";
   const publicNavClass = (path: string) => `rounded-lg px-3 py-2 text-sm font-semibold transition ${location.pathname === path ? "bg-[#eef2fb] text-[#1f2e6e]" : "text-[#657089] hover:bg-white hover:text-[#1f2e6e]"}`;
   const privateNavClass = (path: string) => `rounded-lg px-3 py-2 text-sm font-bold transition ${location.pathname === path ? "bg-white text-[#1f2e6e] shadow-sm" : "text-[#657089] hover:bg-white/80 hover:text-[#1f2e6e]"}`;
+  const privateSection = location.pathname === "/dashboard" ? "Painel" : location.pathname === "/admin/demandas" ? "Triagem" : location.pathname === "/radar-manaus" ? "Radar territorial" : location.pathname === "/estrategia-2028" ? "Estratégia" : location.pathname === "/admin" ? "Governança" : location.pathname === "/admin/audit" ? "Auditoria" : location.pathname === "/relatorios" ? "Relatórios" : "Área privada";
 
   const publicOnly = (element: ReactNode) => authReady && isAdmin ? <Navigate to="/dashboard" replace /> : element;
   const adminOnly = (element: ReactNode) => {
@@ -139,7 +140,7 @@ function AppShell() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col font-sans text-[#172033]">
+    <div className={`flex min-h-screen flex-col font-sans text-[#172033] ${isAdmin ? "private-shell" : ""}`}>
       {!isAdmin && !onDemandForm && <LGPDConsent />}
       <div className="brand-accent-bar" aria-hidden="true" />
       <header className="sticky top-0 z-30 border-b border-[#dde4ef] bg-[#f5f7fb]/95 backdrop-blur-xl">
@@ -166,7 +167,8 @@ function AppShell() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-24 pt-5 sm:px-6 sm:py-8 lg:px-8 lg:pb-8">
+      <main data-private-route={isAdmin ? location.pathname : undefined} className={`mx-auto w-full max-w-7xl flex-1 px-4 pb-24 pt-5 sm:px-6 sm:py-8 lg:px-8 lg:pb-8 ${isAdmin ? "private-area" : ""}`}>
+        {isAdmin && <div className="private-context-bar"><span className="private-context-access"><Lock className="h-3.5 w-3.5" /> Acesso autenticado</span><span className="private-context-module">{privateSection}</span></div>}
         <Suspense fallback={<RouteFallback />}><Routes>
           <Route path="/" element={publicOnly(<Home />)} />
           <Route path="/login" element={<Login setUser={setUser} />} />
