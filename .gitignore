@@ -25,3 +25,7 @@ tmp/
 # Artefatos locais de deploy e Supabase
 .vercel/
 supabase/.temp/
+
+# Artefatos de transporte/importação
+.fiscalize-import/
+*.zip
