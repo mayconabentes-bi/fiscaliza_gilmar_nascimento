@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Activity, ArrowDownRight, ArrowRight, ArrowUpRight, Database, Network } from "lucide-react";
+import { fetchWithTimeout } from "../lib/request";
 
 type Change = {
   metric: string;
@@ -48,37 +49,52 @@ export default function IntelligenceInsightsPanel() {
   const [context, setContext] = useState<ContextResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const controllerRef = useRef<AbortController | null>(null);
 
   const load = async () => {
+    controllerRef.current?.abort();
+    const controller = new AbortController();
+    controllerRef.current = controller;
     setLoading(true);
     setError("");
 
-    const contextPromise = fetch("/api/intelligence/context", { credentials: "same-origin", cache: "no-store" })
-      .then(async (response) => {
-        if (!response.ok) return;
-        setContext(await response.json());
-      })
-      .catch(() => undefined);
-
     try {
-      const historyResponse = await fetch("/api/intelligence/insights", { credentials: "same-origin", cache: "no-store" });
+      const historyResponse = await fetchWithTimeout(
+        "/api/intelligence/insights",
+        { credentials: "same-origin", cache: "no-store", signal: controller.signal },
+        7000
+      );
       const historyPayload = await historyResponse.json();
       if (!historyResponse.ok) throw new Error(historyPayload.error || "Não foi possível carregar os insights.");
-      setData(historyPayload);
+      if (!controller.signal.aborted) setData(historyPayload);
     } catch (err: any) {
+      if (controller.signal.aborted || err?.name === "AbortError") return;
       setError(err?.message || "Não foi possível carregar os insights.");
     } finally {
-      setLoading(false);
+      if (controllerRef.current === controller && !controller.signal.aborted) setLoading(false);
     }
 
-    void contextPromise;
+    if (controller.signal.aborted) return;
+    try {
+      const contextResponse = await fetchWithTimeout(
+        "/api/intelligence/context",
+        { credentials: "same-origin", cache: "no-store", signal: controller.signal },
+        7000
+      );
+      if (contextResponse.ok && !controller.signal.aborted) setContext(await contextResponse.json());
+    } catch (err: any) {
+      if (controller.signal.aborted || err?.name === "AbortError") return;
+    }
   };
 
   useEffect(() => {
     load();
     const handleRefresh = () => { load().catch(() => undefined); };
     window.addEventListener("pulso:intelligence-refreshed", handleRefresh);
-    return () => window.removeEventListener("pulso:intelligence-refreshed", handleRefresh);
+    return () => {
+      controllerRef.current?.abort();
+      window.removeEventListener("pulso:intelligence-refreshed", handleRefresh);
+    };
   }, []);
 
   return (
