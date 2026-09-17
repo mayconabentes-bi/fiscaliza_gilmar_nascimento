@@ -9,7 +9,10 @@ export function getPostgres() {
   if (!connectionString) throw new Error("DATABASE_URL não configurada");
 
   client = postgres(connectionString, {
-    max: 5,
+    // Vercel executa a API em funções serverless. Mantemos uma única conexão
+    // por instância quente para evitar esgotar o pool remoto do Postgres.
+    max: 1,
+    // Necessário ao usar o Transaction Pooler (Supavisor) do Supabase.
     prepare: false,
     ssl: "require",
     idle_timeout: 20,
