@@ -20,6 +20,7 @@ import { allowedOrigins, citizenRegistrationGuard, csrfOriginGuard, setupHealthR
 import { ensureMobileConversionSchema, setupMobileConversion } from "./mobileConversion.js";
 import { requireInternalAccess } from "./internalAccess.js";
 import { ensurePrivateAdminSchema, setupPrivateAdminAuth } from "./privateAdminAuth.js";
+import { setupCepLookup } from "./cepLookup.js";
 import { ensureIntelligenceSchema } from "../intelligence/schema.js";
 import { setupIntelligenceRoutes } from "../intelligence/routes.js";
 import { setupIntelligenceRefreshRoutes } from "../intelligence/refreshRoutes.js";
@@ -48,6 +49,7 @@ export function createApp() {
   app.use("/api/auth/register/cidadao", limiter(60 * 60 * 1000, 10));
   app.use("/api/demandas/protocolo", limiter(15 * 60 * 1000, 30));
   app.use("/api/demandas", (req, res, next) => req.method === "POST" ? demandIntakeLimiter(req, res, next) : next());
+  app.use("/api/localizacao/cep", limiter(15 * 60 * 1000, 60));
   app.use("/api/radar", limiter(15 * 60 * 1000, 300));
   app.use("/api/intelligence", limiter(15 * 60 * 1000, 240));
   app.use("/api/", limiter(15 * 60 * 1000, 200));
@@ -62,6 +64,7 @@ export function createApp() {
   setupMobileConversion(app);
   setupHealthRoutes(app);
   setupPrivateAdminAuth(app);
+  setupCepLookup(app);
 
   if (production) {
     setupCitizenAuthPostgres(app);
