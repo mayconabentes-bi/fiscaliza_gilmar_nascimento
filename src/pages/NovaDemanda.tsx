@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Camera, Check, CheckCircle2, Clock3, Copy, FileText, MapPin, RefreshCw, Search, Share2, ShieldCheck } from "lucide-react";
+import { ArrowRight, Bookmark, Camera, Check, CheckCircle2, Clock3, Copy, FileText, MapPin, RefreshCw, Search, Share2, ShieldCheck, Trash2 } from "lucide-react";
 import { getPulsoAttribution, trackPulsoEvent } from "../lib/mobileAnalytics";
 import { prepareMobileEvidence } from "../lib/mobileImage";
+import { clearSafeDemandDraft, readSafeDemandDraft, saveSafeDemandDraft } from "../lib/safeDemandDraft";
 
 const categorias = ["Infraestrutura","Saúde","Educação","Mobilidade","Segurança Pública","Assistência Social","Meio Ambiente","Outro"];
 
@@ -29,7 +30,26 @@ export default function NovaDemanda() {
   const [error, setError] = useState("");
   const [protocolo, setProtocolo] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [draftAvailable, setDraftAvailable] = useState(false);
+  const [draftMessage, setDraftMessage] = useState("");
   const started = useRef(false);
+  const trackedSteps = useRef(new Set<string>());
+
+  const locationComplete = Boolean(form.logradouro.trim() && form.bairro.trim());
+  const detailsComplete = Boolean(
+    form.faixa_etaria &&
+    form.faixa_etaria !== "UNDER_16" &&
+    form.nome_solicitante.trim() &&
+    form.descricao.trim()
+  );
+  const reviewComplete = Boolean(locationComplete && detailsComplete && form.aviso_privacidade_aceito);
+  const progressSteps = [
+    { label: "Localize", complete: locationComplete },
+    { label: "Descreva", complete: detailsComplete },
+    { label: "Confirme", complete: reviewComplete },
+  ];
+  const completedSteps = progressSteps.filter((step) => step.complete).length;
+  const progressPercent = Math.round((completedSteps / progressSteps.length) * 100);
 
   const loadPublicConfig = async () => {
     setConfigError("");
@@ -49,6 +69,24 @@ export default function NovaDemanda() {
     trackPulsoEvent("form_view", attribution);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attribution.src, attribution.acao]);
+
+  useEffect(() => {
+    setDraftAvailable(Boolean(readSafeDemandDraft()));
+  }, []);
+
+  useEffect(() => {
+    const milestones = [
+      ["form_step_location", locationComplete],
+      ["form_step_details", detailsComplete],
+      ["form_step_review", reviewComplete],
+    ] as const;
+
+    for (const [event, complete] of milestones) {
+      if (!complete || trackedSteps.current.has(event)) continue;
+      trackedSteps.current.add(event);
+      trackPulsoEvent(event, attribution);
+    }
+  }, [locationComplete, detailsComplete, reviewComplete, attribution.src, attribution.acao]);
 
   const markStarted = () => {
     if (started.current) return;
@@ -119,6 +157,33 @@ export default function NovaDemanda() {
     finally { setPhotoBusy(false); }
   };
 
+  const saveDraft = () => {
+    saveSafeDemandDraft({
+      bairro: form.bairro,
+      categoria: form.categoria,
+    });
+    setDraftAvailable(true);
+    setDraftMessage("Rascunho seguro salvo neste dispositivo por até 6 horas.");
+  };
+
+  const restoreDraft = () => {
+    const draft = readSafeDemandDraft();
+    if (!draft) {
+      setDraftAvailable(false);
+      setDraftMessage("O rascunho não está mais disponível.");
+      return;
+    }
+    setForm(prev => ({ ...prev, ...draft.values }));
+    setDraftMessage("Bairro/localidade e categoria restaurados.");
+    markStarted();
+  };
+
+  const deleteDraft = () => {
+    clearSafeDemandDraft();
+    setDraftAvailable(false);
+    setDraftMessage("Rascunho apagado deste dispositivo.");
+  };
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault(); setLoading(true); setError(""); setProtocolo(null);
     if (!form.faixa_etaria) { setError("Informe sua faixa etária para continuar."); setLoading(false); return; }
@@ -131,6 +196,7 @@ export default function NovaDemanda() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Não foi possível enviar seu registro.");
       setProtocolo(data.protocolo); trackPulsoEvent("protocolo_view", attribution);
+      clearSafeDemandDraft(); setDraftAvailable(false);
       setForm(prev => ({ ...prev, descricao: "", aviso_privacidade_aceito: false })); setPhotoData(""); setPhotoName("");
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err: any) { setError(err.message || "Não foi possível enviar seu registro."); }
@@ -174,11 +240,47 @@ export default function NovaDemanda() {
         <div className="flex flex-wrap gap-2"><span className="section-kicker rounded-full border border-[#d7e0f2] bg-white px-3 py-1.5"><FileText className="h-3.5 w-3.5" /> FISCALIZE · Registrar</span><span className="inline-flex items-center gap-2 rounded-full bg-[#fff0e5] px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#b84405]"><Clock3 className="h-3.5 w-3.5" /> leva poucos minutos</span></div>
         <h1 className="mt-5 text-3xl font-extrabold tracking-[-0.045em] text-[#172033] sm:text-4xl">Registre uma situação do seu bairro.</h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#657089] sm:text-base">Informe o local e descreva o que aconteceu. O FISCALIZE organiza o relato e gera um protocolo para você acompanhar depois.</p>
-        <div className="mt-5 grid gap-2 rounded-2xl border border-[#d7e0f2] bg-[#eef2fb] p-4 text-xs font-bold text-[#526078] sm:grid-cols-3 sm:text-sm"><span><strong className="mr-2 text-[#f36a10]">01</strong>Localize</span><span><strong className="mr-2 text-[#f36a10]">02</strong>Descreva</span><span><strong className="mr-2 text-[#f36a10]">03</strong>Guarde o protocolo</span></div>
+
+        <div data-engagement-progress="transparent" className="mt-5 rounded-2xl border border-[#d7e0f2] bg-[#eef2fb] p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-4 text-xs font-bold text-[#526078] sm:text-sm">
+            <span>Seu progresso no registro</span>
+            <span>{completedSteps} de {progressSteps.length} etapas</span>
+          </div>
+          <div role="progressbar" aria-label="Progresso do registro" aria-valuemin={0} aria-valuemax={progressSteps.length} aria-valuenow={completedSteps} className="mt-3 h-2 overflow-hidden rounded-full bg-white">
+            <div className="h-full rounded-full bg-[#1f2e6e] transition-[width] duration-300" style={{ width: `${progressPercent}%` }} />
+          </div>
+          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            {progressSteps.map((step, index) => (
+              <div key={step.label} className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold sm:text-sm ${step.complete ? "border-[#b7c6e8] bg-white text-[#1f2e6e]" : "border-transparent bg-[#f7f9fd] text-[#657089]"}`}>
+                <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold ${step.complete ? "bg-[#1f2e6e] text-white" : "border border-[#c4cfe3] bg-white text-[#657089]"}`}>{step.complete ? <Check className="h-3.5 w-3.5" /> : `0${index + 1}`}</span>
+                {step.label}
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-xs leading-relaxed text-[#657089]">O indicador é apenas orientativo: não há contagem regressiva, pontuação ou penalidade. Revise as informações no seu ritmo antes de enviar.</p>
+        </div>
       </div>
 
+      <section data-safe-draft="explicit" className="mb-6 rounded-2xl border border-[#d7e0f2] bg-white p-4 sm:p-5">
+        <div className="flex items-start gap-3">
+          <span className="icon-tile"><Bookmark className="h-4 w-4" /></span>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-sm font-extrabold text-[#172033]">Rascunho seguro neste dispositivo</h2>
+            <p className="mt-1 text-xs leading-relaxed text-[#657089]">
+              Se você quiser, salve somente bairro/localidade e categoria por até 6 horas. CEP, rua, número, complemento, nome, contato, descrição, foto, faixa etária e aceite de privacidade não são salvos.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {draftAvailable && <button type="button" onClick={restoreDraft} className="secondary-button min-h-11 px-4 text-sm">Restaurar rascunho</button>}
+              <button type="button" onClick={saveDraft} className="secondary-button min-h-11 px-4 text-sm"><Bookmark className="h-4 w-4" /> {draftAvailable ? "Atualizar rascunho" : "Salvar rascunho"}</button>
+              {draftAvailable && <button type="button" onClick={deleteDraft} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold text-[#657089] hover:bg-[#f7f9fd]"><Trash2 className="h-4 w-4" /> Apagar</button>}
+            </div>
+            {draftMessage && <p aria-live="polite" className="mt-2 text-xs font-semibold text-[#1f2e6e]">{draftMessage}</p>}
+          </div>
+        </div>
+      </section>
+
       <form onSubmit={handleSubmit} className="surface-card space-y-6 p-5 sm:p-8">
-        {error && <div role="alert" className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm leading-relaxed text-red-700">{error}</div>}
+           {error && <div role="alert" className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm leading-relaxed text-red-700">{error}</div>}
         <label className="block">
           <span className="text-sm font-bold text-[#172033]">Faixa etária</span>
           <select name="faixa_etaria" value={form.faixa_etaria} onChange={handleChange} required className="field">
@@ -209,15 +311,18 @@ export default function NovaDemanda() {
             <label className="block"><span className="text-sm font-bold text-[#172033]">Complemento / ponto de referência <span className="font-normal text-slate-500">(opcional)</span></span><input name="complemento" value={form.complemento} onChange={handleChange} className="field text-base" placeholder="Ex.: em frente à escola" /></label>
           </div>
           <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-500"><MapPin className="h-3.5 w-3.5" /> Manaus / AM</p>
+          {locationComplete && <p aria-live="polite" className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-[#1f2e6e]"><Check className="h-3.5 w-3.5" /> Localização principal preenchida.</p>}
         </section>
 
         <label className="block"><span className="text-sm font-bold text-[#172033]">Seu nome</span><input name="nome_solicitante" value={form.nome_solicitante} onChange={handleChange} autoComplete="name" required className="field text-base" placeholder="Digite seu nome" /></label>
         <label className="block"><span className="text-sm font-bold text-[#172033]">Que tipo de problema é?</span><select name="categoria" value={form.categoria} onChange={handleChange} required className="field text-base">{categorias.map(c => <option key={c}>{c}</option>)}</select></label>
         <label className="block"><span className="text-sm font-bold text-[#172033]">O que aconteceu?</span><textarea name="descricao" value={form.descricao} onChange={handleChange} required rows={5} className="field min-h-36 text-base leading-relaxed" placeholder="Explique o problema. Se puder, informe há quanto tempo acontece e algum detalhe que ajude a localizar o ponto." /></label>
+        {detailsComplete && <p aria-live="polite" className="-mt-3 flex items-center gap-1.5 text-xs font-semibold text-[#1f2e6e]"><Check className="h-3.5 w-3.5" /> Informações principais do relato preenchidas.</p>}
         <div><span className="text-sm font-bold text-[#172033]">Foto <span className="font-normal text-slate-500">(opcional)</span></span><label className="mt-2 flex min-h-16 cursor-pointer items-center justify-center gap-3 rounded-2xl border border-dashed border-[#c4cfe3] bg-[#f7f9fd] px-4 py-4 text-sm font-bold text-slate-700 transition hover:border-[#7d8fc1] hover:bg-[#eef2fb]"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-[#1f2e6e] shadow-sm"><Camera className="h-4.5 w-4.5" /></span>{photoBusy ? "Preparando foto..." : photoName || "Tirar foto ou escolher da galeria"}<input type="file" accept="image/*" capture="environment" onChange={handlePhoto} disabled={photoBusy || form.faixa_etaria === "UNDER_16"} className="sr-only" /></label>{photoName && <p className="mt-2 text-xs font-semibold text-[#1f2e6e]">Foto pronta para envio.</p>}<p className="mt-2 text-xs leading-relaxed text-slate-500"><strong>Privacidade da foto:</strong> se enviada, ela fica em armazenamento privado para análise administrativa e não aparece na consulta pública por protocolo. Evite fotografar pessoas, documentos ou placas quando isso não for necessário.</p></div>
         <label className="block"><span className="text-sm font-bold text-[#172033]">Contato <span className="font-normal text-slate-500">(opcional)</span></span><input name="contato" value={form.contato} onChange={handleChange} autoComplete="tel" placeholder="Telefone ou e-mail, se quiser receber retorno" className="field text-base" /></label>
         <input type="hidden" name="municipio" value={form.municipio} /><input type="hidden" name="uf" value={form.uf} /><input type="hidden" name="codigo_ibge" value={form.codigo_ibge} /><input type="hidden" name="prioridade" value={form.prioridade} />
         <div className="rounded-2xl border border-[#d7e0f2] bg-[#eef2fb] p-4 sm:p-5"><div className="flex gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#1f2e6e]" /><div className="space-y-3"><p className="text-xs leading-relaxed text-[#526078] sm:text-sm">A localização detalhada é usada para identificar o ponto da ocorrência e permanece restrita ao fluxo administrativo. Evite informar endereço residencial se ele não for o local do problema.</p><label className="flex cursor-pointer items-start gap-3 text-sm text-[#33466f]"><input type="checkbox" name="aviso_privacidade_aceito" checked={form.aviso_privacidade_aceito} onChange={handleChange} className="mt-0.5 h-5 w-5 shrink-0 rounded border-[#7d8fc1]" required /><span>Entendi que meus dados serão tratados no FISCALIZE para registrar e acompanhar este caso. Gilmar Nascimento é o controlador dos dados das demandas. <Link to="/privacidade" className="font-extrabold underline">Ver privacidade</Link>.</span></label></div></div></div>
+        {reviewComplete && <p aria-live="polite" className="-mt-3 flex items-center justify-center gap-1.5 text-xs font-semibold text-[#1f2e6e]"><Check className="h-3.5 w-3.5" /> Etapas preenchidas. Revise e envie quando estiver pronto.</p>}
         <button disabled={loading || photoBusy || form.faixa_etaria === "UNDER_16"} className="primary-button min-h-14 w-full text-base disabled:cursor-not-allowed disabled:opacity-50">{loading ? "Enviando..." : "Enviar e gerar protocolo"}<ArrowRight className="h-5 w-5" /></button>
         <p className="text-center text-xs leading-relaxed text-slate-500">O FISCALIZE registra, organiza e acompanha demandas por protocolo. A plataforma não substitui canais oficiais nem garante, por si só, a solução de um problema.</p>
       </form>

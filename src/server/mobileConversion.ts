@@ -4,7 +4,11 @@ import path from "node:path";
 import { DB_PATH, getDb } from "./db.js";
 import { getPostgres } from "./postgres.js";
 
-const ALLOWED_EVENTS = new Set(["qr_landing","home_view","cta_registrar","form_view","form_start","form_submit","protocolo_view","protocolo_share"]);
+const ALLOWED_EVENTS = new Set([
+  "qr_landing","home_view","cta_registrar","form_view","form_start",
+  "form_step_location","form_step_details","form_step_review",
+  "form_submit","protocolo_view","protocolo_share"
+]);
 const ATTR = /^[a-z0-9_-]{1,64}$/i;
 const FORBIDDEN = ["preferencia_politica","partido","religiao","saude","raca","etnia","orientacao_sexual","vida_sexual","renda","biometria","intencao_voto","perfil_eleitoral"];
 

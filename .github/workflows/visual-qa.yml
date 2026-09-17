@@ -1,0 +1,56 @@
+name: Visual QA
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'src/pages/Home.tsx'
+      - 'src/pages/NovaDemanda.tsx'
+      - 'src/pages/ConsultaProtocolo.tsx'
+      - 'src/lib/safeDemandDraft.ts'
+      - 'src/index.css'
+      - 'tests/visual/**'
+      - 'tests/*contract.mjs'
+      - 'playwright.visual.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: visual-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright only for visual QA
+        run: npm install --no-save --package-lock=false @playwright/test@1.63.0
+      - name: Install Chromium only
+        run: npx playwright install --with-deps chromium
+      - name: Visual contract
+        run: node tests/visual-qa-contract.mjs
+      - name: Capture public journey screenshots
+        run: npx playwright test -c playwright.visual.config.ts
+      - name: Upload visual QA screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fiscalize-visual-qa-${{ github.sha }}
+          path: test-results/visual/*.png
+          if-no-files-found: error
+          retention-days: 14
