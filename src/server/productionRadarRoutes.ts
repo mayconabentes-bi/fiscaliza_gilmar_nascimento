@@ -29,6 +29,19 @@ function countByNeighborhood(items: any[]) {
   return { counts, unclassified };
 }
 
+function qualityDimension(key: string, item: { available: boolean; source?: any }) {
+  const rows = item.available && Array.isArray(item.source?.data) ? item.source.data : [];
+  const received = rows.length;
+  const classified = rows.filter((row: any) => Boolean(featureNeighborhood(row))).length;
+  return {
+    key,
+    received,
+    classified,
+    unclassified: Math.max(0, received - classified),
+    coverage: received ? classified / received : 0,
+  };
+}
+
 async function safeLoad(loader: () => Promise<any>, name: string, timeoutMs = 4_500) {
   let timer: ReturnType<typeof setTimeout> | null = null;
   try {
@@ -130,8 +143,16 @@ export function setupProductionRadarRoutes(app: Express) {
       tipo: "colecao",
       erro: item.error,
     }));
+    const quality = {
+      dimensions: [
+        qualityDimension("works", obras),
+        qualityDimension("health", saude),
+        qualityDimension("schools", escolas),
+      ],
+      methodology: "Cobertura territorial = registros da fonte com bairro reconhecível / registros recebidos da fonte. Registros sem bairro não são descartados do estado da fonte; apenas ficam fora dos indicadores territoriais.",
+    };
     res.setHeader("Cache-Control", "private, max-age=300");
-    res.json({ municipio: "Manaus", atualizadoEm: new Date().toISOString(), indicadores: itens });
+    res.json({ municipio: "Manaus", atualizadoEm: new Date().toISOString(), indicadores: itens, quality });
   });
 
   app.get("/api/radar/manaus/territorios", async (req, res) => {
