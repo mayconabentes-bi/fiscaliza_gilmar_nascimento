@@ -17,6 +17,10 @@ expect(app.includes('lg:hidden') && app.includes('lg:flex'), 'Folds e tablets de
 expect(app.includes('!isAdmin && !onDemandForm && <LGPDConsent />'), 'O aviso público de privacidade deve ficar fora do núcleo privado e não competir com o formulário.');
 expect(!privacy.includes('motion/react'), 'O aviso de privacidade não deve carregar biblioteca de animação no caminho crítico.');
 expect(app.includes('isAdmin ? <>') && app.includes('<span>Painel</span>') && app.includes('<span>Triagem</span>') && app.includes('<span>Radar</span>') && app.includes('<span>Estratégia</span>'), 'A navegação touch do admin deve conter apenas ferramentas privadas.');
+expect(app.includes('function MobileNav({ user, onLogout }') && app.includes('<MobileNav user={user} onLogout={handleLogout} />'), 'A navegação touch deve reutilizar o logout autenticado do shell.');
+expect(app.includes('data-mobile-logout="admin"') && app.includes('aria-label="Sair da área administrativa"'), 'Administrador deve ter ação Sair visível no first-mobile.');
+expect(app.includes('data-mobile-logout="user"') && app.includes('aria-label="Sair da conta"'), 'Usuário autenticado deve ter ação Sair visível no first-mobile.');
+expect((app.match(/aria-label="Sair"/g) || []).length >= 2, 'Administrador e usuário devem manter logout também no desktop.');
 expect(app.includes('aria-label="Navegação privada"') && app.includes('>Governança</span>') && app.includes('>Auditoria</span>') && app.includes('>Relatórios</span>'), 'O desktop do admin deve expor apenas módulos privados.');
 expect(app.includes('publicOnly(<Home />)') && app.includes('<Navigate to="/dashboard" replace />'), 'Administrador não deve permanecer nas rotas públicas principais.');
 expect(app.includes('<Brand privateMode={isAdmin} />') && app.includes('privateMode ? "/dashboard" : "/"'), 'A marca deve levar o admin para o núcleo privado.');
@@ -30,4 +34,4 @@ expect(form.includes('form_step_location') && form.includes('form_step_details')
 expect(html.includes('width=device-width'), 'Viewport mobile deve estar configurado.');
 
 const targetViewports = ['344x882', '375x667', '393x852', '412x915', '440x956', '744x1133', '768x968', '800x1080', '1032x1376'];
-console.log(`Mobile/touch UI contract OK para ${targetViewports.join(', ')}: safe area, toque, progresso transparente, navegação pública e núcleo privado isolado.`);
+console.log(`Mobile/touch UI contract OK para ${targetViewports.join(', ')}: safe area, toque, logout mobile autenticado, progresso transparente, navegação pública e núcleo privado isolado.`);
