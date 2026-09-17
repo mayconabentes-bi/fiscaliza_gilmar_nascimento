@@ -68,12 +68,30 @@ function AppShell() {
     let active = true;
     const hydrateSession = async () => {
       const storedUser = localStorage.getItem("user");
+      let hasStoredUser = false;
+
       if (storedUser) {
-        try { if (active) setUser(JSON.parse(storedUser)); } catch { localStorage.removeItem("user"); }
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          hasStoredUser = Boolean(parsedUser);
+          if (active) {
+            setUser(parsedUser);
+            setAuthReady(true);
+          }
+        } catch {
+          localStorage.removeItem("user");
+        }
       }
 
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 5000);
+
       try {
-        const response = await fetch("/api/auth/session", { credentials: "same-origin", cache: "no-store" });
+        const response = await fetch("/api/auth/session", {
+          credentials: "same-origin",
+          cache: "no-store",
+          signal: controller.signal,
+        });
         if (response.ok) {
           const data = await response.json();
           if (data?.authenticated && data?.user) {
@@ -87,10 +105,12 @@ function AppShell() {
           localStorage.removeItem("user");
           if (active) setUser(null);
         }
-      } catch {
-        // Em indisponibilidade transitória, preserva a sessão visual local até nova navegação.
+      } catch (error: any) {
+        if (error?.name !== "AbortError") console.warn("Falha transitória ao validar sessão:", error);
+        // Se o backend estiver lento, mantém a sessão visual já criada pelo login.
       } finally {
-        if (active) setAuthReady(true);
+        window.clearTimeout(timeout);
+        if (active && !hasStoredUser) setAuthReady(true);
       }
     };
 
