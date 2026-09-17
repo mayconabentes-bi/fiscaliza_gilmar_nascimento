@@ -1,6 +1,6 @@
 # Checklist de rollout da identidade visual
 
-## Bloco 1
+## Bloco 1 — Base visual
 - [x] Tokens de cor institucionais
 - [x] Botões, campos, foco, cards e seleção
 - [x] Header
@@ -10,12 +10,14 @@
 - [x] Marca web compacta
 - [x] Contrato de CI
 
+## Bloco 2 — Páginas públicas
+- [x] Início
+- [x] Registrar
+- [x] Acompanhar
+- [x] Como funciona
+- [x] Sobre
+
 ## Próximos blocos
-- [ ] Home
-- [ ] Registrar
-- [ ] Acompanhar
-- [ ] Como funciona
-- [ ] Sobre
 - [ ] Área privada
 - [ ] Favicon/app icon
 - [ ] Relatórios/PDFs

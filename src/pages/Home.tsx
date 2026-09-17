@@ -4,9 +4,9 @@ import { ArrowRight, Check, CircleDot, FileCheck2, MapPin, MessageSquareText, Ra
 import { getPulsoAttribution, trackPulsoEvent, withPulsoAttribution } from "../lib/mobileAnalytics";
 
 const etapas = [
-  { icon: MessageSquareText, titulo: "Registre", texto: "Conte o que aconteceu e informe onde." },
-  { icon: FileCheck2, titulo: "Receba o protocolo", texto: "Guarde o código gerado no envio." },
-  { icon: Route, titulo: "Acompanhe", texto: "Consulte as atualizações quando quiser." },
+  { icon: MessageSquareText, titulo: "Registre", texto: "Conte o que aconteceu e informe o local da ocorrência." },
+  { icon: FileCheck2, titulo: "Receba o protocolo", texto: "O código identifica seu registro para acompanhamento." },
+  { icon: Route, titulo: "Acompanhe", texto: "Consulte status e histórico público quando quiser." },
 ];
 
 export default function Home() {
@@ -23,57 +23,63 @@ export default function Home() {
 
   return (
     <div className="pb-20">
-      <section className="grid min-h-[66vh] items-center gap-12 py-10 sm:py-16 lg:grid-cols-[1.08fr_0.92fr] lg:py-24">
+      <section className="grid min-h-[66vh] items-center gap-10 py-10 sm:py-16 lg:grid-cols-[1.08fr_0.92fr] lg:py-24">
         <div className="max-w-3xl">
-          <span className="section-kicker"><MapPin className="h-3.5 w-3.5" /> Manaus</span>
-          <h1 className="mt-5 text-[2.8rem] font-extrabold leading-[0.98] tracking-[-0.06em] text-[#101513] sm:text-6xl lg:text-[4.65rem]">Problemas do bairro, organizados em um só lugar.</h1>
-          <p className="mt-6 max-w-2xl text-base leading-8 text-[#69736d] sm:text-lg">Registre uma situação, receba um protocolo e acompanhe o histórico sem burocracia.</p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link to={demandUrl} onClick={() => trackPulsoEvent('cta_registrar', attribution)} className="primary-button min-h-14 px-6 text-base">Registrar problema <ArrowRight className="h-4.5 w-4.5" /></Link>
-            <Link to={protocolUrl} className="secondary-button min-h-14 px-6 text-base"><Radar className="h-4.5 w-4.5 text-[#157a55]" /> Acompanhar protocolo</Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="section-kicker rounded-full border border-[#d7e0f2] bg-white px-3 py-1.5"><MapPin className="h-3.5 w-3.5" /> Manaus</span>
+            <span className="inline-flex items-center rounded-full bg-[#fff0e5] px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#b84405]">Você cuidando da cidade</span>
           </div>
-          <div className="mt-7 flex flex-wrap gap-x-6 gap-y-3 text-sm text-[#69736d]">
-            <span className="flex items-center gap-2"><Check className="h-4 w-4 text-[#157a55]" /> Funciona bem no celular</span>
-            <span className="flex items-center gap-2"><Check className="h-4 w-4 text-[#157a55]" /> Protocolo imediato</span>
-            <span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#157a55]" /> Participação livre</span>
+          <h1 className="mt-5 text-[2.8rem] font-extrabold leading-[0.98] tracking-[-0.06em] text-[#172033] sm:text-6xl lg:text-[4.65rem]">Um canal simples para registrar o que precisa de atenção.</h1>
+          <p className="mt-6 max-w-2xl text-base leading-8 text-[#657089] sm:text-lg">O FISCALIZE organiza relatos de Manaus em um fluxo claro: você registra a situação, recebe um protocolo e acompanha as atualizações do caso.</p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Link to={demandUrl} onClick={() => trackPulsoEvent('cta_registrar', attribution)} className="primary-button min-h-14 px-6 text-base">Registrar ocorrência <ArrowRight className="h-4.5 w-4.5" /></Link>
+            <Link to={protocolUrl} className="secondary-button min-h-14 px-6 text-base"><Radar className="h-4.5 w-4.5" /> Acompanhar protocolo</Link>
+          </div>
+          <div className="mt-7 flex flex-wrap gap-x-6 gap-y-3 text-sm text-[#657089]">
+            <span className="flex items-center gap-2"><Check className="h-4 w-4 text-[#1f2e6e]" /> Feito para celular</span>
+            <span className="flex items-center gap-2"><Check className="h-4 w-4 text-[#1f2e6e]" /> Protocolo imediato</span>
+            <span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#1f2e6e]" /> Participação livre</span>
           </div>
         </div>
 
-        <div className="surface-card p-5 sm:p-7">
-          <div className="flex items-center justify-between border-b border-[#edf0ee] pb-5">
-            <div><p className="text-xs font-bold uppercase tracking-[0.14em] text-[#8a928e]">Acompanhamento</p><p className="mt-1 text-lg font-extrabold tracking-[-0.025em]">Uma jornada simples</p></div>
-            <span className="icon-tile"><Radar className="h-4.5 w-4.5" /></span>
+        <div className="surface-card overflow-hidden">
+          <div className="h-1.5 bg-[#f36a10]" aria-hidden="true" />
+          <div className="p-5 sm:p-7">
+            <div className="flex items-start justify-between gap-4 border-b border-[#edf0f6] pb-5">
+              <div><p className="text-xs font-bold uppercase tracking-[0.14em] text-[#7c879d]">FISCALIZE</p><p className="mt-1 text-lg font-extrabold tracking-[-0.025em] text-[#1f2e6e]">Você cuidando da cidade</p></div>
+              <span className="brand-signature-mark" aria-hidden="true"><img src="/brand/gilmar-nascimento-oficial.png" alt="" /></span>
+            </div>
+            <div className="mt-6 space-y-1">
+              {["Registro recebido", "Triagem e análise", "Andamento atualizado", "Histórico consultável"].map((item, index) => (
+                <div key={item} className="flex items-center gap-4 rounded-xl px-1 py-3.5">
+                  <span className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-extrabold ${index === 0 ? 'bg-[#f36a10] text-white' : 'border border-[#d7e0f2] bg-white text-[#657089]'}`}>{index + 1}</span>
+                  <span className="flex-1 text-sm font-semibold text-[#34425b]">{item}</span>
+                  <CircleDot className={`h-4 w-4 ${index === 0 ? 'text-[#f36a10]' : 'text-[#c6cfdf]'}`} />
+                </div>
+              ))}
+            </div>
+            <div className="mt-5 rounded-xl bg-[#eef2fb] px-4 py-3 text-xs leading-relaxed text-[#526078]">O protocolo do FISCALIZE é interno e serve para acompanhar o registro. Ele não substitui os canais oficiais dos órgãos públicos.</div>
           </div>
-          <div className="mt-6 space-y-1">
-            {["Registro recebido", "Triagem e análise", "Andamento atualizado", "Histórico consultável"].map((item, index) => (
-              <div key={item} className="flex items-center gap-4 rounded-xl px-1 py-3.5">
-                <span className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-extrabold ${index === 0 ? 'bg-[#157a55] text-white' : 'border border-[#dfe5e1] bg-white text-[#69736d]'}`}>{index + 1}</span>
-                <span className="flex-1 text-sm font-semibold text-[#37413c]">{item}</span>
-                <CircleDot className={`h-4 w-4 ${index === 0 ? 'text-[#157a55]' : 'text-[#c6cec9]'}`} />
-              </div>
-            ))}
-          </div>
-          <div className="mt-5 rounded-xl bg-[#f5f7f5] px-4 py-3 text-xs leading-relaxed text-[#69736d]">O FISCALIZE não substitui os canais oficiais. Ele organiza relatos e acompanhamento em uma experiência simples.</div>
         </div>
       </section>
 
-      <section className="border-y border-[#e6eae7] py-14 sm:py-16">
+      <section className="border-y border-[#dde4ef] py-14 sm:py-16">
         <div className="grid gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:items-start">
-          <div className="max-w-md"><span className="section-kicker">Como funciona</span><h2 className="mt-4 text-3xl font-extrabold tracking-[-0.045em] sm:text-4xl">Três passos. Sem excesso de telas.</h2></div>
+          <div className="max-w-md"><span className="section-kicker">Como funciona</span><h2 className="mt-4 text-3xl font-extrabold tracking-[-0.045em] text-[#172033] sm:text-4xl">Três passos para transformar um relato em acompanhamento.</h2><p className="mt-4 text-sm leading-7 text-[#657089]">Sem excesso de telas e com o histórico do protocolo disponível para consulta.</p></div>
           <div className="grid gap-3 sm:grid-cols-3">
-            {etapas.map(({ icon: Icon, titulo, texto }, index) => <div key={titulo} className="soft-card p-5"><div className="flex items-center justify-between"><Icon className="h-5 w-5 text-[#157a55]" /><span className="text-xs font-bold text-[#a5ada8]">0{index + 1}</span></div><h3 className="mt-5 font-extrabold tracking-[-0.02em]">{titulo}</h3><p className="mt-2 text-sm leading-6 text-[#69736d]">{texto}</p></div>)}
+            {etapas.map(({ icon: Icon, titulo, texto }, index) => <div key={titulo} className="soft-card p-5"><div className="flex items-center justify-between"><span className="icon-tile"><Icon className="h-5 w-5" /></span><span className="text-xs font-extrabold text-[#f36a10]">0{index + 1}</span></div><h3 className="mt-5 font-extrabold tracking-[-0.02em] text-[#172033]">{titulo}</h3><p className="mt-2 text-sm leading-6 text-[#657089]">{texto}</p></div>)}
           </div>
         </div>
       </section>
 
       <section className="grid gap-5 py-14 sm:py-16 lg:grid-cols-2">
-        <div className="surface-card p-6 sm:p-8"><span className="section-kicker">Transparência</span><h2 className="mt-4 text-2xl font-extrabold tracking-[-0.035em] sm:text-3xl">Cada registro mantém contexto e histórico.</h2><p className="mt-4 text-sm leading-7 text-[#69736d] sm:text-base">Você acompanha o andamento pelo protocolo e vê o que aconteceu em cada etapa.</p><Link to={protocolUrl} className="mt-6 inline-flex items-center gap-2 text-sm font-extrabold text-[#157a55]">Consultar protocolo <ArrowRight className="h-4 w-4" /></Link></div>
-        <div className="surface-card p-6 sm:p-8"><span className="section-kicker">Privacidade</span><h2 className="mt-4 text-2xl font-extrabold tracking-[-0.035em] sm:text-3xl">Dados só para registrar e acompanhar o caso.</h2><p className="mt-4 text-sm leading-7 text-[#69736d] sm:text-base">O projeto não usa seus dados para criar perfil político. Informações sensíveis não são solicitadas no registro.</p><Link to="/privacidade" className="mt-6 inline-flex items-center gap-2 text-sm font-extrabold text-[#157a55]">Ver privacidade <ArrowRight className="h-4 w-4" /></Link></div>
+        <div className="surface-card p-6 sm:p-8"><span className="section-kicker">Transparência</span><h2 className="mt-4 text-2xl font-extrabold tracking-[-0.035em] text-[#172033] sm:text-3xl">Cada registro mantém contexto e histórico.</h2><p className="mt-4 text-sm leading-7 text-[#657089] sm:text-base">Você acompanha o andamento pelo protocolo e vê as mudanças de status registradas ao longo do caso.</p><Link to={protocolUrl} className="mt-6 inline-flex items-center gap-2 text-sm font-extrabold text-[#1f2e6e]">Consultar protocolo <ArrowRight className="h-4 w-4" /></Link></div>
+        <div className="surface-card p-6 sm:p-8"><span className="section-kicker">Privacidade</span><h2 className="mt-4 text-2xl font-extrabold tracking-[-0.035em] text-[#172033] sm:text-3xl">Dados usados para registrar e acompanhar o caso.</h2><p className="mt-4 text-sm leading-7 text-[#657089] sm:text-base">A consulta pública não exibe contato, descrição, foto ou observações internas. O projeto não usa seus dados para criar perfil político.</p><Link to="/privacidade" className="mt-6 inline-flex items-center gap-2 text-sm font-extrabold text-[#1f2e6e]">Ver privacidade <ArrowRight className="h-4 w-4" /></Link></div>
       </section>
 
-      <section className="rounded-[1.75rem] bg-[#101513] px-6 py-8 text-white sm:px-9 sm:py-10 lg:flex lg:items-center lg:justify-between lg:gap-10">
-        <div className="max-w-2xl"><p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#9fcbb7]">Participação aberta</p><h2 className="mt-3 text-3xl font-extrabold tracking-[-0.045em]">Tem algo acontecendo no seu bairro?</h2><p className="mt-3 text-sm leading-7 text-[#b8c0bc] sm:text-base">Registre agora e guarde seu protocolo.</p></div>
-        <Link to={demandUrl} onClick={() => trackPulsoEvent('cta_registrar', attribution)} className="mt-6 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-white px-6 py-4 text-base font-extrabold text-[#101513] transition hover:bg-[#eef2ef] lg:mt-0 lg:w-auto">Começar registro <ArrowRight className="h-4.5 w-4.5" /></Link>
+      <section className="rounded-[1.75rem] bg-[#1f2e6e] px-6 py-8 text-white shadow-[0_22px_55px_rgba(31,46,110,0.16)] sm:px-9 sm:py-10 lg:flex lg:items-center lg:justify-between lg:gap-10">
+        <div className="max-w-2xl"><p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#ffd1b1]">Você cuidando da cidade</p><h2 className="mt-3 text-3xl font-extrabold tracking-[-0.045em]">Tem algo acontecendo no seu bairro?</h2><p className="mt-3 text-sm leading-7 text-[#dce3f4] sm:text-base">Faça o registro e guarde o protocolo para acompanhar as atualizações.</p></div>
+        <Link to={demandUrl} onClick={() => trackPulsoEvent('cta_registrar', attribution)} className="mt-6 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-[#f36a10] px-6 py-4 text-base font-extrabold text-white transition hover:bg-[#b84405] lg:mt-0 lg:w-auto">Começar registro <ArrowRight className="h-4.5 w-4.5" /></Link>
       </section>
     </div>
   );
