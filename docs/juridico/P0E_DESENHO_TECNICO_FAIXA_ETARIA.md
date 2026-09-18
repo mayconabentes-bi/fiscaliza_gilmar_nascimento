@@ -18,13 +18,19 @@ A referência de 16 anos é uma decisão cívica de produto alinhada à idade em
 
 A implementação não deve coletar data completa de nascimento, CPF, RG, biometria ou imagem de documento como padrão.
 
-O mecanismo adotado é uma **declaração de faixa etária** com três valores:
+O mecanismo adotado é uma **declaração de faixa etária**, sem data de nascimento ou idade exata, com os valores:
 
 - `UNDER_16`
 - `AGE_16_17`
-- `AGE_18_PLUS`
+- `AGE_18_24`
+- `AGE_25_34`
+- `AGE_35_44`
+- `AGE_45_59`
+- `AGE_60_PLUS`
 
-O sistema armazena somente a classificação necessária para aplicar as regras de acesso e proteção. O backend permanece a fonte de verdade.
+O código `AGE_18_PLUS` permanece aceito apenas para compatibilidade com contas e demandas anteriores à classificação detalhada e não é oferecido em novos formulários.
+
+O sistema armazena somente a classificação necessária para aplicar as regras de acesso, proteção e estatística agregada. O backend permanece a fonte de verdade.
 
 ## Pontos de entrada implementados
 
@@ -37,7 +43,8 @@ Regras:
 - `UNDER_16` é bloqueado no frontend e rejeitado novamente pelo backend;
 - ausência ou valor inválido retorna erro de validação;
 - `AGE_16_17` cria conta com `protecao_reforcada = true`;
-- `AGE_18_PLUS` segue o fluxo normal;
+- as faixas adultas detalhadas (`18–24`, `25–34`, `35–44`, `45–59` e `60+`) seguem o fluxo normal;
+- `AGE_18_PLUS` continua válido somente para registros históricos;
 - não é registrada data de nascimento.
 
 ### Envio público de demanda
@@ -48,12 +55,13 @@ Regras:
 
 - `UNDER_16` é rejeitado para envio autônomo;
 - `AGE_16_17` marca a demanda para proteção e revisão reforçadas;
-- `AGE_18_PLUS` segue o fluxo normal;
+- as faixas adultas detalhadas seguem o fluxo normal;
+- `AGE_18_PLUS` continua válido somente para registros históricos;
 - a faixa etária não é exposta na consulta pública por protocolo.
 
 ## Estado interno implementado
 
-A migration `supabase/migrations/20260915160000_p0e_age_protection.sql` adiciona os campos mínimos de faixa etária e proteção reforçada, sem introduzir data de nascimento, documento ou biometria.
+A migration `supabase/migrations/20260915160000_p0e_age_protection.sql` adiciona os campos mínimos de faixa etária e proteção reforçada. A migration `supabase/migrations/20260918143000_age_intelligence_bands.sql` amplia de forma backward-compatible as faixas aceitas, sem introduzir data de nascimento, idade exata, documento ou biometria.
 
 Registros legados podem permanecer sem faixa etária até nova declaração. Não inferir faixa etária por inteligência artificial, comportamento, redes sociais, nome, foto ou dados de terceiros.
 
@@ -69,7 +77,7 @@ Quando `faixa_etaria = AGE_16_17`, o backend e os fluxos administrativos devem a
 6. prioridade para anonimização ou supressão de identificadores quando não necessários;
 7. acesso administrativo sob menor privilégio e trilha de auditoria.
 
-A faixa etária não deve aparecer em relatórios públicos nem em agregações de estratégia política.
+A faixa etária não deve aparecer em relatórios públicos. No Radar privado, somente agregados estatísticos municipais podem ser exibidos, com limiar mínimo e supressão de grupos pequenos, sem cruzamento com identidade, protocolo ou endereço.
 
 ## UX implementada na branch
 
@@ -77,7 +85,11 @@ A pergunta é exibida como **Faixa etária** com as opções:
 
 - Menos de 16 anos
 - 16 a 17 anos
-- 18 anos ou mais
+- 18 a 24 anos
+- 25 a 34 anos
+- 35 a 44 anos
+- 45 a 59 anos
+- 60 anos ou mais
 
 Para menores de 16 anos, a interface explica de forma neutra que o conteúdo público pode ser consultado, mas a participação autônoma está disponível a partir dos 16 anos.
 
@@ -99,7 +111,8 @@ A branch inclui:
 
 - `test:legal-p0e` — contrato jurídico e textos públicos;
 - `test:p0e-tech` — contrato técnico entre módulo, backend e migration;
-- `test:p0e-age-flow` — execução real da política para `<16`, `16–17` e `18+`.
+- `test:p0e-age-flow` — execução real da política de proteção para `<16`, `16–17` e participação adulta;
+- `test:age-intelligence` — valida faixas detalhadas, compatibilidade legada, cobertura, diversidade e supressão estatística.
 
 ## Critérios para ativação pública
 
