@@ -71,6 +71,7 @@ export function setupHealthRoutes(app: Express) {
             database: "sqlite-local",
             publicRegistration: process.env.ENABLE_PUBLIC_REGISTRATION === "true" ? "enabled" : "disabled",
             publicDemandIntake: process.env.ENABLE_PUBLIC_DEMAND_INTAKE === "true" ? "enabled" : "disabled",
+            passwordRecovery: process.env.ENABLE_PASSWORD_RECOVERY === "true" ? "enabled" : "disabled",
           });
         } finally {
           db.close();
@@ -91,6 +92,7 @@ export function setupHealthRoutes(app: Express) {
         privacyNoticeVersion: process.env.LGPD_CONSENT_VERSION,
         publicRegistration: process.env.ENABLE_PUBLIC_REGISTRATION === "true" ? "enabled" : "disabled",
         publicDemandIntake: process.env.ENABLE_PUBLIC_DEMAND_INTAKE === "true" ? "enabled" : "disabled",
+        passwordRecovery: process.env.ENABLE_PASSWORD_RECOVERY === "true" ? "enabled" : "disabled",
       });
     } catch (error: any) {
       console.error("Falha no readiness check:", error);

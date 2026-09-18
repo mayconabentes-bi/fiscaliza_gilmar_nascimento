@@ -46,6 +46,8 @@ export function createApp() {
   app.use("/api/auth/admin/login", limiter(15 * 60 * 1000, 10));
   app.use("/api/auth/login", limiter(15 * 60 * 1000, 15));
   app.use("/api/auth/register/cidadao", limiter(60 * 60 * 1000, 10));
+  app.use("/api/auth/recovery/request", limiter(60 * 60 * 1000, 6));
+  app.use("/api/auth/recovery/reset", limiter(15 * 60 * 1000, 12));
   app.use("/api/demandas/protocolo", limiter(15 * 60 * 1000, 30));
   app.use("/api/demandas", (req, res, next) => req.method === "POST" ? demandIntakeLimiter(req, res, next) : next());
   app.use("/api/localizacao/cep", limiter(15 * 60 * 1000, 60));

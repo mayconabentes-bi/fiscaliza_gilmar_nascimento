@@ -65,6 +65,7 @@ export default function Login({ setUser }: { setUser: (user: any) => void }) {
           {error && <div role="alert" className="rounded-xl border border-red-100 bg-red-50 p-3.5 text-sm text-red-700">{error}</div>}
           <label className="block"><span className="text-sm font-bold text-[#34425b]">E-mail</span><input id="email" name="email" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} required value={email} onChange={(e) => setEmail(e.target.value)} className="field" placeholder="voce@exemplo.com" /></label>
           <label className="block"><span className="text-sm font-bold text-[#34425b]">Senha</span><input id="password" name="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} className="field" placeholder="Sua senha" /></label>
+          {type === "cidadao" && <div className="-mt-2 text-right"><Link to="/recuperar-acesso" className="text-sm font-bold text-[#1f2e6e] underline decoration-[#f36a10] decoration-2 underline-offset-4">Esqueci minha senha ou e-mail</Link></div>}
           <button type="submit" disabled={loading} className="primary-button min-h-13 w-full text-base">{loading ? "Entrando..." : "Entrar"}<ArrowRight className="h-4 w-4" /></button>
         </form>
 
