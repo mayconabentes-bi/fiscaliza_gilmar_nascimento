@@ -249,7 +249,8 @@ export function setupProductionRadarRoutes(app: Express) {
 
   app.get("/api/radar/manaus/territorios", async (req, res) => {
     const filtroBairro = typeof req.query.bairro === "string" ? normalize(req.query.bairro).slice(0, 120) : "";
-    const [obras, saude, escolas, demandas] = await Promise.all([
+    const [bairros, obras, saude, escolas, demandas] = await Promise.all([
+      safeLoad(loadNeighborhoods, "bairros"),
       safeLoad(loadMunicipalWorks, "obras"),
       safeLoad(loadHealthUnits, "saude"),
       safeLoad(loadSchools, "escolas"),
@@ -259,16 +260,42 @@ export function setupProductionRadarRoutes(app: Express) {
     const obraCounts = countByNeighborhood(obras.source?.data || []);
     const saudeCounts = countByNeighborhood(saude.source?.data || []);
     const escolaCounts = countByNeighborhood(escolas.source?.data || []);
-    const territorios = (demandas.porBairro as any[]).map((item) => {
+
+    const bairrosOficiais = Array.from(new Map(
+      (Array.isArray(bairros.source?.data) ? bairros.source.data : [])
+        .map((feature: any) => featureNeighborhood(feature))
+        .filter(Boolean)
+        .map((bairro: string) => [normalize(bairro), bairro] as const)
+    ).values());
+
+    const demandasPorBairro = new Map(
+      (demandas.porBairro as any[])
+        .filter((item) => normalize(item.bairro) !== normalize("Não informado"))
+        .map((item) => [normalize(item.bairro), item] as const)
+    );
+
+    const baseBairros = bairrosOficiais.length
+      ? bairrosOficiais
+      : Array.from(demandasPorBairro.values(), (item: any) => String(item.bairro));
+
+    const baseKeys = new Set(baseBairros.map((bairro) => normalize(bairro)));
+    const demandasSemBairroOficial = (demandas.porBairro as any[]).reduce((sum, item) => {
       const key = normalize(item.bairro);
-      const total = Number(item.total || 0);
-      const concluidas = Number(item.concluidas || 0);
+      if (!key || key === normalize("Não informado") || baseKeys.has(key)) return sum;
+      return sum + Number(item.total || 0);
+    }, 0);
+
+    const territorios = baseBairros.map((bairro) => {
+      const key = normalize(bairro);
+      const demanda = demandasPorBairro.get(key) as any | undefined;
+      const total = Number(demanda?.total || 0);
+      const concluidas = Number(demanda?.concluidas || 0);
       return {
-        bairro: item.bairro,
+        bairro,
         demandas: total,
-        prioritarias: Number(item.prioritarias || 0),
+        prioritarias: Number(demanda?.prioritarias || 0),
         concluidas,
-        temas: Number(item.temas || 0),
+        temas: Number(demanda?.temas || 0),
         taxaConclusao: total ? Number(((concluidas / total) * 100).toFixed(1)) : 0,
         obras: obraCounts.counts.get(key) || 0,
         unidadesSaude: saudeCounts.counts.get(key) || 0,
@@ -278,9 +305,19 @@ export function setupProductionRadarRoutes(app: Express) {
 
     res.setHeader("Cache-Control", "no-store, private");
     res.json({
-      municipio: "Manaus", geradoEm: new Date().toISOString(), territorios,
-      classificacaoFontes: { obrasSemBairro: obraCounts.unclassified, saudeSemBairro: saudeCounts.unclassified, escolasSemBairro: escolaCounts.unclassified },
-      disponibilidade: [obras, saude, escolas].map(({ name, available, error }) => ({ name, available, error })),
+      municipio: "Manaus",
+      geradoEm: new Date().toISOString(),
+      baseTerritorial: bairrosOficiais.length ? "geomanaus" : "demandas_fallback",
+      totalBairrosBase: baseBairros.length,
+      territorios,
+      classificacaoFontes: {
+        bairrosSemNome: bairros.available ? Math.max(0, Number(bairros.source?.data?.length || 0) - bairrosOficiais.length) : 0,
+        demandasSemBairroOficial,
+        obrasSemBairro: obraCounts.unclassified,
+        saudeSemBairro: saudeCounts.unclassified,
+        escolasSemBairro: escolaCounts.unclassified,
+      },
+      disponibilidade: [bairros, obras, saude, escolas].map(({ name, available, error }) => ({ name, available, error })),
     });
   });
 
