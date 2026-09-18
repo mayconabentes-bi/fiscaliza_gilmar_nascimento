@@ -6,8 +6,6 @@ export const AGE_BANDS = [
   "AGE_35_44",
   "AGE_45_59",
   "AGE_60_PLUS",
-  // Compatibilidade histórica: contas e demandas anteriores à classificação detalhada.
-  "AGE_18_PLUS",
 ] as const;
 
 export const DETAILED_PARTICIPATION_AGE_BANDS = [
