@@ -62,6 +62,8 @@ jobs:
         run: npm run test:account-recovery
       - name: Multi-photo evidence contract
         run: npm run test:photo-evidence
+      - name: Public journey runtime
+        run: npm run test:public-journey
       - name: Public journey refinement contracts
         run: |
           node tests/home-refinement-contract.mjs
