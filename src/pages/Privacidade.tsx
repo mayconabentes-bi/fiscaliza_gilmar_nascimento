@@ -73,9 +73,9 @@ export default function Privacidade() {
             <h2 className="text-2xl font-bold text-slate-950 mb-5">Quais informações usamos</h2>
             <div className="space-y-3 text-slate-600 leading-relaxed">
               <p><strong>Demandas:</strong> nome, bairro/localidade, município, categoria, descrição, contato opcional, protocolo e histórico do acompanhamento.</p>
-              <p><strong>Faixa etária:</strong> para participação ativa, tratamos apenas uma declaração de faixa etária: menos de 16 anos, 16 a 17 anos ou 18 anos ou mais. Não solicitamos, como padrão, data completa de nascimento, documento de identidade ou biometria para essa finalidade.</p>
+              <p><strong>Faixa etária:</strong> para participação ativa, tratamos apenas uma declaração por faixa: menos de 16 anos, 16 a 17 anos, 18 a 24, 25 a 34, 35 a 44, 45 a 59 ou 60 anos ou mais. A faixa “menos de 16 anos” serve somente para bloquear a participação autônoma; contas e demandas novas armazenam apenas as faixas permitidas a partir de 16 anos. Não solicitamos, como padrão, data completa de nascimento, documento de identidade ou biometria para essa finalidade.</p>
               <p><strong>Evidências:</strong> quando você optar por enviar foto, o arquivo é armazenado de forma privada para documentar e analisar o problema. A foto não aparece na consulta pública por protocolo. Evite fotografar pessoas identificáveis, crianças, documentos, placas de veículos ou outros dados pessoais desnecessários.</p>
-              <p><strong>Conta:</strong> quando o cadastro estiver habilitado, podemos tratar nome, e-mail, município, bairro, faixa etária, status da conta e credenciais protegidas por hash.</p>
+              <p><strong>Conta:</strong> quando o cadastro estiver habilitado, podemos tratar nome, e-mail, município, bairro, faixa etária, status da conta e credenciais protegidas por hash. O CEP pode ser consultado durante o cadastro apenas para preencher município e bairro e não é armazenado no perfil da conta.</p>
               <p><strong>Métricas agregadas:</strong> o sistema mede eventos de uso, origem e ação de acesso de forma agregada. Infraestrutura e provedores também podem gerar logs técnicos de segurança e operação.</p>
             </div>
           </section>
