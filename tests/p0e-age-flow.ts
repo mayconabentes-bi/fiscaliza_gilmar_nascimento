@@ -3,7 +3,8 @@ import { AgePolicyError, ageBandForActiveParticipation, parseAgeBand, requiresEn
 
 assert.equal(parseAgeBand('UNDER_16'), 'UNDER_16');
 assert.equal(parseAgeBand('AGE_16_17'), 'AGE_16_17');
-assert.equal(parseAgeBand('AGE_18_PLUS'), 'AGE_18_PLUS');
+assert.equal(parseAgeBand('AGE_18_24'), 'AGE_18_24');
+assert.equal(parseAgeBand('AGE_60_PLUS'), 'AGE_60_PLUS');
 
 assert.throws(
   () => ageBandForActiveParticipation('UNDER_16'),
@@ -20,14 +21,14 @@ assert.equal(teen.ageBand, 'AGE_16_17');
 assert.equal(teen.enhancedProtection, true);
 assert.equal(requiresEnhancedProtection('AGE_16_17'), true);
 
-const adult = ageBandForActiveParticipation('AGE_18_PLUS');
-assert.equal(adult.ageBand, 'AGE_18_PLUS');
+const adult = ageBandForActiveParticipation('AGE_18_24');
+assert.equal(adult.ageBand, 'AGE_18_24');
 assert.equal(adult.enhancedProtection, false);
-assert.equal(requiresEnhancedProtection('AGE_18_PLUS'), false);
+assert.equal(requiresEnhancedProtection('AGE_18_24'), false);
 
 assert.throws(
   () => parseAgeBand(''),
   (error: unknown) => error instanceof AgePolicyError && error.code === 'AGE_BAND_INVALID',
 );
 
-console.log('P0-E age flow runtime tests: OK — <16 bloqueado, 16–17 protegido, 18+ permitido');
+console.log('P0-E age flow runtime tests: OK — <16 bloqueado, 16–17 protegido, faixas adultas permitidas');
