@@ -90,7 +90,7 @@ function MobileNav({ user, onLogout }: { user: any; onLogout: () => void | Promi
               ))}
             </div>
             <div className="border-t border-[#eef2fb] p-3">
-              <button type="button" onClick={onLogout} data-mobile-logout="admin" className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-extrabold text-red-700">
+              <button type="button" onClick={onLogout} data-mobile-logout="admin" aria-label="Sair da área administrativa" className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-extrabold text-red-700">
                 <LogOut className="h-4.5 w-4.5" /> Sair da área administrativa
               </button>
             </div>
