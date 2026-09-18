@@ -4,6 +4,7 @@ const app = fs.readFileSync('src/App.tsx', 'utf8');
 const home = fs.readFileSync('src/pages/Home.tsx', 'utf8');
 const form = fs.readFileSync('src/pages/NovaDemanda.tsx', 'utf8');
 const protocol = fs.readFileSync('src/pages/ConsultaProtocolo.tsx', 'utf8');
+const triage = fs.readFileSync('src/pages/AdminDemandas.tsx', 'utf8');
 const privacy = fs.readFileSync('src/components/LGPDConsent.tsx', 'utf8');
 const html = fs.readFileSync('index.html', 'utf8');
 
@@ -32,6 +33,12 @@ expect(form.includes('capture="environment"'), 'Captura de evidência deve favor
 const radar = fs.readFileSync("src/pages/RadarTerritorial.tsx", "utf8");
 expect(radar.includes('id="radar-bairro-mobile"') && radar.includes('Escolher bairro'), 'Radar deve oferecer seletor nativo de bairro no mobile.');
 expect(radar.includes('onTouchEnd={(event) => {'), 'Mapa do Radar deve possuir fallback touch explícito no mobile.');
+expect(triage.includes('data-mobile-triage-cards') && triage.includes('lg:hidden'), 'Triagem deve usar cards dedicados no mobile.');
+expect(triage.includes('hidden overflow-hidden') && triage.includes('lg:block'), 'Tabela de triagem deve ficar restrita ao desktop.');
+expect(triage.includes('Abrir triagem') && triage.includes('min-h-12'), 'Ações críticas da triagem mobile devem ter alvo de toque confortável.');
+expect(triage.includes('Buscar protocolo') && triage.includes('Filtrar bairro') && triage.includes('Todas as prioridades'), 'Triagem mobile deve oferecer filtros operacionais por protocolo, bairro e prioridade.');
+expect(triage.includes('Prioridade operacional') && triage.includes('Salvar triagem'), 'Modal de triagem deve permitir alterar prioridade e status no mesmo fluxo.');
+expect(triage.includes('obrigatória para encerramento'), 'UI deve comunicar justificativa obrigatória ao concluir ou indeferir.');
 expect(form.includes('name="camera_photo"') && form.includes('name="gallery_photos"') && form.includes('opacity-0 disabled:cursor-not-allowed'), 'Câmera e galeria devem usar inputs file nativos diretamente tocáveis.');
 expect(form.includes('data-engagement-progress="transparent"') && form.includes('role="progressbar"'), 'O formulário deve mostrar progresso transparente, sem urgência artificial.');
 expect(form.includes('form_step_location') && form.includes('form_step_details') && form.includes('form_step_review'), 'O funil deve medir apenas conclusão agregada das etapas cívicas.');

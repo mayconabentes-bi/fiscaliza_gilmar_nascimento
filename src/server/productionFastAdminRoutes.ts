@@ -71,7 +71,10 @@ export function setupProductionFastAdminRoutes(app: Express) {
     const startedAt = Date.now();
     try {
       const status = typeof req.query.status === "string" ? req.query.status.trim() : "";
+      const prioridade = typeof req.query.prioridade === "string" ? req.query.prioridade.trim().toUpperCase().slice(0, 20) : "";
+      const protocolo = typeof req.query.protocolo === "string" ? req.query.protocolo.trim().toUpperCase().slice(0, 80) : "";
       const municipio = typeof req.query.municipio === "string" ? req.query.municipio.trim().slice(0, 120) : "";
+      const bairro = typeof req.query.bairro === "string" ? req.query.bairro.trim().slice(0, 160) : "";
       const categoria = typeof req.query.categoria === "string" ? req.query.categoria.trim().slice(0, 120) : "";
       const tipoProblema = typeof req.query.tipo_problema === "string" ? req.query.tipo_problema.trim().slice(0, 120) : "";
       const requestedLimit = Number(req.query.limit || 100);
@@ -79,6 +82,9 @@ export function setupProductionFastAdminRoutes(app: Express) {
 
       if (status && !STATUS_VALIDOS.includes(status)) {
         return res.status(400).json({ error: "Status inválido." });
+      }
+      if (prioridade && !["BAIXA", "MEDIA", "ALTA", "CRITICA"].includes(prioridade)) {
+        return res.status(400).json({ error: "Prioridade inválida." });
       }
 
       const sql = await getHealthyPostgres();
@@ -95,7 +101,10 @@ export function setupProductionFastAdminRoutes(app: Express) {
                d.created_at, d.updated_at
         from public.demandas d
         where (${status} = '' or d.status = ${status})
+          and (${prioridade} = '' or d.prioridade = ${prioridade})
+          and (${protocolo} = '' or d.protocolo ilike ${`%${protocolo}%`})
           and (${municipio} = '' or d.municipio ilike ${`%${municipio}%`})
+          and (${bairro} = '' or coalesce(d.bairro, '') ilike ${`%${bairro}%`})
           and (${categoria} = '' or d.categoria = ${categoria})
           and (${tipoProblema} = '' or d.tipo_problema = ${tipoProblema})
         order by d.created_at desc

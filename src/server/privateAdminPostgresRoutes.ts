@@ -71,17 +71,24 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
     try {
       const sql = getPostgres();
       const status = typeof req.query.status === "string" ? req.query.status.trim() : "";
-      const municipio = typeof req.query.municipio === "string" ? req.query.municipio.trim() : "";
+      const prioridade = typeof req.query.prioridade === "string" ? req.query.prioridade.trim().toUpperCase().slice(0, 20) : "";
+      const protocolo = typeof req.query.protocolo === "string" ? req.query.protocolo.trim().toUpperCase().slice(0, 80) : "";
+      const municipio = typeof req.query.municipio === "string" ? req.query.municipio.trim().slice(0, 120) : "";
+      const bairro = typeof req.query.bairro === "string" ? req.query.bairro.trim().slice(0, 160) : "";
       const categoria = typeof req.query.categoria === "string" ? req.query.categoria.trim() : "";
       const tipoProblema = typeof req.query.tipo_problema === "string" ? req.query.tipo_problema.trim() : "";
       if (status && !STATUS_VALIDOS.includes(status)) return res.status(400).json({ error: "Status inválido." });
+      if (prioridade && !PRIORIDADES_VALIDAS.includes(prioridade)) return res.status(400).json({ error: "Prioridade inválida." });
       const rows = await sql`
         select id, protocolo, nome_solicitante, contato, municipio, bairro, categoria, tipo_problema, descricao,
                prioridade, status, observacao_interna, usuario_id, evidencia_moderacao_status,
                (evidencia_foto_path is not null) as tem_evidencia_foto, created_at, updated_at
         from public.demandas
         where (${status} = '' or status = ${status})
+          and (${prioridade} = '' or prioridade = ${prioridade})
+          and (${protocolo} = '' or protocolo ilike ${`%${protocolo}%`})
           and (${municipio} = '' or municipio ilike ${`%${municipio}%`})
+          and (${bairro} = '' or coalesce(bairro, '') ilike ${`%${bairro}%`})
           and (${categoria} = '' or categoria = ${categoria})
           and (${tipoProblema} = '' or tipo_problema = ${tipoProblema})
         order by created_at desc limit 500
@@ -169,6 +176,8 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
       const result = await sql.begin(async (tx) => {
         const [atual] = await tx`select id, protocolo, status, prioridade from public.demandas where id = ${req.params.id} for update`;
         if (!atual) return null;
+        const encerrandoAgora = ["CONCLUIDA", "INDEFERIDA"].includes(status) && String(atual.status) !== status;
+        if (encerrandoAgora && !observacao) throw new Error("FINAL_JUSTIFICATION_REQUIRED");
         const prioridadeFinal = prioridade || String(atual.prioridade);
         await tx`
           update public.demandas set status = ${status}, prioridade = ${prioridadeFinal},
@@ -191,7 +200,10 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
       });
       if (!result) return res.status(404).json({ error: "Demanda não encontrada." });
       return res.json({ success: true, ...result });
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.message === "FINAL_JUSTIFICATION_REQUIRED") {
+        return res.status(400).json({ error: "Informe uma justificativa para concluir ou indeferir a demanda." });
+      }
       console.error("Falha ao atualizar demanda:", error);
       return res.status(500).json({ error: "Erro ao atualizar demanda." });
     }
