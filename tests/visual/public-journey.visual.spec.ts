@@ -132,6 +132,30 @@ test('registro mantém fluxo guiado, privacidade e revisão no mobile', async ({
   }
 });
 
+test('acompanhamento coloca busca na primeira dobra', async ({ page }, testInfo) => {
+  await page.goto('/protocolo');
+  await stabilize(page);
+
+  const input = page.getByLabel('Número do protocolo');
+  const submit = page.getByRole('button', { name: /ver andamento/i });
+  await expect(input).toBeVisible();
+  await expect(submit).toBeVisible();
+  await expect(page.getByText(/consulta pública protegida/i)).toBeVisible();
+
+  const viewport = page.viewportSize();
+  const inputBox = await input.boundingBox();
+  const submitBox = await submit.boundingBox();
+  expect(viewport).not.toBeNull();
+  expect(inputBox).not.toBeNull();
+  expect(submitBox).not.toBeNull();
+  if ((viewport?.width || 0) < 640) {
+    expect((inputBox?.y || 0) + (inputBox?.height || 0)).toBeLessThanOrEqual(viewport?.height || Number.MAX_SAFE_INTEGER);
+    expect((submitBox?.y || 0) + (submitBox?.height || 0)).toBeLessThanOrEqual(viewport?.height || Number.MAX_SAFE_INTEGER);
+  }
+
+  await capture(page, 'acompanhamento-busca', testInfo.project.name);
+});
+
 test('acompanhamento usa somente status público determinístico', async ({ page }, testInfo) => {
   await page.route('**/api/demandas/protocolo/**', async (route) => {
     await route.fulfill({
@@ -139,7 +163,7 @@ test('acompanhamento usa somente status público determinístico', async ({ page
       contentType: 'application/json',
       body: JSON.stringify({
         demanda: {
-          protocolo: 'AM-VISUAL-QA',
+          protocolo: 'AM-20260917-A1B2C3',
           municipio: 'Manaus',
           categoria: 'INFRAESTRUTURA_URBANA',
           tipo_problema: 'BURACO_PAVIMENTACAO',
@@ -156,11 +180,33 @@ test('acompanhamento usa somente status público determinístico', async ({ page
     });
   });
 
-  await page.goto('/protocolo?codigo=AM-VISUAL-QA');
+  await page.goto('/protocolo?codigo=AM-20260917-A1B2C3');
   await stabilize(page);
 
-  await expect(page.getByText('AM-VISUAL-QA')).toBeVisible();
+  await expect(page.getByText('AM-20260917-A1B2C3')).toBeVisible();
+  await expect(page.locator('[data-followup-status]')).toBeVisible();
   await expect(page.getByText(/em análise/i).first()).toBeVisible();
-  await expect(page.getByText(/descrição, contato, foto/i)).toBeVisible();
+  await expect(page.getByText(/descrição, contato, fotos, endereço detalhado/i)).toBeVisible();
+  await expect(page.locator('[data-followup-history]')).toBeVisible();
   await capture(page, 'acompanhamento-publico', testInfo.project.name);
+});
+
+test('acompanhamento orienta protocolo não encontrado sem expor dados', async ({ page }, testInfo) => {
+  await page.route('**/api/demandas/protocolo/**', async (route) => {
+    await route.fulfill({
+      status: 404,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'Protocolo não encontrado.' }),
+    });
+  });
+
+  await page.goto('/protocolo');
+  await stabilize(page);
+  await page.getByLabel('Número do protocolo').fill('AM-20260917-FFFFFF');
+  await page.getByRole('button', { name: /ver andamento/i }).click();
+
+  await expect(page.locator('[data-followup-error]')).toBeVisible();
+  await expect(page.getByText('Protocolo não encontrado', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /tentar novamente/i })).toBeVisible();
+  await capture(page, 'acompanhamento-nao-encontrado', testInfo.project.name);
 });

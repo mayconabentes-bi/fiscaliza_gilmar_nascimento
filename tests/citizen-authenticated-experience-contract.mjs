@@ -31,6 +31,9 @@ expect(app.includes('aria-label="Navegação da conta"') && app.includes('to="/m
 expect(records.includes("/api/minha-conta/demandas"), "Tela Meus registros deve carregar somente a API privada da conta.");
 expect(records.includes('to={`/protocolo?codigo='), "Cada registro deve abrir o acompanhamento pelo protocolo.");
 expect(records.includes("Você ainda não tem registros nesta conta."), "Tela deve ter estado vazio orientando novo registro.");
+expect(records.includes('data-citizen-followup-list') && records.includes('Registrar nova ocorrência'), "Meus registros deve priorizar a lista vinculada e o novo registro.");
+expect(records.includes('Consultar outro protocolo') && !records.includes('Novo problema'), "Consulta manual deve ser secundária, sem repetir o card Registrar/Acompanhar.");
+expect(records.includes('aria-label="Atualizar meus registros"'), "Atualização da lista deve permanecer acessível no mobile.");
 expect(profile.includes("Perfil") && profile.includes("Faixa etária") && profile.includes("Localidade"), "Perfil deve exibir os dados básicos da conta.");
 expect(profile.includes('"/api/minha-conta/demandas"') && profile.includes("Seus registros") && profile.includes("Ver todos") && profile.includes("slice(0, 3)"), "Perfil deve mostrar resumo dos registros vinculados.");
 expect(demandForm.includes('user?.type === "cidadao"') && demandForm.includes('to="/meus-registros"') && demandForm.includes("Ver meus registros"), "Confirmação de envio autenticado deve oferecer Ver meus registros.");
