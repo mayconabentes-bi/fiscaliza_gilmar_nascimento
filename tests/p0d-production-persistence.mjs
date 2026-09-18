@@ -9,6 +9,7 @@ const postgres = read('src/server/postgres.ts');
 const demand = read('src/server/citizenDemandPostgres.ts');
 const compliance = read('src/server/citizenCompliancePostgres.ts');
 const admin = read('src/server/privateAdminPostgresRoutes.ts');
+const fastAdmin = read('src/server/productionFastAdminRoutes.ts');
 const evidence = read('src/server/evidenceStorage.ts');
 const mobile = read('src/server/mobileConversion.ts');
 const backup = read('src/modules/infraestrutura-operacional/infrastructure/backup/BackupService.ts');
@@ -26,6 +27,10 @@ assert(demand.includes('aviso_privacidade_versao') && demand.includes('aviso_pri
 assert(demand.includes('uploadDemandEvidence') && demand.includes('evidencia_moderacao_status') && demand.includes('PENDENTE'), 'Evidência de produção deve ir ao Storage e iniciar pendente.');
 assert(compliance.includes('/api/compliance/exportar') && compliance.includes('/api/compliance/excluir'), 'Direitos do titular devem possuir implementação Postgres.');
 assert(admin.includes('/api/admin/evidencias/pendentes') && admin.includes('/api/admin/compliance/retention-run'), 'Moderação e retenção admin devem possuir implementação Postgres.');
+assert(admin.includes('FINAL_JUSTIFICATION_REQUIRED') && admin.includes('Informe uma justificativa para concluir ou indeferir'), 'Encerramento de demanda deve exigir justificativa no backend.');
+for (const filter of ['prioridade', 'protocolo', 'bairro']) {
+  assert(fastAdmin.includes(`req.query.${filter}`) && admin.includes(`req.query.${filter}`), `Triagem de produção deve suportar filtro por ${filter} no fast path e fallback.`);
+}
 assert(evidence.includes('/storage/v1/object/') && evidence.includes('SUPABASE_SERVICE_ROLE_KEY'), 'Evidência deve usar Supabase Storage pelo backend.');
 assert(evidence.includes('/storage/v1/bucket/') && evidence.includes('data.public !== false'), 'Bucket configurado deve ser verificado como privado.');
 assert(mobile.includes('process.env.NODE_ENV !== "production"') && mobile.includes('persistEvidenceLocal'), 'Filesystem de evidência deve estar explicitamente restrito ao modo local.');
