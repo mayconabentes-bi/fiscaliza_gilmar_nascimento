@@ -35,7 +35,7 @@ expect(home.includes('min-h-14') && form.includes('min-h-14') && protocol.includ
 expect(app.includes('location.pathname !== "/"') && app.includes('primary-button min-h-10'), 'Home mobile deve evitar CTA Registrar duplicado no cabeçalho, preservando-o nas demais rotas públicas.');
 expect(home.includes('sm:min-h-[66vh]') && home.includes('data-home-mobile-flow') && home.includes('data-home-trust'), 'Home mobile deve reduzir a primeira dobra e consolidar fluxo, transparência e privacidade.');
 expect(home.includes('Sem perfilamento político') && home.includes('não usa seus dados para criar perfil político'), 'Home deve preservar linguagem explícita contra perfilamento político.');
-expect(privacy.includes('bottom-[calc(76px+env(safe-area-inset-bottom))]'), 'Aviso LGPD deve respeitar a navegação inferior e a safe area no mobile.');
+expect(privacy.includes('bottom-[calc(76px+env(safe-area-inset-bottom))]') && privacy.includes('lg:bottom-5') && !privacy.includes('md:bottom-5'), 'Aviso LGPD deve permanecer acima da navegação touch até o breakpoint lg.');
 expect(form.includes('text-base') && protocol.includes('text-base'), 'Campos críticos devem usar fonte de 16px para evitar zoom involuntário no iOS.');
 expect(form.includes('capture="environment"'), 'Captura de evidência deve favorecer a câmera traseira no celular.');
 const radar = fs.readFileSync("src/pages/RadarTerritorial.tsx", "utf8");
