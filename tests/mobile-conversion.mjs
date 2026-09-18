@@ -17,7 +17,7 @@ const server = spawn(process.execPath, ['dist-server/server.js'], {
     CIVIC_DB_PATH: dbPath, EVIDENCE_DIR: evidenceDir,
     BACKUP_EXTERNAL_DIR: path.join(root, 'external'), BACKUP_DIR: path.join(root, 'backup'),
     DPO_CONTACT_EMAIL: 'privacidade-mobile@fiscalize.local', LGPD_CONSENT_VERSION: 'mobile-qa-v1',
-    ENABLE_PUBLIC_REGISTRATION: 'false', INTERNAL_PILOT_MODE: 'false', ENABLE_PUBLIC_DEMAND_INTAKE: 'true',
+    ENABLE_PUBLIC_REGISTRATION: 'true', INTERNAL_PILOT_MODE: 'false', ENABLE_PUBLIC_DEMAND_INTAKE: 'true',
   }, stdio: ['ignore', 'pipe', 'pipe']
 });
 let output = '';
@@ -47,6 +47,65 @@ try {
   expect(demand.status, 201, 'demanda pública local');
   const body = await demand.json();
 
+  const citizenEmail = 'mobile-citizen@example.local';
+  const citizenPassword = 'SenhaMobile123!';
+  const register = await fetch(`${BASE}/api/auth/register/cidadao`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', origin: BASE },
+    body: JSON.stringify({
+      nome_completo: 'Cidadão Mobile',
+      email: citizenEmail,
+      municipio: 'Manaus',
+      bairro: 'Centro',
+      faixa_etaria: 'AGE_25_34',
+      password: citizenPassword,
+      aceite_codigo: true,
+      aceite_lgpd: true,
+    }),
+  });
+  expect(register.status, 201, 'cadastro cidadão local');
+
+  const login = await fetch(`${BASE}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', origin: BASE },
+    body: JSON.stringify({ email: citizenEmail, password: citizenPassword, type: 'cidadao' }),
+  });
+  expect(login.status, 200, 'login cidadão local');
+  const authCookie = String(login.headers.get('set-cookie') || '').split(';')[0];
+  if (!authCookie.includes('token=')) throw new Error('Login cidadão não retornou cookie de sessão.');
+
+  const authenticatedDemand = await fetch(`${BASE}/api/demandas`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', origin: BASE, cookie: authCookie },
+    body: JSON.stringify({
+      nome_solicitante: 'Cidadão Mobile',
+      contato: citizenEmail,
+      municipio: 'Manaus',
+      bairro: 'Centro',
+      categoria: 'LIMPEZA_URBANA',
+      tipo_problema: 'LIXO_ACUMULADO',
+      descricao: 'Registro autenticado para Meus registros',
+      faixa_etaria: 'AGE_25_34',
+      prioridade: 'MEDIA',
+      aviso_privacidade_aceito: true,
+    }),
+  });
+  expect(authenticatedDemand.status, 201, 'demanda autenticada local');
+  const authenticatedBody = await authenticatedDemand.json();
+
+  const myRecordsResponse = await fetch(`${BASE}/api/minha-conta/demandas`, {
+    headers: { origin: BASE, cookie: authCookie },
+  });
+  expect(myRecordsResponse.status, 200, 'Meus registros autenticado');
+  const myRecords = await myRecordsResponse.json();
+  expect(myRecords.total, 1, 'quantidade de registros vinculados à conta');
+  if (myRecords.registros?.[0]?.protocolo !== authenticatedBody.protocolo) {
+    throw new Error('Meus registros não retornou o protocolo da demanda autenticada.');
+  }
+  if (myRecords.registros.some((item) => item.protocolo === body.protocolo)) {
+    throw new Error('Meus registros expôs demanda pública sem vínculo com a conta.');
+  }
+
   await new Promise(r => setTimeout(r, 100));
   const db = new Database(dbPath, { readonly: true });
   const row = db.prepare('SELECT evidencia_foto_path, evidencia_moderacao_status FROM demandas WHERE id = ?').get(body.id);
@@ -58,7 +117,7 @@ try {
   if (row.evidencia_moderacao_status !== 'PENDENTE') throw new Error('Evidência local não iniciou pendente de moderação.');
   if (landing?.total !== 1 || submitted?.total !== 1) throw new Error('Funil agregado local não persistido corretamente.');
   if (steps.length !== 3 || steps.some(step => step.total !== 1)) throw new Error('Etapas agregadas do formulário não foram persistidas corretamente.');
-  console.log('Mobile local OK: config, privacidade, QR, progresso agregado, demanda e evidência pendente.');
+  console.log('Mobile local OK: config, privacidade, QR, progresso agregado, demanda, evidência pendente e Meus registros autenticado.');
 } catch (error) {
   console.error(error); console.error(output); process.exitCode = 1;
 } finally {
