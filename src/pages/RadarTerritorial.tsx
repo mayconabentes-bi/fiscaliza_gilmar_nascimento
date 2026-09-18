@@ -116,11 +116,30 @@ function MapaBairros({ mapa, selecionado, onSelect }: { mapa: MapaResponse | nul
     });
   }, [mapa]);
 
+  const bairroOptions = useMemo(
+    () => Array.from(new Set(shapes.map((shape) => shape.bairro).filter(Boolean)))
+      .sort((a, b) => a.localeCompare(b, "pt-BR")),
+    [shapes]
+  );
+
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <div><h2 className="text-lg font-bold text-slate-900">Mapa territorial de bairros</h2><p className="mt-1 text-sm text-slate-500">Toque em um bairro para abrir o diagnóstico territorial.</p></div>
+        <div><h2 className="text-lg font-bold text-slate-900">Mapa territorial de bairros</h2><p className="mt-1 text-sm text-slate-500">Toque no mapa ou escolha um bairro na lista para abrir o diagnóstico territorial.</p></div>
         <span className="text-xs font-semibold text-slate-500">{mapa ? `${mapa.retornados} de ${mapa.total} áreas · ${mapa.classificados ?? mapa.retornados} identificadas` : "Camada indisponível"}</span>
+      </div>
+      <div className="mt-4 sm:hidden">
+        <label htmlFor="radar-bairro-mobile" className="mb-1.5 block text-sm font-semibold text-slate-700">Escolher bairro</label>
+        <select
+          id="radar-bairro-mobile"
+          value={selecionado}
+          onChange={(event) => onSelect(event.target.value)}
+          className="min-h-12 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-base text-slate-900 shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+        >
+          <option value="">Selecione um bairro</option>
+          {bairroOptions.map((bairro) => <option key={bairro} value={bairro}>{bairro}</option>)}
+        </select>
+        <p className="mt-1.5 text-xs text-slate-500">No celular, a lista é a forma mais precisa de selecionar áreas pequenas do mapa.</p>
       </div>
       <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
         {shapes.length ? (
@@ -149,6 +168,11 @@ function MapaBairros({ mapa, selecionado, onSelect }: { mapa: MapaResponse | nul
                     aria-pressed={shape.bairro ? Boolean(active) : undefined}
                     pointerEvents={shape.bairro ? "all" : "none"}
                     onClick={() => shape.bairro && onSelect(shape.bairro)}
+                    onTouchEnd={(event) => {
+                      if (!shape.bairro) return;
+                      event.stopPropagation();
+                      onSelect(shape.bairro);
+                    }}
                     onKeyDown={(event) => {
                       if (shape.bairro && (event.key === "Enter" || event.key === " ")) {
                         event.preventDefault();
