@@ -14,11 +14,41 @@ export default function RegisterCidadao() {
     aceite_lgpd: false,
   });
   const [error, setError] = useState("");
+  const [cep, setCep] = useState("");
+  const [cepLoading, setCepLoading] = useState(false);
+  const [cepMessage, setCepMessage] = useState("");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const val = type === "checkbox" && e.target instanceof HTMLInputElement ? e.target.checked : value;
     setFormData((prev) => ({ ...prev, [name]: val }));
+  };
+
+  const lookupCep = async () => {
+    const normalized = cep.replace(/\D/g, "");
+    setCepMessage("");
+    if (normalized.length !== 8) {
+      setCepMessage("Informe um CEP válido com 8 dígitos.");
+      return;
+    }
+
+    setCepLoading(true);
+    try {
+      const res = await fetch(`/api/localizacao/cep/${normalized}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Não foi possível buscar o CEP.");
+      setFormData((prev) => ({
+        ...prev,
+        municipio: String(data.municipio || prev.municipio),
+        bairro: String(data.bairro || prev.bairro),
+      }));
+      setCep(String(data.cep || normalized));
+      setCepMessage("Localização encontrada. Confira município e bairro antes de continuar.");
+    } catch (err: any) {
+      setCepMessage(err.message || "Consulta de CEP indisponível. Preencha município e bairro manualmente.");
+    } finally {
+      setCepLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -77,9 +107,32 @@ export default function RegisterCidadao() {
             </select>
             <span className="mt-1.5 block text-xs leading-relaxed text-slate-500">Usamos somente a faixa etária para aplicar as proteções adequadas. A participação autônoma começa aos 16 anos.</span>
           </label>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block"><span className="text-sm font-bold">Município</span><input name="municipio" value={formData.municipio} onChange={handleChange} autoComplete="address-level2" required className="field" /></label>
-            <label className="block"><span className="text-sm font-bold">Bairro</span><input name="bairro" value={formData.bairro} onChange={handleChange} autoComplete="address-level3" required className="field" /></label>
+          <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div>
+              <span className="text-sm font-bold">Localização</span>
+              <p className="mt-1 text-xs leading-relaxed text-slate-500">Use o CEP apenas para preencher município e bairro. O CEP não é armazenado na sua conta.</p>
+            </div>
+            <div className="flex gap-2">
+              <input
+                name="cep"
+                value={cep}
+                onChange={(e) => setCep(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                onBlur={() => { if (cep.replace(/\D/g, "").length === 8 && !cepLoading) void lookupCep(); }}
+                inputMode="numeric"
+                autoComplete="postal-code"
+                placeholder="CEP"
+                aria-label="CEP"
+                className="field min-w-0 flex-1"
+              />
+              <button type="button" onClick={() => void lookupCep()} disabled={cepLoading} className="secondary-button min-h-12 shrink-0 px-4 disabled:opacity-50">
+                {cepLoading ? "Buscando..." : "Buscar CEP"}
+              </button>
+            </div>
+            {cepMessage && <p role="status" className="text-xs leading-relaxed text-slate-600">{cepMessage}</p>}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block"><span className="text-sm font-bold">Município</span><input name="municipio" value={formData.municipio} onChange={handleChange} autoComplete="address-level2" required className="field" /></label>
+              <label className="block"><span className="text-sm font-bold">Bairro</span><input name="bairro" value={formData.bairro} onChange={handleChange} autoComplete="address-level3" required className="field" /></label>
+            </div>
           </div>
           <label className="block"><span className="text-sm font-bold">Senha</span><input name="password" type="password" value={formData.password} onChange={handleChange} autoComplete="new-password" minLength={8} required className="field" /></label>
 
