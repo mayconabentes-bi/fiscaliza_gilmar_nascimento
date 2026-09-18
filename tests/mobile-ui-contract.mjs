@@ -5,6 +5,8 @@ const home = fs.readFileSync('src/pages/Home.tsx', 'utf8');
 const form = fs.readFileSync('src/pages/NovaDemanda.tsx', 'utf8');
 const protocol = fs.readFileSync('src/pages/ConsultaProtocolo.tsx', 'utf8');
 const records = fs.readFileSync('src/pages/MeusRegistros.tsx', 'utf8');
+const login = fs.readFileSync('src/pages/Login.tsx', 'utf8');
+const recovery = fs.readFileSync('src/pages/RecoverAccess.tsx', 'utf8');
 const triage = fs.readFileSync('src/pages/AdminDemandas.tsx', 'utf8');
 const strategy = fs.readFileSync('src/pages/Estrategia2028.tsx', 'utf8');
 const strategyRefresh = fs.readFileSync('src/components/IntelligenceRefreshPanel.tsx', 'utf8');
@@ -81,6 +83,12 @@ expect(protocol.includes('sm:hidden') && protocol.includes('historyNewestFirst.m
 expect(protocol.includes('Consulta pública protegida.') && protocol.includes('endereço detalhado'), 'Acompanhar deve comunicar claramente a minimização da resposta pública.');
 expect(records.includes('data-citizen-followup-list') && records.includes('Registrar nova ocorrência') && records.includes('Consultar outro protocolo'), 'Conta cidadã deve priorizar registros vinculados e deixar consulta manual como ação secundária.');
 expect(!records.includes('Novo problema') && !records.includes('Consultar protocolo</span>'), 'Meus registros mobile não deve repetir cards de navegação já presentes no shell.');
+expect(login.includes('data-login-mode={type}') && login.includes('Acesse seus registros e sua conta.'), 'Entrar mobile deve priorizar a jornada cidadã.');
+expect(login.includes('hidden grid-cols-2') && login.includes('sm:grid') && login.includes('Acesso administrativo'), 'Seletor Pessoa/Administrador deve ficar fora da primeira dobra mobile e preservar o modo desktop.');
+expect(login.includes('Mostrar senha') && login.includes('Ocultar senha') && login.includes('text-base'), 'Campos de autenticação mobile devem ser legíveis e permitir revelar senha por ação explícita.');
+expect(login.includes('/recuperar-acesso?modo=senha') && login.includes('/recuperar-acesso?modo=email'), 'Recuperação deve abrir diretamente no modo escolhido.');
+expect(login.includes('Entrar na área privada') && login.includes('Não existe cadastro de administrador pela aplicação.'), 'Modo administrativo deve permanecer claramente restrito.');
+expect(recovery.includes('searchParams.get("modo") === "email"') && recovery.includes('text-base'), 'Recuperação mobile deve respeitar o modo solicitado e evitar zoom nos campos.');
 expect(html.includes('width=device-width'), 'Viewport mobile deve estar configurado.');
 
 const targetViewports = ['344x882', '375x667', '393x852', '412x915', '440x956', '744x1133', '768x968', '800x1080', '1032x1376'];

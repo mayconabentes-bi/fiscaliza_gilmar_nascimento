@@ -1,16 +1,18 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { KeyRound, Mail, ShieldCheck } from "lucide-react";
 
 type RecoveryConfig = { enabled: boolean; supportEmail: string | null };
 
 export default function RecoverAccess() {
+  const [searchParams] = useSearchParams();
   const resetToken = useMemo(() => {
     const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
     return params.get("token") || "";
   }, []);
 
-  const [mode, setMode] = useState<"password" | "email">("password");
+  const initialMode = searchParams.get("modo") === "email" ? "email" : "password";
+  const [mode, setMode] = useState<"password" | "email">(initialMode);
   const [config, setConfig] = useState<RecoveryConfig>({ enabled: true, supportEmail: null });
   const [email, setEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -71,8 +73,8 @@ export default function RecoverAccess() {
       <p className="mt-2 text-sm leading-6 text-[#657089]">Este link tem validade curta e deixa de funcionar assim que a senha é alterada.</p>
       <form className="mt-6 space-y-5" onSubmit={resetPassword}>
         {error && <div role="alert" className="rounded-xl border border-red-100 bg-red-50 p-3.5 text-sm text-red-700">{error}</div>}
-        <label className="block"><span className="text-sm font-bold text-[#34425b]">Nova senha</span><input type="password" autoComplete="new-password" minLength={8} required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="field" /></label>
-        <label className="block"><span className="text-sm font-bold text-[#34425b]">Confirmar nova senha</span><input type="password" autoComplete="new-password" minLength={8} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="field" /></label>
+        <label className="block"><span className="text-sm font-bold text-[#34425b]">Nova senha</span><input type="password" autoComplete="new-password" minLength={8} required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="field text-base" /></label>
+        <label className="block"><span className="text-sm font-bold text-[#34425b]">Confirmar nova senha</span><input type="password" autoComplete="new-password" minLength={8} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="field text-base" /></label>
         <button type="submit" disabled={loading} className="primary-button min-h-12 w-full">{loading ? "Alterando..." : "Alterar senha"}</button>
       </form>
     </section></div>
@@ -101,7 +103,7 @@ export default function RecoverAccess() {
           {error && <div role="alert" className="rounded-xl border border-red-100 bg-red-50 p-3.5 text-sm text-red-700">{error}</div>}
           {message && <div role="status" className="rounded-xl border border-emerald-100 bg-emerald-50 p-3.5 text-sm text-emerald-800">{message}</div>}
           {!config.enabled && <div className="rounded-xl border border-amber-100 bg-amber-50 p-3.5 text-sm text-amber-800">A recuperação automática ainda está sendo configurada.</div>}
-          <label className="block"><span className="text-sm font-bold text-[#34425b]">E-mail da conta</span><input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="field" placeholder="voce@exemplo.com" /></label>
+          <label className="block"><span className="text-sm font-bold text-[#34425b]">E-mail da conta</span><input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="field text-base" placeholder="voce@exemplo.com" /></label>
           <p className="text-xs leading-5 text-[#657089]">A resposta é sempre genérica para proteger a privacidade e não revelar quais e-mails possuem conta.</p>
           <button type="submit" disabled={loading || !config.enabled} className="primary-button min-h-12 w-full disabled:cursor-not-allowed disabled:opacity-50">{loading ? "Enviando..." : "Enviar link de recuperação"}</button>
         </form>

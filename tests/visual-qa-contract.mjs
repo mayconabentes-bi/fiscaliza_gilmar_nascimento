@@ -31,6 +31,9 @@ expect(spec.includes("capture(page, 'acompanhamento-publico'"), 'Acompanhamento 
 expect(spec.includes("capture(page, 'acompanhamento-busca'") && spec.includes("capture(page, 'acompanhamento-nao-encontrado'"), 'Acompanhar deve ter capturas específicas da busca e do estado não encontrado.');
 expect(spec.includes("input.boundingBox()") && spec.includes("submit.boundingBox()"), 'QA visual deve garantir campo e CTA do protocolo na primeira dobra mobile.');
 expect(spec.includes("data-followup-status") && spec.includes("data-followup-history") && spec.includes("data-followup-error"), 'QA visual deve validar status, histórico e erro orientativo do acompanhamento.');
+expect(spec.includes("capture(page, 'login-cidadao'") && spec.includes("capture(page, 'login-admin'") && spec.includes("capture(page, 'login-erro'"), 'Entrar deve ter capturas visuais de cidadão, administrador e credenciais inválidas.');
+expect(spec.includes("mostrar senha") && spec.includes("ocultar senha") && spec.includes("toHaveAttribute('type', 'text')"), 'QA visual deve validar mostrar/ocultar senha sem alterar o valor.');
+expect(spec.includes("data-login-mode=\"admin\"") && spec.includes("data-login-error"), 'QA visual deve validar o isolamento visual do admin e o erro genérico de autenticação.');
 expect(spec.includes("test-results/visual"), 'Capturas devem ser gravadas em diretório de artefatos.');
 expect(!spec.includes('vercel.app'), 'O QA visual deve rodar localmente e não consumir deploy Vercel.');
 expect(workflow.includes('npx playwright install --with-deps chromium'), 'Workflow deve instalar somente Chromium para reduzir custo de CI.');
