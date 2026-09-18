@@ -106,6 +106,12 @@ async function main() {
   if (!radarPageSource.includes("<title>{shape.bairro}</title>") || !radarPageSource.includes('aria-live="polite"')) {
     throw new Error("Mapa deve identificar bairros e anunciar a seleção de forma acessível.");
   }
+  if (!radarPageSource.includes('data-bairro={shape.bairro || undefined}') || !radarPageSource.includes('onPointerUp={(event) => {')) {
+    throw new Error("Mapa deve selecionar bairros por evento pointer delegado no SVG.");
+  }
+  if (!productionRadarSource.includes('classificados: features.filter') || !productionRadarSource.includes('bairro: featureNeighborhood(feature)')) {
+    throw new Error("Payload do mapa deve enviar bairro normalizado explicitamente por feature.");
+  }
 
   await waitForServer();
   seedAdminAndDemand();
