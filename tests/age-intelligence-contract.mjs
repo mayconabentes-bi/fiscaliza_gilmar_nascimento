@@ -10,7 +10,7 @@ const stats = read("src/server/ageIntelligence.ts");
 const radarRoutes = read("src/server/productionRadarRoutes.ts");
 const radarPage = read("src/pages/RadarTerritorial.tsx");
 const app = read("src/server/app.ts");
-const migration = read("supabase/migrations/20260918143000_age_intelligence_bands.sql");
+const migration = read("supabase/migrations/20260918145150_age_intelligence_bands_only.sql");
 
 for (const code of ["AGE_16_17", "AGE_18_24", "AGE_25_34", "AGE_35_44", "AGE_45_59", "AGE_60_PLUS"]) {
   expect(agePolicy.includes(code), `agePolicy deve aceitar ${code}.`);
@@ -24,8 +24,7 @@ for (const code of ["AGE_18_24", "AGE_25_34", "AGE_35_44", "AGE_45_59", "AGE_60_
 
 expect(!register.includes('option value="AGE_18_PLUS"'), "Cadastro novo não deve oferecer a faixa legada AGE_18_PLUS.");
 expect(!demandForm.includes('option value="AGE_18_PLUS"'), "Demanda nova não deve oferecer a faixa legada AGE_18_PLUS.");
-expect(migration.includes("AGE_18_PLUS permanece válido"), "Migration deve preservar compatibilidade histórica.");
-expect(migration.includes("Não cria data de nascimento"), "Migration deve documentar minimização de dados.");
+expect(!migration.includes("AGE_18_PLUS"), "Migration efetiva não deve aceitar AGE_18_PLUS.");
 
 expect(stats.includes("segunda categoria é ocultada") && stats.includes("subtração dos totais"), "Estatística deve aplicar supressão complementar contra reconstrução por diferença.");
 expect(stats.includes("Math.log(6)"), "Diversidade deve usar normalização fixa das seis faixas detalhadas.");
