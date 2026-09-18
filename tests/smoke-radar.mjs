@@ -132,7 +132,9 @@ async function main() {
   }
 
   const territorial = await (await request("/api/radar/manaus/territorios?bairro=Centro", adminCookie)).json();
-  if (!Array.isArray(territorial.territorios) || territorial.territorios[0]?.bairro !== "Centro" || territorial.territorios[0]?.demandas !== 1) {
+  const centro = Array.isArray(territorial.territorios) ? territorial.territorios[0] : null;
+  const centroNormalizado = String(centro?.bairro || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
+  if (!centro || centroNormalizado !== "CENTRO" || centro.demandas !== 1) {
     throw new Error("Cruzamento territorial não preservou a demanda agregada do bairro Centro.");
   }
 
