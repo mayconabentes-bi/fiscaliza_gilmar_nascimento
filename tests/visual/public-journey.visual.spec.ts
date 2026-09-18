@@ -51,14 +51,47 @@ test.beforeEach(async ({ page }) => {
   await mockCommonPublicApis(page);
 });
 
-test('home mantém hierarquia e CTAs sem overflow', async ({ page }, testInfo) => {
+test('home mantém hierarquia e CTAs na primeira dobra', async ({ page }, testInfo) => {
+  await page.addInitScript(() => localStorage.setItem('pulso_privacy_notice_seen', 'true'));
   await page.goto('/');
   await stabilize(page);
 
+  const register = page.getByRole('link', { name: /registrar ocorrência/i });
+  const follow = page.getByRole('link', { name: /acompanhar protocolo/i });
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  await expect(page.getByRole('link', { name: /registrar ocorrência/i })).toBeVisible();
-  await expect(page.getByRole('link', { name: /acompanhar protocolo/i })).toBeVisible();
+  await expect(register).toBeVisible();
+  await expect(follow).toBeVisible();
+
+  const viewport = page.viewportSize();
+  const registerBox = await register.boundingBox();
+  const followBox = await follow.boundingBox();
+  expect(viewport).not.toBeNull();
+  expect(registerBox).not.toBeNull();
+  expect(followBox).not.toBeNull();
+  expect((registerBox?.y || 0) + (registerBox?.height || 0)).toBeLessThanOrEqual(viewport?.height || Number.MAX_SAFE_INTEGER);
+  expect((followBox?.y || 0) + (followBox?.height || 0)).toBeLessThanOrEqual(viewport?.height || Number.MAX_SAFE_INTEGER);
+
   await capture(page, 'home-publica', testInfo.project.name);
+});
+
+test('aviso de privacidade respeita a navegação touch', async ({ page }, testInfo) => {
+  await page.addInitScript(() => localStorage.removeItem('pulso_privacy_notice_seen'));
+  await page.goto('/');
+  await stabilize(page);
+  await page.waitForTimeout(1900);
+
+  const notice = page.locator('[data-privacy-notice]');
+  await expect(notice).toBeVisible();
+
+  const viewport = page.viewportSize();
+  const box = await notice.boundingBox();
+  expect(viewport).not.toBeNull();
+  expect(box).not.toBeNull();
+  if ((viewport?.width || 0) < 1024) {
+    expect((box?.y || 0) + (box?.height || 0)).toBeLessThanOrEqual((viewport?.height || 0) - 70);
+  }
+
+  await capture(page, 'home-privacidade', testInfo.project.name);
 });
 
 test('registro mantém progresso, privacidade e toque confortável', async ({ page }, testInfo) => {
