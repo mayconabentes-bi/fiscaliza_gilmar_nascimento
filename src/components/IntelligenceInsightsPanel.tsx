@@ -98,28 +98,34 @@ export default function IntelligenceInsightsPanel() {
   }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       {context && (
-        <section className="rounded-2xl border border-[#dfe6e2] bg-white p-5 shadow-sm sm:p-6">
-          <div className="flex items-start gap-3"><Network className="mt-0.5 h-5 w-5 text-[#157a55]" /><div><p className="text-sm font-extrabold uppercase tracking-wide text-[#157a55]">Contexto multi-fonte</p><h2 className="mt-1 text-xl font-extrabold text-[#101513]">Indicadores proporcionais e cobertura pública</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-[#69736d]">Cruzamento entre IBGE, SEMINF, GeoManaus, PNCP, SICONFI, ObrasGov e demais fontes monitoradas.</p></div></div>
-          <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <section className="rounded-2xl border border-[#dfe6e2] bg-white p-4 shadow-sm sm:p-6">
+          <div className="flex items-start gap-3"><Network className="mt-0.5 h-5 w-5 text-[#157a55]" /><div><p className="text-sm font-extrabold uppercase tracking-wide text-[#157a55]">Contexto multi-fonte</p><h2 className="mt-1 text-xl font-extrabold text-[#101513]">Indicadores proporcionais e cobertura pública</h2><p className="mt-2 hidden max-w-3xl text-sm leading-6 text-[#69736d] sm:block">Cruzamento entre IBGE, SEMINF, GeoManaus, PNCP, SICONFI, ObrasGov e demais fontes monitoradas.</p><p className="mt-2 text-sm leading-5 text-[#69736d] sm:hidden">Indicadores agregados de múltiplas fontes públicas.</p></div></div>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:mt-5 md:grid-cols-2 xl:grid-cols-4">
             {context.indicators.map((indicator) => (
-              <details key={indicator.key} className="rounded-xl border border-[#e5e9e6] bg-[#fbfcfb] p-4">
-                <summary className="cursor-pointer list-none"><p className="text-sm font-bold text-[#37413c]">{indicator.label}</p><p className="mt-2 text-2xl font-extrabold text-[#101513]">{indicator.value == null ? "—" : formatNumber(indicator.value)}</p></summary>
+              <details key={indicator.key} className="rounded-xl border border-[#e5e9e6] bg-[#fbfcfb] p-3.5 sm:p-4">
+                <summary className="cursor-pointer list-none"><p className="text-sm font-bold text-[#37413c]">{indicator.label}</p><p className="mt-1.5 text-xl font-extrabold text-[#101513] sm:mt-2 sm:text-2xl">{indicator.value == null ? "—" : formatNumber(indicator.value)}</p></summary>
                 <div className="mt-3 border-t border-[#eef0ee] pt-3 text-xs leading-5 text-[#69736d]"><p><strong>Metodologia:</strong> {indicator.methodology}</p><p className="mt-1"><strong>Fontes:</strong> {indicator.sourceKeys.join(", ")}</p></div>
               </details>
             ))}
           </div>
-          <div className="mt-5 grid gap-2 md:grid-cols-2">{context.observations.map((item) => <div key={item} className="rounded-xl bg-[#f6f8f7] px-4 py-3 text-sm text-[#56615b]">{item}</div>)}</div>
+          <>
+            <details className="mt-4 rounded-xl bg-[#f6f8f7] sm:hidden">
+              <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-extrabold text-[#37413c]"><span>Observações metodológicas</span><span className="text-xs text-[#69736d]">{context.observations.length}</span></summary>
+              <div className="border-t border-[#e8ece9] px-4 py-3 space-y-2">{context.observations.map((item) => <p key={item} className="text-sm leading-5 text-[#56615b]">{item}</p>)}</div>
+            </details>
+            <div className="mt-5 hidden gap-2 sm:grid md:grid-cols-2">{context.observations.map((item) => <div key={item} className="rounded-xl bg-[#f6f8f7] px-4 py-3 text-sm text-[#56615b]">{item}</div>)}</div>
+          </>
         </section>
       )}
 
-      <section className="rounded-2xl border border-[#dfe6e2] bg-white p-5 shadow-sm sm:p-6">
+      <section className="rounded-2xl border border-[#dfe6e2] bg-white p-4 shadow-sm sm:p-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
             <div className="flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide text-[#157a55]"><Activity className="h-4 w-4" /> Mudanças observadas</div>
             <h2 className="mt-2 text-xl font-extrabold text-[#101513]">Evolução dos dados consolidados de Manaus</h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-[#69736d]">Comparação descritiva entre snapshots diários. O painel informa o que mudou nos dados coletados, sem score eleitoral, perfilamento individual ou recomendação de direcionamento político.</p>
+            <p className="mt-2 hidden max-w-3xl text-sm leading-6 text-[#69736d] sm:block">Comparação descritiva entre snapshots diários. O painel informa o que mudou nos dados coletados, sem score eleitoral, perfilamento individual ou recomendação de direcionamento político.</p><p className="mt-2 text-sm leading-5 text-[#69736d] sm:hidden">Mudanças descritivas nos dados consolidados, sem perfilamento individual.</p>
           </div>
           {data?.currentPeriod && <div className="rounded-lg bg-[#f4f7f5] px-3 py-2 text-xs font-semibold text-[#69736d]">Atual: {data.currentPeriod}{data.previousPeriod ? ` · anterior: ${data.previousPeriod}` : ""}</div>}
         </div>
@@ -130,7 +136,7 @@ export default function IntelligenceInsightsPanel() {
         {!loading && data && (
           <>
             <div className="mt-5 rounded-xl border border-[#e8ece9] bg-[#f8faf9] px-4 py-3 text-sm text-[#69736d]">{data.message}</div>
-            <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:mt-5 md:grid-cols-2 xl:grid-cols-3">
               {data.changes.map((change) => (
                 <details key={change.metric} className="group rounded-xl border border-[#e5e9e6] bg-white p-4">
                   <summary className="cursor-pointer list-none"><div className="flex items-start justify-between gap-4"><div><p className="text-sm font-bold text-[#37413c]">{change.label}</p><p className="mt-2 text-2xl font-extrabold text-[#101513]">{formatNumber(change.current)}</p></div><Database className="h-4.5 w-4.5 text-[#8a928e]" /></div><div className="mt-3 flex items-center justify-between gap-3"><Delta change={change} />{change.previous != null && <span className="text-xs text-[#8a928e]">Anterior: {formatNumber(change.previous)}</span>}</div></summary>
