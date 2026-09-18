@@ -38,6 +38,7 @@ export default function NovaDemanda({ user }: { user?: any }) {
 
   const locationComplete = Boolean(form.logradouro.trim() && form.bairro.trim());
   const selectedCategory = getDemandCategory(form.categoria) || DEMAND_TAXONOMY[0];
+  const photoDisabled = photoBusy || photos.length >= MAX_PHOTOS || form.faixa_etaria === "UNDER_16";
   const detailsComplete = Boolean(
     form.faixa_etaria &&
     form.faixa_etaria !== "UNDER_16" &&
@@ -387,16 +388,36 @@ export default function NovaDemanda({ user }: { user?: any }) {
             <span className="text-xs font-bold text-[#657089]">{photos.length}/{MAX_PHOTOS}</span>
           </div>
           <div className="mt-2 grid gap-2 sm:grid-cols-2">
-            <label className={`flex min-h-16 cursor-pointer items-center justify-center gap-3 rounded-2xl border border-dashed border-[#c4cfe3] bg-[#f7f9fd] px-4 py-4 text-sm font-bold text-slate-700 transition hover:border-[#7d8fc1] hover:bg-[#eef2fb] ${photos.length >= MAX_PHOTOS ? "pointer-events-none opacity-50" : ""}`}>
+            <div className={`relative flex min-h-16 items-center justify-center gap-3 overflow-hidden rounded-2xl border border-dashed border-[#c4cfe3] bg-[#f7f9fd] px-4 py-4 text-sm font-bold text-slate-700 transition hover:border-[#7d8fc1] hover:bg-[#eef2fb] ${photoDisabled ? "opacity-50" : ""}`}>
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-[#1f2e6e] shadow-sm"><Camera className="h-4.5 w-4.5" /></span>
-              Tirar foto
-              <input type="file" accept="image/*" capture="environment" onChange={handleCameraPhoto} disabled={photoBusy || photos.length >= MAX_PHOTOS || form.faixa_etaria === "UNDER_16"} className="sr-only" />
-            </label>
-            <label className={`flex min-h-16 cursor-pointer items-center justify-center gap-3 rounded-2xl border border-dashed border-[#c4cfe3] bg-[#f7f9fd] px-4 py-4 text-sm font-bold text-slate-700 transition hover:border-[#7d8fc1] hover:bg-[#eef2fb] ${photos.length >= MAX_PHOTOS ? "pointer-events-none opacity-50" : ""}`}>
+              <span>Tirar foto</span>
+              <input
+                name="camera_photo"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                aria-label="Tirar foto com a câmera"
+                onClick={(event) => { event.currentTarget.value = ""; }}
+                onChange={handleCameraPhoto}
+                disabled={photoDisabled}
+                className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+              />
+            </div>
+            <div className={`relative flex min-h-16 items-center justify-center gap-3 overflow-hidden rounded-2xl border border-dashed border-[#c4cfe3] bg-[#f7f9fd] px-4 py-4 text-sm font-bold text-slate-700 transition hover:border-[#7d8fc1] hover:bg-[#eef2fb] ${photoDisabled ? "opacity-50" : ""}`}>
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-[#1f2e6e] shadow-sm"><Images className="h-4.5 w-4.5" /></span>
-              Escolher da galeria
-              <input type="file" accept="image/*" multiple onChange={handleGalleryPhotos} disabled={photoBusy || photos.length >= MAX_PHOTOS || form.faixa_etaria === "UNDER_16"} className="sr-only" />
-            </label>
+              <span>Escolher da galeria</span>
+              <input
+                name="gallery_photos"
+                type="file"
+                accept="image/*"
+                multiple
+                aria-label="Escolher fotos da galeria"
+                onClick={(event) => { event.currentTarget.value = ""; }}
+                onChange={handleGalleryPhotos}
+                disabled={photoDisabled}
+                className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+              />
+            </div>
           </div>
           {photoBusy && <p className="mt-2 text-xs font-semibold text-[#1f2e6e]">Preparando foto(s) para envio...</p>}
           {photos.length > 0 && <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
