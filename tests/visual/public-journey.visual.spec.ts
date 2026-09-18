@@ -216,7 +216,7 @@ test('login cidadão prioriza autenticação comum na primeira dobra', async ({ 
   await stabilize(page);
 
   const email = page.getByLabel('E-mail');
-  const password = page.getByLabel('Senha');
+  const password = page.locator('input[name="password"]');
   const submit = page.getByRole('button', { name: /^entrar$/i });
   await expect(email).toBeVisible();
   await expect(password).toBeVisible();
@@ -265,7 +265,7 @@ test('login mantém erro de credenciais genérico', async ({ page }, testInfo) =
   await page.goto('/login');
   await stabilize(page);
   await page.getByLabel('E-mail').fill('qa@example.com');
-  await page.getByLabel('Senha').fill('senha-invalida');
+  await page.locator('input[name="password"]').fill('senha-invalida');
   await page.getByRole('button', { name: /^entrar$/i }).click();
 
   await expect(page.locator('[data-login-error]')).toBeVisible();
