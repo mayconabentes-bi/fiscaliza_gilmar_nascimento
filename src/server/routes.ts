@@ -211,6 +211,24 @@ export function setupRoutes(app: Express) {
     } finally { db.close(); }
   });
 
+  app.get("/api/minha-conta/demandas", (req, res) => {
+    const claims = citizenClaims(req);
+    if (!claims) return res.status(401).json({ error: "Entre na sua conta para ver seus registros." });
+
+    const db = getDb();
+    try {
+      const user = db.prepare("SELECT id, status FROM usuarios WHERE id = ?").get(claims.id) as any | undefined;
+      if (!user || user.status === "excluido" || user.status === "suspenso") {
+        return res.status(401).json({ error: "Sessão inválida." });
+      }
+      const registros = db.prepare(`SELECT protocolo, municipio, bairro, categoria, tipo_problema, prioridade, status, created_at, updated_at FROM demandas WHERE usuario_id = ? ORDER BY created_at DESC LIMIT 100`).all(claims.id);
+      res.setHeader("Cache-Control", "no-store, private");
+      return res.json({ total: registros.length, registros });
+    } finally {
+      db.close();
+    }
+  });
+
   app.get("/api/demandas/protocolo/:protocolo", (req, res) => {
     let protocolo: string;
     try { protocolo = cleanProtocol(req.params.protocolo); }
