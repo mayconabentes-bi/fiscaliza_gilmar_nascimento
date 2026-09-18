@@ -112,6 +112,15 @@ async function main() {
   if (!radarPageSource.includes('id="radar-bairro-mobile"') || !radarPageSource.includes("bairroOptions.map")) {
     throw new Error("Radar deve oferecer seleção nativa de bairro como fallback no mobile.");
   }
+  if (!radarPageSource.includes("Ampliar mapa") || !radarPageSource.includes("Leitura operacional") || !radarPageSource.includes("Qualidade e fontes")) {
+    throw new Error("Radar mobile deve priorizar território, mapa compacto e detalhes técnicos recolhidos.");
+  }
+  if (!(radarPageSource.indexOf("Explorar território") < radarPageSource.indexOf("Perfil etário dos registros"))) {
+    throw new Error("Fluxo do Radar deve priorizar diagnóstico territorial antes da análise etária complementar.");
+  }
+  if (!radarPageSource.includes('min-h-11 rounded-xl border border-slate-200 px-3 py-2') || !radarPageSource.includes("Limpar seleção")) {
+    throw new Error("Controles territoriais mobile devem preservar alvo de toque confortável.");
+  }
   if (!productionRadarSource.includes('classificados: features.filter') || !productionRadarSource.includes('bairro: featureNeighborhood(feature)')) {
     throw new Error("Payload do mapa deve enviar bairro normalizado explicitamente por feature.");
   }
