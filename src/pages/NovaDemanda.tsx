@@ -301,11 +301,16 @@ export default function NovaDemanda({ user }: { user?: any }) {
     if (mobileFlow && mobileStep === 1) { continueFromLocation(); return; }
     if (mobileFlow && mobileStep === 2) { continueToReview(); return; }
     setLoading(true);
-    if (!form.faixa_etaria) { setError("Informe sua faixa etária para continuar."); setLoading(false); return; }
-    if (form.faixa_etaria === "UNDER_16") { setError("O envio autônomo de demandas no FISCALIZE está disponível a partir de 16 anos."); setLoading(false); return; }
-    if (form.cep && form.cep.replace(/\D/g, "").length !== 8) { setError("Revise o CEP do local do problema."); setLoading(false); return; }
-    if (!form.logradouro.trim() || !form.bairro.trim()) { setError("Informe o logradouro e o bairro da ocorrência."); setLoading(false); return; }
-    if (!form.aviso_privacidade_aceito) { setError("Marque a opção de privacidade para continuar."); setLoading(false); return; }
+    if (!form.faixa_etaria) { setMobileStep(1); setError("Informe sua faixa etária para continuar."); focusField("faixa_etaria"); setLoading(false); return; }
+    if (form.faixa_etaria === "UNDER_16") { setMobileStep(1); setError("O envio autônomo de demandas no FISCALIZE está disponível a partir de 16 anos."); focusField("faixa_etaria"); setLoading(false); return; }
+    if (form.cep && form.cep.replace(/\D/g, "").length !== 8) { setMobileStep(1); setError("Revise o CEP do local do problema."); focusField("cep"); setLoading(false); return; }
+    if (!form.logradouro.trim()) { setMobileStep(1); setError("Informe o logradouro ou via da ocorrência."); focusField("logradouro"); setLoading(false); return; }
+    if (!form.bairro.trim()) { setMobileStep(1); setError("Informe o bairro ou localidade da ocorrência."); focusField("bairro"); setLoading(false); return; }
+    if (!form.nome_solicitante.trim()) { setMobileStep(2); setError("Informe seu nome para continuar."); focusField("nome_solicitante"); setLoading(false); return; }
+    if (!form.categoria) { setMobileStep(2); setError("Selecione a área do problema."); focusField("categoria"); setLoading(false); return; }
+    if (!form.tipo_problema) { setMobileStep(2); setError("Selecione o tipo do problema."); focusField("tipo_problema"); setLoading(false); return; }
+    if (!form.descricao.trim()) { setMobileStep(2); setError("Descreva o que aconteceu."); focusField("descricao"); setLoading(false); return; }
+    if (!form.aviso_privacidade_aceito) { setMobileStep(3); setError("Marque a opção de privacidade para continuar."); focusField("aviso_privacidade_aceito"); setLoading(false); return; }
     try {
       const response = await fetch("/api/demandas", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, cep: form.cep.replace(/\D/g, ""), ...attribution, foto_evidencias_base64: photos.map((photo) => photo.dataUrl) }) });
       const data = await response.json();
@@ -429,7 +434,7 @@ export default function NovaDemanda({ user }: { user?: any }) {
         </div>
       </section>
 
-      <form onSubmit={handleSubmit} className="surface-card space-y-5 p-4 sm:space-y-6 sm:p-8" data-mobile-register-flow="guided">
+      <form onSubmit={handleSubmit} noValidate className="surface-card space-y-5 p-4 sm:space-y-6 sm:p-8" data-mobile-register-flow="guided">
         {error && <div role="alert" className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm leading-relaxed text-red-700">{error}</div>}
 
         <section data-register-step="1" className={`${mobileStep === 1 ? "block" : "hidden"} space-y-5 sm:block`}>
