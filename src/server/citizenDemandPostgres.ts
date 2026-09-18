@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import { getHealthyPostgres } from "./postgres.js";
 import { removeDemandEvidence, uploadDemandEvidence } from "./evidenceStorage.js";
+import { ensureDemandEvidenceSchema } from "./demandEvidencePostgres.js";
 import { cleanEnum, cleanProtocol, cleanText } from "./requestValidation.js";
 import { AgePolicyError, ageBandForActiveParticipation, type AgeBand } from "./agePolicy.js";
 
@@ -72,7 +73,16 @@ export function setupCitizenDemandPostgres(app: Express) {
     const claims = citizenClaims(req);
     let nome: string, contato: string, municipio: string, bairro: string, categoria: string, descricao: string, prioridade: string;
     let cep: string, logradouro: string, numero: string, complemento: string, uf: string, codigoIbge: string;
-    const fotoEvidenciaBase64 = typeof req.body?.foto_evidencia_base64 === "string" ? req.body.foto_evidencia_base64.trim() : "";
+    const legacyPhoto = typeof req.body?.foto_evidencia_base64 === "string" ? req.body.foto_evidencia_base64.trim() : "";
+    const photoCandidates = Array.isArray(req.body?.foto_evidencias_base64)
+      ? req.body.foto_evidencias_base64
+      : legacyPhoto ? [legacyPhoto] : [];
+    const fotoEvidenciasBase64 = photoCandidates
+      .filter((value: unknown) => typeof value === "string" && value.trim())
+      .map((value: string) => value.trim());
+    if (fotoEvidenciasBase64.length > 7) {
+      return res.status(400).json({ error: "É permitido enviar no máximo 7 fotos por demanda." });
+    }
 
     try {
       nome = cleanText(req.body?.nome_solicitante, 160, true);
@@ -117,7 +127,22 @@ export function setupCitizenDemandPostgres(app: Express) {
       }
 
       const id = uuidv4();
-      const uploadedEvidence = fotoEvidenciaBase64 ? await uploadDemandEvidence(id, fotoEvidenciaBase64) : null;
+      let uploadedEvidences: Array<{ path: string; mime: string }> = [];
+      if (fotoEvidenciasBase64.length) {
+        await ensureDemandEvidenceSchema();
+        const uploads = await Promise.allSettled(
+          fotoEvidenciasBase64.map((photo) => uploadDemandEvidence(id, photo))
+        );
+        uploadedEvidences = uploads
+          .filter((result): result is PromiseFulfilledResult<{ path: string; mime: string }> => result.status === "fulfilled")
+          .map((result) => result.value);
+        const failed = uploads.find((result): result is PromiseRejectedResult => result.status === "rejected");
+        if (failed) {
+          await Promise.all(uploadedEvidences.map((item) => removeDemandEvidence(item.path).catch(() => undefined)));
+          throw failed.reason;
+        }
+      }
+      const firstEvidence = uploadedEvidences[0] || null;
       const revisaoMotivo = revisaoReforcada ? "Participante adolescente de 16 a 17 anos — proteção reforçada P0-E." : null;
       let protocolo = "";
       let inserted = false;
@@ -135,8 +160,8 @@ export function setupCitizenDemandPostgres(app: Express) {
               ) values (
                 ${id}, ${protocolo}, ${nome}, ${contato || null}, ${municipio}, ${bairro || null}, ${cep || null}, ${logradouro || null},
                 ${numero || null}, ${complemento || null}, ${uf || null}, ${codigoIbge || null}, ${categoria}, ${descricao},
-                ${prioridade}, 'RECEBIDA', ${usuarioId}, ${uploadedEvidence?.path || null}, ${uploadedEvidence?.mime || null},
-                ${uploadedEvidence ? "PENDENTE" : "NAO_ENVIADA"}, ${privacyVersion()}, ${new Date().toISOString()},
+                ${prioridade}, 'RECEBIDA', ${usuarioId}, ${firstEvidence?.path || null}, ${firstEvidence?.mime || null},
+                ${uploadedEvidences.length ? "PENDENTE" : "NAO_ENVIADA"}, ${privacyVersion()}, ${new Date().toISOString()},
                 ${faixaEtaria}, ${revisaoReforcada}, ${revisaoMotivo}
               )
             `;
@@ -144,18 +169,25 @@ export function setupCitizenDemandPostgres(app: Express) {
               insert into public.historico_status_demandas (id, demanda_id, status_anterior, status_novo, usuario_responsavel_id, observacao)
               values (${uuidv4()}, ${id}, null, 'RECEBIDA', ${usuarioId}, ${revisaoReforcada ? "Registro recebido com proteção reforçada P0-E." : usuarioId ? "Registro recebido por cidadão autenticado." : "Registro recebido pelo formulário público."})
             `;
+            for (let index = 0; index < uploadedEvidences.length; index += 1) {
+              const evidence = uploadedEvidences[index];
+              await transaction`
+                insert into public.demanda_evidencias (id, demanda_id, storage_path, mime, ordem, moderacao_status)
+                values (${uuidv4()}, ${id}, ${evidence.path}, ${evidence.mime}, ${index + 1}, 'PENDENTE')
+              `;
+            }
           });
           inserted = true;
           break;
         } catch (error: any) {
           if (error?.code === "23505") continue;
-          if (uploadedEvidence) await removeDemandEvidence(uploadedEvidence.path).catch(() => undefined);
+          if (uploadedEvidences.length) await Promise.all(uploadedEvidences.map((item) => removeDemandEvidence(item.path).catch(() => undefined)));
           throw error;
         }
       }
 
       if (!inserted) {
-        if (uploadedEvidence) await removeDemandEvidence(uploadedEvidence.path).catch(() => undefined);
+        if (uploadedEvidences.length) await Promise.all(uploadedEvidences.map((item) => removeDemandEvidence(item.path).catch(() => undefined)));
         throw new Error("Não foi possível gerar protocolo único.");
       }
       return res.status(201).json({ id, protocolo, status: "RECEBIDA" });

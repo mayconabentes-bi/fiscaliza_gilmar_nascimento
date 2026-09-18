@@ -39,7 +39,7 @@ export function createApp() {
   app.use(helmet({ contentSecurityPolicy: production ? undefined : false, crossOriginEmbedderPolicy: false }));
   app.set("trust proxy", 1);
   app.use(cors({ origin(origin, callback) { if (!origin || origins.includes(origin)) return callback(null, true); callback(new Error("Origem não permitida por CORS")); }, credentials: true }));
-  app.use(express.json({ limit: "3mb" }));
+  app.use(express.json({ limit: "4mb" }));
   app.use(cookieParser());
   app.use(csrfOriginGuard);
   app.use(citizenRegistrationGuard);

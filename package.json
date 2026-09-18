@@ -26,6 +26,7 @@
     "test:mobile-ui": "node tests/mobile-ui-contract.mjs",
     "test:brand-ui": "node tests/brand-ui-contract.mjs",
     "test:account-recovery": "node tests/account-recovery-contract.mjs",
+    "test:photo-evidence": "node tests/photo-evidence-contract.mjs",
     "test:devices": "node tests/device-matrix.mjs",
     "test:internal-access": "node tests/internal-access-contract.mjs",
     "test:performance": "node tests/performance-budget.mjs",

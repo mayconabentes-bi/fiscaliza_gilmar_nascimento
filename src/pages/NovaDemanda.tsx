@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Bookmark, Camera, Check, CheckCircle2, Clock3, Copy, FileText, MapPin, RefreshCw, Search, Share2, ShieldCheck, Trash2 } from "lucide-react";
+import { ArrowRight, Bookmark, Camera, Check, CheckCircle2, Clock3, Copy, FileText, Images, MapPin, RefreshCw, Search, Share2, ShieldCheck, Trash2, X } from "lucide-react";
 import { getPulsoAttribution, trackPulsoEvent } from "../lib/mobileAnalytics";
 import { prepareMobileEvidence } from "../lib/mobileImage";
 import { clearSafeDemandDraft, readSafeDemandDraft, saveSafeDemandDraft } from "../lib/safeDemandDraft";
 
 const categorias = ["Infraestrutura","Saúde","Educação","Mobilidade","Segurança Pública","Assistência Social","Meio Ambiente","Outro"];
+const MAX_PHOTOS = 7;
+
+type PreparedPhoto = { id: string; dataUrl: string; bytes: number };
 
 function formatCep(value: string) {
   const digits = value.replace(/\D/g, "").slice(0, 8);
@@ -20,8 +23,7 @@ export default function NovaDemanda() {
     nome_solicitante: "", contato: "", municipio: "Manaus", bairro: "", cep: "", logradouro: "", numero: "", complemento: "", uf: "AM", codigo_ibge: "",
     categoria: "Infraestrutura", prioridade: "MEDIA", descricao: "", faixa_etaria: "", aviso_privacidade_aceito: false
   });
-  const [photoData, setPhotoData] = useState("");
-  const [photoName, setPhotoName] = useState("");
+  const [photos, setPhotos] = useState<PreparedPhoto[]>([]);
   const [photoBusy, setPhotoBusy] = useState(false);
   const [cepBusy, setCepBusy] = useState(false);
   const [cepError, setCepError] = useState("");
@@ -144,17 +146,53 @@ export default function NovaDemanda() {
     }
   };
 
-  const handlePhoto = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const addPhotoFiles = async (files: File[]) => {
+    if (!files.length) return;
     markStarted();
-    setPhotoBusy(true); setError("");
+    setError("");
+
+    const remaining = MAX_PHOTOS - photos.length;
+    if (remaining <= 0) {
+      setError("Você já adicionou o limite de 7 fotos.");
+      return;
+    }
+
+    const selected = files.slice(0, remaining);
+    if (files.length > remaining) {
+      setError(`Você pode adicionar no máximo 7 fotos. Foram consideradas apenas as primeiras ${remaining}.`);
+    }
+
+    setPhotoBusy(true);
     try {
-      const prepared = await prepareMobileEvidence(file);
-      setPhotoData(prepared.dataUrl);
-      setPhotoName(`${file.name} · ${Math.round(prepared.bytes / 1024)} KB`);
-    } catch (err: any) { setError(err.message || "Não foi possível preparar a foto."); }
-    finally { setPhotoBusy(false); }
+      const preparedPhotos: PreparedPhoto[] = [];
+      for (const file of selected) {
+        const prepared = await prepareMobileEvidence(file);
+        preparedPhotos.push({
+          id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          dataUrl: prepared.dataUrl,
+          bytes: prepared.bytes,
+        });
+      }
+      setPhotos((current) => [...current, ...preparedPhotos].slice(0, MAX_PHOTOS));
+    } catch (err: any) {
+      setError(err.message || "Não foi possível preparar uma das fotos.");
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
+  const handleCameraPhoto = async (event: ChangeEvent<HTMLInputElement>) => {
+    await addPhotoFiles(Array.from(event.target.files || []));
+    event.target.value = "";
+  };
+
+  const handleGalleryPhotos = async (event: ChangeEvent<HTMLInputElement>) => {
+    await addPhotoFiles(Array.from(event.target.files || []));
+    event.target.value = "";
+  };
+
+  const removePhoto = (id: string) => {
+    setPhotos((current) => current.filter((photo) => photo.id !== id));
   };
 
   const saveDraft = () => {
@@ -192,12 +230,12 @@ export default function NovaDemanda() {
     if (!form.logradouro.trim() || !form.bairro.trim()) { setError("Informe o logradouro e o bairro da ocorrência."); setLoading(false); return; }
     if (!form.aviso_privacidade_aceito) { setError("Marque a opção de privacidade para continuar."); setLoading(false); return; }
     try {
-      const response = await fetch("/api/demandas", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, cep: form.cep.replace(/\D/g, ""), ...attribution, foto_evidencia_base64: photoData || undefined }) });
+      const response = await fetch("/api/demandas", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, cep: form.cep.replace(/\D/g, ""), ...attribution, foto_evidencias_base64: photos.map((photo) => photo.dataUrl) }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Não foi possível enviar seu registro.");
       setProtocolo(data.protocolo); trackPulsoEvent("protocolo_view", attribution);
       clearSafeDemandDraft(); setDraftAvailable(false);
-      setForm(prev => ({ ...prev, descricao: "", aviso_privacidade_aceito: false })); setPhotoData(""); setPhotoName("");
+      setForm(prev => ({ ...prev, descricao: "", aviso_privacidade_aceito: false })); setPhotos([]);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err: any) { setError(err.message || "Não foi possível enviar seu registro."); }
     finally { setLoading(false); }
@@ -318,7 +356,33 @@ export default function NovaDemanda() {
         <label className="block"><span className="text-sm font-bold text-[#172033]">Que tipo de problema é?</span><select name="categoria" value={form.categoria} onChange={handleChange} required className="field text-base">{categorias.map(c => <option key={c}>{c}</option>)}</select></label>
         <label className="block"><span className="text-sm font-bold text-[#172033]">O que aconteceu?</span><textarea name="descricao" value={form.descricao} onChange={handleChange} required rows={5} className="field min-h-36 text-base leading-relaxed" placeholder="Explique o problema. Se puder, informe há quanto tempo acontece e algum detalhe que ajude a localizar o ponto." /></label>
         {detailsComplete && <p aria-live="polite" className="-mt-3 flex items-center gap-1.5 text-xs font-semibold text-[#1f2e6e]"><Check className="h-3.5 w-3.5" /> Informações principais do relato preenchidas.</p>}
-        <div><span className="text-sm font-bold text-[#172033]">Foto <span className="font-normal text-slate-500">(opcional)</span></span><label className="mt-2 flex min-h-16 cursor-pointer items-center justify-center gap-3 rounded-2xl border border-dashed border-[#c4cfe3] bg-[#f7f9fd] px-4 py-4 text-sm font-bold text-slate-700 transition hover:border-[#7d8fc1] hover:bg-[#eef2fb]"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-[#1f2e6e] shadow-sm"><Camera className="h-4.5 w-4.5" /></span>{photoBusy ? "Preparando foto..." : photoName || "Tirar foto ou escolher da galeria"}<input type="file" accept="image/*" capture="environment" onChange={handlePhoto} disabled={photoBusy || form.faixa_etaria === "UNDER_16"} className="sr-only" /></label>{photoName && <p className="mt-2 text-xs font-semibold text-[#1f2e6e]">Foto pronta para envio.</p>}<p className="mt-2 text-xs leading-relaxed text-slate-500"><strong>Privacidade da foto:</strong> se enviada, ela fica em armazenamento privado para análise administrativa e não aparece na consulta pública por protocolo. Evite fotografar pessoas, documentos ou placas quando isso não for necessário.</p></div>
+        <div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm font-bold text-[#172033]">Fotos <span className="font-normal text-slate-500">(opcional)</span></span>
+            <span className="text-xs font-bold text-[#657089]">{photos.length}/{MAX_PHOTOS}</span>
+          </div>
+          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+            <label className={`flex min-h-16 cursor-pointer items-center justify-center gap-3 rounded-2xl border border-dashed border-[#c4cfe3] bg-[#f7f9fd] px-4 py-4 text-sm font-bold text-slate-700 transition hover:border-[#7d8fc1] hover:bg-[#eef2fb] ${photos.length >= MAX_PHOTOS ? "pointer-events-none opacity-50" : ""}`}>
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-[#1f2e6e] shadow-sm"><Camera className="h-4.5 w-4.5" /></span>
+              Tirar foto
+              <input type="file" accept="image/*" capture="environment" onChange={handleCameraPhoto} disabled={photoBusy || photos.length >= MAX_PHOTOS || form.faixa_etaria === "UNDER_16"} className="sr-only" />
+            </label>
+            <label className={`flex min-h-16 cursor-pointer items-center justify-center gap-3 rounded-2xl border border-dashed border-[#c4cfe3] bg-[#f7f9fd] px-4 py-4 text-sm font-bold text-slate-700 transition hover:border-[#7d8fc1] hover:bg-[#eef2fb] ${photos.length >= MAX_PHOTOS ? "pointer-events-none opacity-50" : ""}`}>
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-[#1f2e6e] shadow-sm"><Images className="h-4.5 w-4.5" /></span>
+              Escolher da galeria
+              <input type="file" accept="image/*" multiple onChange={handleGalleryPhotos} disabled={photoBusy || photos.length >= MAX_PHOTOS || form.faixa_etaria === "UNDER_16"} className="sr-only" />
+            </label>
+          </div>
+          {photoBusy && <p className="mt-2 text-xs font-semibold text-[#1f2e6e]">Preparando foto(s) para envio...</p>}
+          {photos.length > 0 && <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {photos.map((photo, index) => <div key={photo.id} className="relative overflow-hidden rounded-2xl border border-[#d7e0f2] bg-white">
+              <img src={photo.dataUrl} alt={`Prévia da foto ${index + 1}`} className="h-28 w-full object-cover" />
+              <button type="button" onClick={() => removePhoto(photo.id)} className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-slate-950/70 text-white" aria-label={`Remover foto ${index + 1}`}><X className="h-4 w-4" /></button>
+              <div className="px-3 py-2"><p className="text-[11px] font-bold text-[#34425b]">Foto {index + 1}</p><p className="text-[10px] text-[#7b8599]">{Math.round(photo.bytes / 1024)} KB</p></div>
+            </div>)}
+          </div>}
+          <p className="mt-2 text-xs leading-relaxed text-slate-500"><strong>Privacidade das fotos:</strong> você pode enviar até 7 imagens. Elas ficam em armazenamento privado para análise administrativa e não aparecem na consulta pública por protocolo. Evite fotografar pessoas, documentos ou placas quando isso não for necessário.</p>
+        </div>
         <label className="block"><span className="text-sm font-bold text-[#172033]">Contato <span className="font-normal text-slate-500">(opcional)</span></span><input name="contato" value={form.contato} onChange={handleChange} autoComplete="tel" placeholder="Telefone ou e-mail, se quiser receber retorno" className="field text-base" /></label>
         <input type="hidden" name="municipio" value={form.municipio} /><input type="hidden" name="uf" value={form.uf} /><input type="hidden" name="codigo_ibge" value={form.codigo_ibge} /><input type="hidden" name="prioridade" value={form.prioridade} />
         <div className="rounded-2xl border border-[#d7e0f2] bg-[#eef2fb] p-4 sm:p-5"><div className="flex gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#1f2e6e]" /><div className="space-y-3"><p className="text-xs leading-relaxed text-[#526078] sm:text-sm">A localização detalhada é usada para identificar o ponto da ocorrência e permanece restrita ao fluxo administrativo. Evite informar endereço residencial se ele não for o local do problema.</p><label className="flex cursor-pointer items-start gap-3 text-sm text-[#33466f]"><input type="checkbox" name="aviso_privacidade_aceito" checked={form.aviso_privacidade_aceito} onChange={handleChange} className="mt-0.5 h-5 w-5 shrink-0 rounded border-[#7d8fc1]" required /><span>Entendi que meus dados serão tratados no FISCALIZE para registrar e acompanhar este caso. Gilmar Nascimento é o controlador dos dados das demandas. <Link to="/privacidade" className="font-extrabold underline">Ver privacidade</Link>.</span></label></div></div></div>
