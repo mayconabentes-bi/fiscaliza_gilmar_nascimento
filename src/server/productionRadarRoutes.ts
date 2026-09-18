@@ -208,14 +208,19 @@ export function setupProductionRadarRoutes(app: Express) {
       });
     }
     res.setHeader("Cache-Control", "private, max-age=300");
+    const features = bairros.source.data.map((feature: any) => ({
+      ...feature,
+      bairro: featureNeighborhood(feature),
+    }));
     return res.json({
       municipio: "Manaus",
-      total: Number(bairros.source?.quality?.total ?? bairros.source.data.length),
-      retornados: bairros.source.data.length,
+      total: Number(bairros.source?.quality?.total ?? features.length),
+      retornados: features.length,
+      classificados: features.filter((feature: any) => Boolean(feature.bairro)).length,
       truncated: Boolean(bairros.source?.quality?.truncated),
       geometryType: "esriGeometryPolygon",
       spatialReference: { wkid: 4326 },
-      features: bairros.source.data,
+      features,
     });
   });
 

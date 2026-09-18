@@ -43,8 +43,8 @@ type Resumo = {
 };
 
 type Fonte = { key: string; etapa: string; nome: string; status: string; endpoint?: string | null; paginaOficial?: string };
-type MapFeature = { attributes?: Record<string, unknown>; geometry?: { rings?: number[][][] } };
-type MapaResponse = { total: number; retornados: number; truncated: boolean; features: MapFeature[] };
+type MapFeature = { bairro?: string; attributes?: Record<string, unknown>; geometry?: { rings?: number[][][] } };
+type MapaResponse = { total: number; retornados: number; classificados?: number; truncated: boolean; features: MapFeature[] };
 type Territorio = { bairro: string; demandas: number; prioritarias: number; concluidas: number; temas: number; taxaConclusao: number; obras: number; unidadesSaude: number; escolas: number };
 type IndicadorExterno = { key: string; nome: string; configurado: boolean; disponibilidade: string; registrosObservados: number | null; tipo: string | null; erro?: string | null };
 type QualityResponse = { dimensions: Array<{ key: string; received: number; classified: number; unclassified: number; coverage: number }>; methodology: string };
@@ -78,6 +78,7 @@ function qualityLabel(key: string) {
 }
 
 function bairroDaFeature(feature: MapFeature) {
+  if (feature.bairro && feature.bairro.trim()) return feature.bairro.trim();
   const attrs = feature.attributes || {};
   for (const key of ["BAIRRO", "NM_BAIRRO", "NOME_BAIRRO", "NOMEBAIRRO", "BAIRRO_NOME", "DS_BAIRRO"]) {
     if (attrs[key] != null && String(attrs[key]).trim()) return String(attrs[key]).trim();
@@ -119,11 +120,21 @@ function MapaBairros({ mapa, selecionado, onSelect }: { mapa: MapaResponse | nul
     <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div><h2 className="text-lg font-bold text-slate-900">Mapa territorial de bairros</h2><p className="mt-1 text-sm text-slate-500">Toque em um bairro para abrir o diagnóstico territorial.</p></div>
-        <span className="text-xs font-semibold text-slate-500">{mapa ? `${mapa.retornados} de ${mapa.total} áreas` : "Camada indisponível"}</span>
+        <span className="text-xs font-semibold text-slate-500">{mapa ? `${mapa.retornados} de ${mapa.total} áreas · ${mapa.classificados ?? mapa.retornados} identificadas` : "Camada indisponível"}</span>
       </div>
       <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
         {shapes.length ? (
-          <svg viewBox="0 0 800 420" role="img" aria-label="Mapa interativo dos bairros de Manaus" className="block w-full h-auto min-h-64">
+          <svg
+            viewBox="0 0 800 420"
+            role="img"
+            aria-label="Mapa interativo dos bairros de Manaus"
+            className="block w-full h-auto min-h-64 touch-manipulation"
+            onPointerUp={(event) => {
+              const target = event.target as SVGElement;
+              const bairro = target.closest?.("[data-bairro]")?.getAttribute("data-bairro") || "";
+              if (bairro) onSelect(bairro);
+            }}
+          >
             <g strokeWidth="0.8" vectorEffect="non-scaling-stroke">
               {shapes.map((shape) => {
                 const active = shape.bairro && normalize(shape.bairro) === normalize(selecionado);
@@ -133,8 +144,10 @@ function MapaBairros({ mapa, selecionado, onSelect }: { mapa: MapaResponse | nul
                     d={shape.d}
                     role={shape.bairro ? "button" : undefined}
                     tabIndex={shape.bairro ? 0 : -1}
+                    data-bairro={shape.bairro || undefined}
                     aria-label={shape.bairro || undefined}
                     aria-pressed={shape.bairro ? Boolean(active) : undefined}
+                    pointerEvents={shape.bairro ? "all" : "none"}
                     onClick={() => shape.bairro && onSelect(shape.bairro)}
                     onKeyDown={(event) => {
                       if (shape.bairro && (event.key === "Enter" || event.key === " ")) {
