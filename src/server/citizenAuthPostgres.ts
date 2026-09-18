@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import { getHealthyPostgres } from "./postgres.js";
 import { cleanEmail, cleanText } from "./requestValidation.js";
-import { AgePolicyError, ageBandForActiveParticipation } from "./agePolicy.js";
+import { AgePolicyError, ageBandForActiveParticipation, type AgeBand } from "./agePolicy.js";
 
 function jwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -213,7 +213,7 @@ export function setupCitizenAuthPostgres(app: Express) {
     let municipio: string;
     let bairro: string;
     let password: string;
-    let faixaEtaria: "AGE_16_17" | "AGE_18_PLUS";
+    let faixaEtaria: AgeBand;
     let protecaoReforcada = false;
 
     try {
@@ -224,7 +224,7 @@ export function setupCitizenAuthPostgres(app: Express) {
       password = cleanText(req.body?.password, 128, true);
       if (password.length < 8) return validationError(res, "A senha deve ter pelo menos 8 caracteres.");
       const agePolicy = ageBandForActiveParticipation(req.body?.faixa_etaria);
-      faixaEtaria = agePolicy.ageBand as "AGE_16_17" | "AGE_18_PLUS";
+      faixaEtaria = agePolicy.ageBand;
       protecaoReforcada = agePolicy.enhancedProtection;
     } catch (error: any) {
       if (error instanceof AgePolicyError) {

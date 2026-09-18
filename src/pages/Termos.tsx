@@ -32,8 +32,8 @@ export default function Termos() {
         <div className="mt-3 space-y-3 text-slate-600 leading-relaxed">
           <p>A participação autônoma para criar conta e registrar demandas está disponível a partir de 16 anos.</p>
           <p>Pessoas com menos de 16 anos podem acessar o conteúdo público, mas não devem criar conta nem registrar demanda de forma autônoma.</p>
-          <p>Participantes de 16 e 17 anos recebem proteção reforçada. O FISCALIZE solicita apenas a faixa etária, sem exigir como padrão data completa de nascimento, documento de identidade ou biometria.</p>
-          <p>A faixa etária serve exclusivamente para aplicar proteção adequada e não pode ser usada para perfilamento político, propaganda eleitoral ou inferência de preferência.</p>
+          <p>Participantes de 16 e 17 anos recebem proteção reforçada. Para participantes adultos, o FISCALIZE utiliza as faixas 18–24, 25–34, 35–44, 45–59 e 60 anos ou mais. Não exigimos como padrão data completa de nascimento, documento de identidade ou biometria.</p>
+          <p>A faixa etária serve para proteção adequada e estatísticas agregadas de funcionamento da plataforma. Não pode ser usada para perfilamento político, propaganda eleitoral ou inferência de preferência individual.</p>
         </div>
       </section>
 
@@ -65,7 +65,7 @@ export default function Termos() {
       <section className="rounded-3xl border border-slate-200 bg-white p-7">
         <h2 className="text-xl font-bold">Privacidade e segurança</h2>
         <div className="mt-3 space-y-3 text-slate-600 leading-relaxed">
-          <p>O tratamento de dados pessoais é detalhado na Política de Privacidade. Para os dados das demandas, Gilmar Nascimento atua como controlador.</p>
+          <p>O tratamento de dados pessoais é detalhado na Política de Privacidade. Para os dados das demandas, Gilmar Nascimento atua como controlador. A consulta de CEP no cadastro é usada apenas para auxiliar o preenchimento de município e bairro; o CEP não integra o perfil da conta.</p>
           <p>O usuário pode consultar os canais e direitos disponíveis naquela página. Medidas técnicas e administrativas são adotadas de forma proporcional aos riscos, sem promessa de segurança absoluta.</p>
         </div>
       </section>
