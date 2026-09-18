@@ -20,6 +20,12 @@ type DemografiaEtaria = {
   coberturaDetalhadaPercentual: number;
   limiarMinimo: number;
   diversidadeGeracional: number | null;
+  diversidadeMinimo: number;
+  registrosParaDiversidade: number;
+  faixasVisiveis: number;
+  faixasProtegidas: number;
+  registrosProtegidos: number | null;
+  supressaoComplementarAplicada: boolean;
   faixas: AgeIntelligenceBand[];
   metodologia: string;
 };
@@ -250,28 +256,60 @@ export default function RadarTerritorial() {
 
         {ageIntelligence ? <>
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="rounded-xl border border-slate-200 p-3"><p className="text-[11px] text-slate-500">Cobertura etária</p><p className="mt-1 text-lg font-bold text-slate-900">{ageIntelligence.coberturaPercentual.toFixed(1)}%</p></div>
-            <div className="rounded-xl border border-slate-200 p-3"><p className="text-[11px] text-slate-500">Classificação detalhada</p><p className="mt-1 text-lg font-bold text-slate-900">{ageIntelligence.coberturaDetalhadaPercentual.toFixed(1)}%</p></div>
-            <div className="rounded-xl border border-slate-200 p-3"><p className="text-[11px] text-slate-500">Não informado</p><p className="mt-1 text-lg font-bold text-slate-900">{ageIntelligence.naoInformados.toLocaleString("pt-BR")}</p></div>
-            <div className="rounded-xl border border-slate-200 p-3"><p className="text-[11px] text-slate-500">Diversidade geracional</p><p className="mt-1 text-lg font-bold text-slate-900">{ageIntelligence.diversidadeGeracional == null ? "Base em formação" : ageIntelligence.diversidadeGeracional.toFixed(3)}</p></div>
+            <div className="rounded-xl border border-slate-200 p-3">
+              <p className="text-[11px] text-slate-500">Base analisada</p>
+              <p className="mt-1 text-lg font-bold text-slate-900">{ageIntelligence.total.toLocaleString("pt-BR")} registros</p>
+              <p className="mt-1 text-[11px] text-slate-500">{ageIntelligence.classificados.toLocaleString("pt-BR")} com faixa informada</p>
+            </div>
+            <div className="rounded-xl border border-slate-200 p-3">
+              <p className="text-[11px] text-slate-500">Cobertura etária</p>
+              <p className="mt-1 text-lg font-bold text-slate-900">{ageIntelligence.coberturaPercentual.toFixed(1)}%</p>
+              <p className="mt-1 text-[11px] text-slate-500">{ageIntelligence.naoInformados.toLocaleString("pt-BR")} não informado{ageIntelligence.naoInformados === 1 ? "" : "s"}</p>
+            </div>
+            <div className="rounded-xl border border-slate-200 p-3">
+              <p className="text-[11px] text-slate-500">Faixas com leitura segura</p>
+              <p className="mt-1 text-lg font-bold text-slate-900">{ageIntelligence.faixasVisiveis} de 6</p>
+              <p className="mt-1 text-[11px] text-slate-500">mínimo de {ageIntelligence.limiarMinimo} registros por faixa</p>
+            </div>
+            <div className="rounded-xl border border-slate-200 p-3">
+              <p className="text-[11px] text-slate-500">Diversidade geracional</p>
+              <p className="mt-1 text-lg font-bold text-slate-900">{ageIntelligence.diversidadeGeracional == null ? `Faltam ${ageIntelligence.registrosParaDiversidade}` : ageIntelligence.diversidadeGeracional.toFixed(3)}</p>
+              <p className="mt-1 text-[11px] text-slate-500">{ageIntelligence.diversidadeGeracional == null ? `índice liberado a partir de ${ageIntelligence.diversidadeMinimo} registros` : "índice de diversidade normalizado"}</p>
+            </div>
           </div>
 
           <div className="mt-5 space-y-3">
-            {ageIntelligence.faixas.map((faixa) => (
-              <div key={faixa.codigo} className="rounded-xl border border-slate-200 p-3 sm:p-4">
-                <div className="flex items-center justify-between gap-3 text-sm">
-                  <div className="min-w-0">
+            {ageIntelligence.faixas
+              .filter((faixa) => faixa.codigo !== "NAO_INFORMADA" && !faixa.suprimido && Number(faixa.total || 0) > 0)
+              .map((faixa) => (
+                <div key={faixa.codigo} className="rounded-xl border border-slate-200 p-3 sm:p-4">
+                  <div className="flex items-center justify-between gap-3 text-sm">
                     <p className="font-semibold text-slate-800">{faixa.label}</p>
+                    <span className="shrink-0 font-semibold text-slate-600">{faixa.total?.toLocaleString("pt-BR") || 0} · {(faixa.percentual || 0).toFixed(1)}%</span>
                   </div>
-                  <span className="shrink-0 font-semibold text-slate-600">{faixa.suprimido ? "Amostra protegida" : `${faixa.total?.toLocaleString("pt-BR") || 0} · ${(faixa.percentual || 0).toFixed(1)}%`}</span>
+                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-indigo-500" style={{ width: `${Math.max(faixa.total ? 3 : 0, faixa.percentual || 0)}%` }} /></div>
                 </div>
-                {!faixa.suprimido && <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-indigo-500" style={{ width: `${Math.max(faixa.total ? 3 : 0, faixa.percentual || 0)}%` }} /></div>}
+              ))}
+
+            {ageIntelligence.faixasProtegidas > 0 && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3 sm:p-4">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                  <div>
+                    <p className="text-sm font-semibold text-amber-900">Outras faixas protegidas</p>
+                    <p className="mt-1 text-xs leading-relaxed text-amber-800">Os grupos pequenos permanecem consolidados para evitar identificação estatística.</p>
+                  </div>
+                  <span className="shrink-0 text-sm font-bold text-amber-900">
+                    {ageIntelligence.registrosProtegidos == null
+                      ? "Detalhamento protegido"
+                      : `${ageIntelligence.registrosProtegidos.toLocaleString("pt-BR")} registros · ${ageIntelligence.faixasProtegidas} faixas`}
+                  </span>
+                </div>
               </div>
-            ))}
+            )}
           </div>
 
           <div className="mt-4 rounded-xl bg-slate-50 p-3 text-xs leading-relaxed text-slate-600">
-            <strong>Proteção estatística:</strong> grupos abaixo de {ageIntelligence.limiarMinimo} registros recebem supressão complementar. O Radar não cruza faixa etária com nome, protocolo, endereço ou identidade.
+            <strong>Como ler:</strong> faixas com pelo menos {ageIntelligence.limiarMinimo} registros aparecem individualmente. Grupos menores são consolidados; quando existe apenas um grupo pequeno, o Radar também oculta uma segunda faixa para impedir reconstrução por diferença.
           </div>
           <p className="mt-3 text-xs leading-relaxed text-slate-500">{ageIntelligence.metodologia}</p>
         </> : <p className="mt-5 text-sm text-slate-500">A inteligência etária ainda não está disponível neste ambiente.</p>}
