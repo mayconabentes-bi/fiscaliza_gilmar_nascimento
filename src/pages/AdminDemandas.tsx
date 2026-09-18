@@ -59,8 +59,8 @@ export default function AdminDemandas() {
   const [salvando, setSalvando] = useState(false);
   const [modalError, setModalError] = useState("");
   const [evidenciaDemanda, setEvidenciaDemanda] = useState<any | null>(null);
-  const [evidenciaUrl, setEvidenciaUrl] = useState("");
-  const [evidenciaMime, setEvidenciaMime] = useState("");
+  const [evidencias, setEvidencias] = useState<any[]>([]);
+  const [evidenciaIndex, setEvidenciaIndex] = useState(0);
   const [evidenciaLoading, setEvidenciaLoading] = useState(false);
   const [evidenciaError, setEvidenciaError] = useState("");
   const [evidenciaObservacao, setEvidenciaObservacao] = useState("");
@@ -72,6 +72,11 @@ export default function AdminDemandas() {
     () => demandaSelecionada ? statusLabel(demandaSelecionada.status) : "",
     [demandaSelecionada]
   );
+
+  const evidenciaAtual = evidencias[evidenciaIndex] || null;
+  const evidenciaUrl = String(evidenciaAtual?.url || "");
+  const evidenciaMime = String(evidenciaAtual?.mime || "");
+  const evidenciaStatusAtual = String(evidenciaAtual?.moderacao_status || evidenciaDemanda?.evidencia_moderacao_status || "PENDENTE");
 
   const fetchDemandas = async () => {
     listControllerRef.current?.abort();
@@ -156,24 +161,26 @@ export default function AdminDemandas() {
 
   const abrirEvidencia = async (demanda: any) => {
     setEvidenciaDemanda(demanda);
-    setEvidenciaUrl("");
-    setEvidenciaMime("");
+    setEvidencias([]);
+    setEvidenciaIndex(0);
     setEvidenciaError("");
     setEvidenciaObservacao("");
     setEvidenciaLoading(true);
 
     try {
       const response = await fetchWithTimeout(
-        `/api/admin/demandas/${demanda.id}/evidencia`,
+        `/api/admin/demandas/${demanda.id}/evidencias`,
         { credentials: "same-origin", cache: "no-store" },
         10000
       );
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Não foi possível carregar a evidência.");
-      setEvidenciaUrl(String(data.url || ""));
-      setEvidenciaMime(String(data.mime || ""));
+      if (!response.ok) throw new Error(data.error || "Não foi possível carregar as evidências.");
+      const items = Array.isArray(data.evidencias) ? data.evidencias : [];
+      if (!items.length) throw new Error("Nenhuma evidência disponível.");
+      setEvidencias(items);
+      setEvidenciaIndex(0);
     } catch (err: any) {
-      setEvidenciaError(err?.name === "AbortError" ? "A evidência demorou além do esperado para abrir." : (err.message || "Não foi possível carregar a evidência."));
+      setEvidenciaError(err?.name === "AbortError" ? "As evidências demoraram além do esperado para abrir." : (err.message || "Não foi possível carregar as evidências."));
     } finally {
       setEvidenciaLoading(false);
     }
@@ -182,20 +189,23 @@ export default function AdminDemandas() {
   const fecharEvidencia = () => {
     if (moderandoEvidencia) return;
     setEvidenciaDemanda(null);
-    setEvidenciaUrl("");
-    setEvidenciaMime("");
+    setEvidencias([]);
+    setEvidenciaIndex(0);
     setEvidenciaError("");
     setEvidenciaObservacao("");
   };
 
   const moderarEvidencia = async (decisao: EvidenciaDecisao) => {
-    if (!evidenciaDemanda) return;
-    if (decisao === "REJEITAR" && !window.confirm("Rejeitar esta evidência removerá a foto do armazenamento privado. Deseja continuar?")) return;
+    if (!evidenciaDemanda || !evidenciaAtual) return;
+    if (decisao === "REJEITAR" && !window.confirm("Rejeitar esta evidência removerá somente esta foto do armazenamento privado. Deseja continuar?")) return;
 
     setModerandoEvidencia(true);
     setEvidenciaError("");
     try {
-      const response = await fetchWithTimeout(`/api/admin/evidencias/${evidenciaDemanda.id}/decisao`, {
+      const endpoint = evidenciaAtual.legacy
+        ? `/api/admin/evidencias/${evidenciaDemanda.id}/decisao`
+        : `/api/admin/evidencias/item/${evidenciaAtual.id}/decisao`;
+      const response = await fetchWithTimeout(endpoint, {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
@@ -204,8 +214,8 @@ export default function AdminDemandas() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Não foi possível registrar a decisão sobre a evidência.");
       setEvidenciaDemanda(null);
-      setEvidenciaUrl("");
-      setEvidenciaMime("");
+      setEvidencias([]);
+      setEvidenciaIndex(0);
       setEvidenciaObservacao("");
       await fetchDemandas();
     } catch (err: any) {
@@ -276,7 +286,7 @@ export default function AdminDemandas() {
                           {evidenciaLabel(demanda.evidencia_moderacao_status)}
                         </span>
                         <button onClick={() => abrirEvidencia(demanda)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50">
-                          <Eye className="h-3.5 w-3.5" /> Ver foto
+                          <Eye className="h-3.5 w-3.5" /> Ver {Number(demanda.evidencia_total || 1)} foto{Number(demanda.evidencia_total || 1) === 1 ? "" : "s"}
                         </button>
                       </div>
                     ) : <span className="text-xs text-slate-400">Sem foto</span>}
@@ -378,18 +388,33 @@ export default function AdminDemandas() {
             <div className="max-h-[72vh] overflow-y-auto px-5 py-5 sm:px-6">
               <div className="mb-4 flex flex-wrap items-center gap-2">
                 <span className="text-xs font-semibold text-slate-500">Moderação:</span>
-                <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${evidenciaStatusClass[evidenciaDemanda.evidencia_moderacao_status] || evidenciaStatusClass.PENDENTE}`}>
-                  {evidenciaLabel(evidenciaDemanda.evidencia_moderacao_status)}
+                <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${evidenciaStatusClass[evidenciaStatusAtual] || evidenciaStatusClass.PENDENTE}`}>
+                  {evidenciaLabel(evidenciaStatusAtual)}
                 </span>
                 {evidenciaMime && <span className="text-xs text-slate-400">{evidenciaMime}</span>}
+                {evidencias.length > 1 && <span className="text-xs font-bold text-slate-500">Foto {evidenciaIndex + 1} de {evidencias.length}</span>}
               </div>
 
               {evidenciaLoading && <div className="flex min-h-72 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-500">Carregando evidência privada...</div>}
 
               {!evidenciaLoading && evidenciaUrl && (
-                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
-                  <img src={evidenciaUrl} alt={`Evidência da demanda ${evidenciaDemanda.protocolo}`} className="mx-auto max-h-[52vh] w-auto max-w-full object-contain" />
-                </div>
+                <>
+                  {evidencias.length > 1 && <div className="mb-3 flex flex-wrap gap-2">
+                    {evidencias.map((item, index) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => { setEvidenciaIndex(index); setEvidenciaObservacao(""); }}
+                        className={`rounded-lg px-3 py-2 text-xs font-bold ${index === evidenciaIndex ? "bg-slate-900 text-white" : "border border-slate-300 bg-white text-slate-700"}`}
+                      >
+                        Foto {index + 1}
+                      </button>
+                    ))}
+                  </div>}
+                  <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
+                    <img src={evidenciaUrl} alt={`Evidência ${evidenciaIndex + 1} da demanda ${evidenciaDemanda.protocolo}`} className="mx-auto max-h-[52vh] w-auto max-w-full object-contain" />
+                  </div>
+                </>
               )}
 
               {!evidenciaLoading && !evidenciaUrl && !evidenciaError && <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">Nenhuma imagem disponível.</div>}
@@ -418,9 +443,9 @@ export default function AdminDemandas() {
             <div className="flex flex-col gap-2 border-t border-slate-200 px-5 py-4 sm:flex-row sm:flex-wrap sm:justify-end sm:px-6">
               <button type="button" onClick={fecharEvidencia} disabled={moderandoEvidencia} className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50">Fechar</button>
               {evidenciaUrl && <>
-                <button type="button" onClick={() => moderarEvidencia("REQUER_ANONIMIZACAO")} disabled={moderandoEvidencia || evidenciaDemanda.evidencia_moderacao_status === "REQUER_ANONIMIZACAO"} className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-bold text-violet-700 hover:bg-violet-100 disabled:opacity-50">Requer anonimização</button>
+                <button type="button" onClick={() => moderarEvidencia("REQUER_ANONIMIZACAO")} disabled={moderandoEvidencia || evidenciaStatusAtual === "REQUER_ANONIMIZACAO"} className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-bold text-violet-700 hover:bg-violet-100 disabled:opacity-50">Requer anonimização</button>
                 <button type="button" onClick={() => moderarEvidencia("REJEITAR")} disabled={moderandoEvidencia} className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 hover:bg-red-100 disabled:opacity-50">Rejeitar e remover</button>
-                <button type="button" onClick={() => moderarEvidencia("APROVAR_PRIVADA")} disabled={moderandoEvidencia || evidenciaDemanda.evidencia_moderacao_status === "APROVADA_PRIVADA"} className="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50">{moderandoEvidencia ? "Salvando..." : "Aprovar privada"}</button>
+                <button type="button" onClick={() => moderarEvidencia("APROVAR_PRIVADA")} disabled={moderandoEvidencia || evidenciaStatusAtual === "APROVADA_PRIVADA"} className="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50">{moderandoEvidencia ? "Salvando..." : "Aprovar privada"}</button>
               </>}
             </div>
           </div>

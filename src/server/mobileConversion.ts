@@ -74,22 +74,37 @@ function validatePublicDemand(req: Request, res: Response, next: NextFunction) {
 }
 
 function persistEvidenceLocal(req: any, demandId: string) {
-  const raw = String(req.body?.foto_evidencia_base64 || "");
-  if (!raw) return;
-  const match = raw.match(/^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/);
-  if (!match) throw new Error("Formato de evidência inválido.");
-  const buffer = Buffer.from(match[2], "base64");
-  if (!buffer.length || buffer.length > 700 * 1024) throw new Error("Evidência excede o limite local de 700 KB.");
-  const ext = match[1] === "jpeg" ? "jpg" : match[1];
-  const mime = `image/${match[1]}`;
+  const legacy = typeof req.body?.foto_evidencia_base64 === "string" ? req.body.foto_evidencia_base64 : "";
+  const candidates = Array.isArray(req.body?.foto_evidencias_base64)
+    ? req.body.foto_evidencias_base64
+    : legacy ? [legacy] : [];
+  const photos = candidates.filter((value: unknown) => typeof value === "string" && value.trim()).slice(0, 7);
+  if (!photos.length) return;
+
   const dir = process.env.EVIDENCE_DIR || path.join(path.dirname(DB_PATH), "evidence");
   fs.mkdirSync(dir, { recursive: true });
-  const filename = `${demandId}.${ext}`;
-  fs.writeFileSync(path.join(dir, filename), buffer, { flag: "wx" });
+  let firstFilename = "";
+  let firstMime = "";
+
+  photos.forEach((raw: string, index: number) => {
+    const match = raw.match(/^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/);
+    if (!match) throw new Error("Formato de evidência inválido.");
+    const buffer = Buffer.from(match[2], "base64");
+    if (!buffer.length || buffer.length > 700 * 1024) throw new Error("Evidência excede o limite local de 700 KB.");
+    const ext = match[1] === "jpeg" ? "jpg" : match[1];
+    const mime = `image/${match[1]}`;
+    const filename = `${demandId}-${index + 1}.${ext}`;
+    fs.writeFileSync(path.join(dir, filename), buffer, { flag: "wx" });
+    if (index === 0) {
+      firstFilename = filename;
+      firstMime = mime;
+    }
+  });
+
   const db = getDb();
   try {
     db.prepare(`UPDATE demandas SET evidencia_foto_path = ?, evidencia_foto_mime = ?, evidencia_moderacao_status = 'PENDENTE' WHERE id = ?`)
-      .run(filename, mime, demandId);
+      .run(firstFilename, firstMime, demandId);
   } finally { db.close(); }
 }
 
