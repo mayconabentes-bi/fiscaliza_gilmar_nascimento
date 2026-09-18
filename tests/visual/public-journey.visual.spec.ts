@@ -210,3 +210,66 @@ test('acompanhamento orienta protocolo não encontrado sem expor dados', async (
   await expect(page.getByRole('button', { name: /tentar novamente/i })).toBeVisible();
   await capture(page, 'acompanhamento-nao-encontrado', testInfo.project.name);
 });
+
+test('login cidadão prioriza autenticação comum na primeira dobra', async ({ page }, testInfo) => {
+  await page.goto('/login');
+  await stabilize(page);
+
+  const email = page.getByLabel('E-mail');
+  const password = page.getByLabel('Senha');
+  const submit = page.getByRole('button', { name: /^entrar$/i });
+  await expect(email).toBeVisible();
+  await expect(password).toBeVisible();
+  await expect(submit).toBeVisible();
+  await expect(page.getByRole('link', { name: /esqueci minha senha/i })).toBeVisible();
+  await expect(page.getByRole('link', { name: /não lembro meu e-mail/i })).toBeVisible();
+
+  const viewport = page.viewportSize();
+  if ((viewport?.width || 0) < 640) {
+    await expect(page.getByRole('button', { name: /acesso administrativo/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Administrador' })).toBeHidden();
+    const submitBox = await submit.boundingBox();
+    expect(submitBox).not.toBeNull();
+    expect((submitBox?.y || 0) + (submitBox?.height || 0)).toBeLessThanOrEqual(viewport?.height || Number.MAX_SAFE_INTEGER);
+  }
+
+  await password.fill('senha-visual');
+  await page.getByRole('button', { name: /mostrar senha/i }).click();
+  await expect(password).toHaveAttribute('type', 'text');
+  await page.getByRole('button', { name: /ocultar senha/i }).click();
+  await expect(password).toHaveAttribute('type', 'password');
+
+  await capture(page, 'login-cidadao', testInfo.project.name);
+});
+
+test('login administrativo permanece claramente restrito', async ({ page }, testInfo) => {
+  await page.goto('/login?admin=1');
+  await stabilize(page);
+
+  await expect(page.locator('[data-login-mode="admin"]')).toBeVisible();
+  await expect(page.getByText(/não existe cadastro de administrador/i)).toBeVisible();
+  await expect(page.getByRole('button', { name: /entrar na área privada/i })).toBeVisible();
+  await expect(page.getByRole('link', { name: /criar conta/i })).toHaveCount(0);
+  await capture(page, 'login-admin', testInfo.project.name);
+});
+
+test('login mantém erro de credenciais genérico', async ({ page }, testInfo) => {
+  await page.route('**/api/auth/login', async (route) => {
+    await route.fulfill({
+      status: 401,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'Credenciais inválidas.' }),
+    });
+  });
+
+  await page.goto('/login');
+  await stabilize(page);
+  await page.getByLabel('E-mail').fill('qa@example.com');
+  await page.getByLabel('Senha').fill('senha-invalida');
+  await page.getByRole('button', { name: /^entrar$/i }).click();
+
+  await expect(page.locator('[data-login-error]')).toBeVisible();
+  await expect(page.getByText('E-mail ou senha inválidos.')).toBeVisible();
+  await capture(page, 'login-erro', testInfo.project.name);
+});
+
