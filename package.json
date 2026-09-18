@@ -44,7 +44,8 @@
     "admin:doctor": "tsx src/scripts/internal_doctor.ts",
     "audit:high": "npm audit --audit-level=high",
     "test:public-journey": "node tests/public-journey-runtime.mjs",
-    "test:postgres-production-like": "node tests/postgres-production-like.mjs"
+    "test:postgres-production-like": "node tests/postgres-production-like.mjs",
+    "test:account-recovery-runtime": "tsx tests/account-recovery-runtime.ts"
   },
   "dependencies": {
     "@google/genai": "^1.52.0",
