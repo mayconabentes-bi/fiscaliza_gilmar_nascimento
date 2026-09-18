@@ -12,6 +12,11 @@ const local = read("src/server/routes.ts");
 const demandForm = read("src/pages/NovaDemanda.tsx");
 
 expect(login.includes('navigate(type === "admin" ? "/dashboard" : "/meus-registros")'), "Login cidadão deve abrir Meus registros.");
+expect(login.includes('const initialType = searchParams.get("admin") === "1" ? "admin" : "cidadao"'), "Login deve manter cidadão como modo padrão e aceitar admin explícito.");
+expect(login.includes('sm:hidden') && login.includes('Acesso administrativo'), "Acesso administrativo deve ficar secundário no mobile.");
+expect(login.includes('aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}') && login.includes('type={showPassword ? "text" : "password"}'), "Login deve permitir revelar a senha somente por ação explícita.");
+expect(login.includes('res.status === 429') && login.includes('Muitas tentativas. Aguarde alguns minutos'), "Login deve orientar rate limit sem revelar detalhes internos.");
+expect(login.includes('localStorage.setItem("user"') && !login.includes('localStorage.setItem("token"') && !login.includes('localStorage.setItem("password"'), "Frontend pode hidratar usuário visual, mas nunca deve persistir token ou senha no localStorage.");
 expect(app.includes('path="/meus-registros"') && app.includes('citizenOnly(<MeusRegistros />)'), "Meus registros deve ser rota exclusiva do cidadão autenticado.");
 expect(app.includes('path="/perfil"') && app.includes('citizenOnly(<PerfilCidadao user={user} />)'), "Perfil deve ser rota exclusiva do cidadão autenticado.");
 expect(app.includes('isCitizen ? <Navigate to="/meus-registros" replace />'), "A raiz autenticada deve redirecionar cidadão para Meus registros.");
