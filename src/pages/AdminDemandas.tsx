@@ -58,8 +58,8 @@ function evidenciaLabel(value: string) {
 export default function AdminDemandas() {
   const [demandas, setDemandas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState("");
-  const [prioridade, setPrioridade] = useState("");
+  const [status, setStatus] = useState(() => new URLSearchParams(window.location.search).get("status") || "");
+  const [prioridade, setPrioridade] = useState(() => new URLSearchParams(window.location.search).get("prioridade") || "");
   const [protocolo, setProtocolo] = useState("");
   const [municipio, setMunicipio] = useState("");
   const [bairro, setBairro] = useState("");
