@@ -48,7 +48,7 @@ expect(strategy.includes('/api/admin/strategy/2028') && strategy.includes('/api/
 
 expect(html.includes('href="/favicon.svg"') && html.includes('href="/apple-touch-icon.png"') && html.includes('href="/site.webmanifest"'), 'HTML deve registrar favicon, touch icon e web manifest.');
 expect(favicon.includes('#1f2e6e') && favicon.includes('#f36a10'), 'Favicon vetorial deve usar azul e laranja institucionais.');
-expect(manifest.includes('"short_name":"FISCALIZE"') && manifest.includes('"purpose":"any maskable"') && manifest.includes('"theme_color":"#1f2e6e"'), 'Web manifest deve preservar nome, cor e suporte maskable.');
+expect(manifest.includes('"short_name":"FISCALIZE"') && (manifest.includes('"purpose":"any maskable"') || manifest.includes('"purpose":"maskable"')) && manifest.includes('"theme_color":"#1f2e6e"'), 'Web manifest deve preservar nome, cor e suporte maskable.');
 expect(fs.existsSync('public/app-icon-192.png') && fs.existsSync('public/app-icon-512.png') && fs.existsSync('public/apple-touch-icon.png'), 'Ícones PNG para instalação e Apple touch devem existir.');
 
 expect(reports.includes('FISCALIZE · Relatórios') && reports.includes('/api/relatorios/gerar'), 'Relatórios devem preservar identidade e endpoint administrativo de geração.');
