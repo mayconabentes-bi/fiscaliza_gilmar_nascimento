@@ -56,13 +56,19 @@ export function buildAgeIntelligenceAggregate(rows: AgeCountRow[], minGroupInput
     if (value > 0 && value < minGroupSize) suppress.add(band.codigo);
   }
 
-  // Se um grupo pequeno for suprimido, uma segunda categoria é ocultada para
-  // impedir reconstrução do valor protegido por simples subtração dos totais.
-  if (suppress.size > 0) {
+  // Supressão complementar só é necessária quando existe exatamente um grupo
+  // pequeno protegido. Com dois ou mais grupos ocultos, mostrar categorias que
+  // já atingiram o limiar não permite reconstruir individualmente os valores
+  // protegidos por simples subtração do total.
+  let complementarySuppressionApplied = false;
+  if (suppress.size === 1) {
     const complement = demographicBands
       .filter((band) => !suppress.has(band.codigo) && (counts.get(band.codigo) || 0) >= minGroupSize)
       .sort((a, b) => (counts.get(a.codigo) || 0) - (counts.get(b.codigo) || 0))[0];
-    if (complement) suppress.add(complement.codigo);
+    if (complement) {
+      suppress.add(complement.codigo);
+      complementarySuppressionApplied = true;
+    }
   }
 
   const faixas = AGE_INTELLIGENCE_BANDS.map((band) => {
@@ -80,6 +86,14 @@ export function buildAgeIntelligenceAggregate(rows: AgeCountRow[], minGroupInput
   const diversityCounts = AGE_INTELLIGENCE_BANDS
     .filter((band) => band.detalhada)
     .map((band) => counts.get(band.codigo) || 0);
+  const protectedValues = demographicBands
+    .filter((band) => suppress.has(band.codigo))
+    .map((band) => counts.get(band.codigo) || 0);
+  const protectedRecords = protectedValues.reduce((sum, value) => sum + value, 0);
+  const visibleDetailedBands = faixas.filter(
+    (band) => band.codigo !== "NAO_INFORMADA" && !band.suprimido && Number(band.total || 0) > 0
+  ).length;
+  const diversityMinimum = 20;
 
   return {
     total,
@@ -90,8 +104,14 @@ export function buildAgeIntelligenceAggregate(rows: AgeCountRow[], minGroupInput
     coberturaDetalhadaPercentual: percentage(detalhados, total),
     limiarMinimo: minGroupSize,
     diversidadeGeracional: demographicDiversity(diversityCounts),
+    diversidadeMinimo: diversityMinimum,
+    registrosParaDiversidade: Math.max(0, diversityMinimum - detalhados),
+    faixasVisiveis: visibleDetailedBands,
+    faixasProtegidas: suppress.size,
+    registrosProtegidos: suppress.size >= 2 ? protectedRecords : null,
+    supressaoComplementarAplicada: complementarySuppressionApplied,
     faixas,
     metodologia:
-      "Faixas autodeclaradas e agregadas no nível municipal. Nenhuma idade exata é armazenada. Grupos pequenos recebem supressão estatística e não são cruzados com bairro, protocolo ou identidade.",
+      "Faixas autodeclaradas e agregadas no nível municipal. Nenhuma idade exata é armazenada. Grupos abaixo do limiar são protegidos; quando há apenas um grupo pequeno, aplica-se supressão complementar. O Radar não cruza faixa etária com bairro, protocolo ou identidade.",
   };
 }
