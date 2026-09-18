@@ -31,8 +31,14 @@ expect(home.includes('min-h-14') && form.includes('min-h-14') && protocol.includ
 expect(form.includes('text-base') && protocol.includes('text-base'), 'Campos críticos devem usar fonte de 16px para evitar zoom involuntário no iOS.');
 expect(form.includes('capture="environment"'), 'Captura de evidência deve favorecer a câmera traseira no celular.');
 const radar = fs.readFileSync("src/pages/RadarTerritorial.tsx", "utf8");
-expect(radar.includes('id="radar-bairro-mobile"') && radar.includes('Escolher bairro'), 'Radar deve oferecer seletor nativo de bairro no mobile.');
+expect(radar.includes('id="radar-bairro-mobile"') && radar.includes('Explorar bairro'), 'Radar deve priorizar seletor nativo de bairro no mobile.');
 expect(radar.includes('onTouchEnd={(event) => {'), 'Mapa do Radar deve possuir fallback touch explícito no mobile.');
+expect(radar.includes('Ampliar mapa') && radar.includes('Reduzir mapa'), 'Mapa do Radar deve ser compacto e expansível no mobile.');
+expect(radar.includes('min-h-11 rounded-xl border border-slate-200 px-3 py-2') && radar.includes('Limpar seleção'), 'Controles territoriais do Radar devem manter alvo de toque confortável.');
+expect(radar.includes('Leitura operacional') && radar.includes('role="tab"') && radar.includes('Bairros</button>') && radar.includes('Problemas</button>'), 'Radar mobile deve consolidar bairros e problemas em leitura operacional por abas.');
+expect(radar.includes('Qualidade e fontes') && radar.includes('sm:hidden'), 'Detalhes técnicos do Radar devem ficar compactados no mobile.');
+expect(radar.indexOf('Explorar território') < radar.indexOf('Perfil etário dos registros'), 'Fluxo mobile deve priorizar território antes da leitura etária complementar.');
+expect(radar.includes('Outras faixas protegidas') && !radar.includes('faixa etária por bairro'), 'Radar mobile deve preservar supressão estatística e impedir cruzamento etário por bairro.');
 expect(triage.includes('data-mobile-triage-cards') && triage.includes('lg:hidden'), 'Triagem deve usar cards dedicados no mobile.');
 expect(triage.includes('hidden overflow-hidden') && triage.includes('lg:block'), 'Tabela de triagem deve ficar restrita ao desktop.');
 expect(triage.includes('Abrir triagem') && triage.includes('min-h-12'), 'Ações críticas da triagem mobile devem ter alvo de toque confortável.');
