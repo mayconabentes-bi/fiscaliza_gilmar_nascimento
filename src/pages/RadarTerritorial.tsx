@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { BarChart3, Database, GraduationCap, HeartPulse, MapPinned, RefreshCw, ShieldCheck, UsersRound, Wrench } from "lucide-react";
 import { fetchWithTimeout } from "../lib/request";
+import { demandCategoryLabel, demandProblemLabel } from "../shared/demandTaxonomy";
 
 type AgeIntelligenceBand = {
   codigo: string;
@@ -8,14 +9,12 @@ type AgeIntelligenceBand = {
   total: number | null;
   percentual: number | null;
   suprimido: boolean;
-  legado: boolean;
 };
 
 type DemografiaEtaria = {
   total: number;
   classificados: number;
   naoInformados: number;
-  legado: number;
   detalhados: number;
   coberturaPercentual: number;
   coberturaDetalhadaPercentual: number;
@@ -31,6 +30,7 @@ type Resumo = {
   indicadores: { bairros: number | null; obras: number | null; unidadesSaude: number | null; escolasMunicipais: number | null; demandasRegistradas: number };
   demandasPorBairro: Array<{ bairro: string; total: number }>;
   demandasPorTema: Array<{ categoria: string; total: number }>;
+  demandasPorTipo: Array<{ categoria: string; tipo_problema: string; total: number }>;
   demografiaEtaria?: DemografiaEtaria;
   disponibilidade: Array<{ name: string; available: boolean; error?: string | null }>;
   fontesExternas: Array<{ key: string; etapa: string; nome: string; status: string; endpoint?: string | null }>;
@@ -262,7 +262,6 @@ export default function RadarTerritorial() {
                 <div className="flex items-center justify-between gap-3 text-sm">
                   <div className="min-w-0">
                     <p className="font-semibold text-slate-800">{faixa.label}</p>
-                    {faixa.legado && <p className="mt-0.5 text-[11px] text-slate-500">Mantida apenas para registros históricos anteriores às novas faixas.</p>}
                   </div>
                   <span className="shrink-0 font-semibold text-slate-600">{faixa.suprimido ? "Amostra protegida" : `${faixa.total?.toLocaleString("pt-BR") || 0} · ${(faixa.percentual || 0).toFixed(1)}%`}</span>
                 </div>
@@ -286,7 +285,7 @@ export default function RadarTerritorial() {
 
       <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm"><h2 className="text-lg font-bold text-slate-900">Demandas por bairro</h2><p className="mt-1 text-sm text-slate-500">Selecione também pelo ranking para abrir o diagnóstico.</p><div className="mt-5 space-y-3">{(resumo?.demandasPorBairro || []).length === 0 ? <p className="text-sm text-slate-500">Ainda não há dados suficientes para o ranking.</p> : resumo?.demandasPorBairro.slice(0, 12).map((item) => <button type="button" onClick={() => setBairroSelecionado(item.bairro)} key={item.bairro} className="block w-full text-left rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"><div className="flex justify-between gap-3 text-sm"><span className="font-medium text-slate-700 truncate">{item.bairro}</span><span className="text-slate-500">{item.total}</span></div><div className="mt-1 h-2 rounded-full bg-slate-100 overflow-hidden"><div className="h-full rounded-full bg-indigo-500" style={{ width: `${Math.max(3, (Number(item.total) / maxBairro) * 100)}%` }} /></div></button>)}</div></div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm"><h2 className="text-lg font-bold text-slate-900">Temas recorrentes</h2><p className="mt-1 text-sm text-slate-500">Sinais agregados para diagnóstico e formulação.</p><div className="mt-5 divide-y divide-slate-100">{(resumo?.demandasPorTema || []).length === 0 ? <p className="text-sm text-slate-500">Nenhum tema consolidado no momento.</p> : resumo?.demandasPorTema.slice(0, 12).map((item) => <div key={item.categoria} className="py-3 flex items-center justify-between gap-4"><span className="text-sm font-medium text-slate-700">{item.categoria}</span><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{item.total}</span></div>)}</div></div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm"><h2 className="text-lg font-bold text-slate-900">Problemas recorrentes</h2><p className="mt-1 text-sm text-slate-500">Tipos estruturados de ocorrência para leitura operacional e estatística.</p><div className="mt-5 divide-y divide-slate-100">{(resumo?.demandasPorTipo || []).length === 0 ? <p className="text-sm text-slate-500">Nenhum problema consolidado no momento.</p> : resumo?.demandasPorTipo.slice(0, 12).map((item) => <div key={`${item.categoria}-${item.tipo_problema}`} className="py-3 flex items-center justify-between gap-4"><span className="min-w-0"><span className="block text-sm font-semibold text-slate-700">{demandProblemLabel(item.categoria, item.tipo_problema)}</span><span className="block text-xs text-slate-400">{demandCategoryLabel(item.categoria)}</span></span><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{item.total}</span></div>)}</div></div>
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm"><div className="flex items-center gap-2"><BarChart3 className="w-5 h-5 text-indigo-600" /><h2 className="text-lg font-bold text-slate-900">Indicadores externos comparáveis</h2></div><p className="mt-1 text-sm text-slate-500">Todas as fontes são exibidas com o mesmo contrato: configuração, disponibilidade e volume observado.</p><div className="mt-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">{indicadoresExternos.map((item) => <div key={item.key} className="rounded-xl border border-slate-200 p-4"><div className="flex items-start justify-between gap-3"><p className="text-sm font-semibold text-slate-900">{item.nome}</p><span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${statusClass(item.disponibilidade)}`}>{statusLabel(item.disponibilidade)}</span></div><dl className="mt-4 grid grid-cols-2 gap-3 text-xs"><div><dt className="text-slate-500">Configurado</dt><dd className="mt-1 font-semibold text-slate-800">{item.configurado ? "Sim" : "Não"}</dd></div><div><dt className="text-slate-500">Registros</dt><dd className="mt-1 font-semibold text-slate-800">{item.registrosObservados == null ? "—" : Number(item.registrosObservados).toLocaleString("pt-BR")}</dd></div></dl>{item.erro && <p className="mt-3 text-xs text-slate-600 line-clamp-3">{item.erro}</p>}</div>)}</div></section>
