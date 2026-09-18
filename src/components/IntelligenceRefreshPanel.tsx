@@ -72,8 +72,8 @@ export default function IntelligenceRefreshPanel({ onRefreshed }: { onRefreshed?
   const lastTime = latest?.finishedAt || latest?.startedAt;
 
   return (
-    <div className="rounded-xl border border-[#dbe8e0] bg-white p-5">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="rounded-xl border border-[#dbe8e0] bg-white p-4 sm:p-5">
+      <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <div className="flex items-center gap-2 text-sm font-extrabold text-[#101513]"><Clock3 className="h-4 w-4 text-[#157a55]" /> Atualização das fontes</div>
           <p className="mt-1 text-sm text-[#69736d]">
@@ -89,7 +89,7 @@ export default function IntelligenceRefreshPanel({ onRefreshed }: { onRefreshed?
           type="button"
           onClick={refreshNow}
           disabled={refreshing || state.running}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#157a55] px-4 py-2 text-sm font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#157a55] px-4 py-2 text-sm font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         >
           <RefreshCw className={`h-4 w-4 ${refreshing || state.running ? "animate-spin" : ""}`} />
           {refreshing || state.running ? "Atualizando fontes..." : "Atualizar agora"}
