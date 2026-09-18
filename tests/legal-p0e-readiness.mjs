@@ -75,9 +75,16 @@ for (const [text, label] of [[register, 'Cadastro'], [intake, 'Demanda']]) {
   expectIncludes(text, [
     'value="UNDER_16"',
     'value="AGE_16_17"',
-    'value="AGE_18_PLUS"',
+    'value="AGE_18_24"',
+    'value="AGE_25_34"',
+    'value="AGE_35_44"',
+    'value="AGE_45_59"',
+    'value="AGE_60_PLUS"',
     'faixa_etaria',
   ], `${label} — faixas etárias`);
+  if (text.includes('option value="AGE_18_PLUS"')) {
+    throw new Error(`${label}: faixa legada AGE_18_PLUS não deve ser oferecida em novos formulários.`);
+  }
 }
 
 expectIncludes(register, [
