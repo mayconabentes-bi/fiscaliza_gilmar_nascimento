@@ -40,7 +40,7 @@ expect(radarPage.includes("Outras faixas protegidas"), "UI deve consolidar grupo
 expect(radarPage.includes("Faixas com leitura segura"), "UI deve indicar quantas faixas podem ser exibidas com segurança.");
 expect(radarPage.includes("Faltam"), "UI deve mostrar progresso objetivo para liberar o índice de diversidade.");
 expect(radarPage.includes("Cobertura etária"), "UI deve mostrar cobertura estatística.");
-expect(radarPage.includes("Classificação detalhada"), "UI deve separar cobertura detalhada de legado.");
+expect(radarPage.includes("Base analisada"), "UI deve mostrar o tamanho da base etária analisada.");
 expect(radarPage.includes("Diversidade geracional"), "UI deve preparar índice de diversidade.");
 expect(!radarPage.includes("faixa etária por bairro"), "UI não deve apresentar cruzamento idade x bairro.");
 
