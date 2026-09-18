@@ -43,4 +43,5 @@ expect(radarPage.includes("Classificação detalhada"), "UI deve separar cobertu
 expect(radarPage.includes("Diversidade geracional"), "UI deve preparar índice de diversidade.");
 expect(!radarPage.includes("faixa etária por bairro"), "UI não deve apresentar cruzamento idade x bairro.");
 
-expect(!agePolicy.includes("AGE_18_PLUS"), "Backend não deve aceitar a faixa legada AGE_18_PLUS.");\nconsole.log("Age intelligence contract OK: apenas faixas detalhadas, ADMIN-only e agregação protegida.");
+expect(!agePolicy.includes("AGE_18_PLUS"), "Backend não deve aceitar a faixa legada AGE_18_PLUS.");
+console.log("Age intelligence contract OK: apenas faixas detalhadas, ADMIN-only e agregação protegida.");
