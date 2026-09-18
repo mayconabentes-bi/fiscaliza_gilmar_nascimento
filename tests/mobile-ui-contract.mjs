@@ -5,6 +5,10 @@ const home = fs.readFileSync('src/pages/Home.tsx', 'utf8');
 const form = fs.readFileSync('src/pages/NovaDemanda.tsx', 'utf8');
 const protocol = fs.readFileSync('src/pages/ConsultaProtocolo.tsx', 'utf8');
 const triage = fs.readFileSync('src/pages/AdminDemandas.tsx', 'utf8');
+const strategy = fs.readFileSync('src/pages/Estrategia2028.tsx', 'utf8');
+const strategyRefresh = fs.readFileSync('src/components/IntelligenceRefreshPanel.tsx', 'utf8');
+const strategyAdvanced = fs.readFileSync('src/components/AdvancedIntelligencePanel.tsx', 'utf8');
+const strategyInsights = fs.readFileSync('src/components/IntelligenceInsightsPanel.tsx', 'utf8');
 const privacy = fs.readFileSync('src/components/LGPDConsent.tsx', 'utf8');
 const html = fs.readFileSync('index.html', 'utf8');
 
@@ -39,6 +43,13 @@ expect(radar.includes('Leitura operacional') && radar.includes('role="tab"') && 
 expect(radar.includes('Qualidade e fontes') && radar.includes('sm:hidden'), 'Detalhes técnicos do Radar devem ficar compactados no mobile.');
 expect(radar.indexOf('Explorar território') < radar.indexOf('Perfil etário dos registros'), 'Fluxo mobile deve priorizar território antes da leitura etária complementar.');
 expect(radar.includes('Outras faixas protegidas') && !radar.includes('faixa etária por bairro'), 'Radar mobile deve preservar supressão estatística e impedir cruzamento etário por bairro.');
+expect(strategy.includes('Visões da Estratégia') && strategy.includes('{ key: "resumo", label: "Resumo" }') && strategy.includes('{ key: "dados", label: "Dados" }') && strategy.includes('{ key: "analises", label: "Análises" }') && strategy.includes('{ key: "plano", label: "Plano" }'), 'Estratégia mobile deve organizar o conteúdo em quatro visões operacionais.');
+expect((strategy.match(/data-strategy-mobile-view=/g) || []).length === 4, 'Estratégia deve preservar quatro blocos mobile sem duplicar conteúdo protegido.');
+expect(strategy.includes('Detalhamento dos sinais operacionais') && strategy.includes('>Andamento</button>') && strategy.includes('>Categorias</button>'), 'Resumo estratégico deve compactar andamento e categorias em abas no mobile.');
+expect(strategy.includes('Estado das fontes') && strategy.includes('sm:hidden') && strategyRefresh.includes('sm:w-auto'), 'Dados estratégicos devem compactar fontes e manter atualização confortável no mobile.');
+expect(strategyAdvanced.includes('Qualidade territorial') && strategyAdvanced.includes('grid grid-cols-2') && strategyInsights.includes('Observações metodológicas'), 'Camadas analíticas devem reduzir densidade vertical no mobile sem remover metodologia.');
+expect(strategy.includes('Roadmap de inteligência') && strategy.includes('open={index === 0}') && strategy.includes('Ciclo semanal') && strategy.includes('Guardrails'), 'Plano estratégico mobile deve usar roadmap e controles progressivamente expansíveis.');
+expect(strategy.includes('/api/admin/strategy/2028') && !strategy.includes('Operação eleitoral') && !strategy.includes('Sala de situação'), 'Arquitetura mobile da Estratégia deve permanecer no perímetro privado e sem conteúdo eleitoral embutido no bundle.');
 expect(triage.includes('data-mobile-triage-cards') && triage.includes('lg:hidden'), 'Triagem deve usar cards dedicados no mobile.');
 expect(triage.includes('hidden overflow-hidden') && triage.includes('lg:block'), 'Tabela de triagem deve ficar restrita ao desktop.');
 expect(triage.includes('Abrir triagem') && triage.includes('min-h-12'), 'Ações críticas da triagem mobile devem ter alvo de toque confortável.');
