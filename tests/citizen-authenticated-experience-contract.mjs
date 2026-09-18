@@ -9,6 +9,7 @@ const records = read("src/pages/MeusRegistros.tsx");
 const profile = read("src/pages/PerfilCidadao.tsx");
 const postgres = read("src/server/citizenDemandPostgres.ts");
 const local = read("src/server/routes.ts");
+const demandForm = read("src/pages/NovaDemanda.tsx");
 
 expect(login.includes('navigate(type === "admin" ? "/dashboard" : "/meus-registros")'), "Login cidadão deve abrir Meus registros.");
 expect(app.includes('path="/meus-registros"') && app.includes('citizenOnly(<MeusRegistros />)'), "Meus registros deve ser rota exclusiva do cidadão autenticado.");
@@ -24,11 +25,16 @@ expect(!citizenMobileBlock.includes("<span>Entrar</span>"), "Menu mobile cidadã
 expect(app.includes('aria-label="Navegação da conta"'), "Desktop deve ter navegação específica da conta.");
 expect(app.includes('to="/perfil"') && app.includes(">Perfil</Link>"), "Desktop cidadão deve conter Perfil.");
 expect(app.includes('data-mobile-logout="user"') && app.includes('aria-label="Sair da conta"'), "Logout cidadão deve permanecer visível no mobile.");
+expect(citizenMobileBlock.includes('to="/meus-registros"') && citizenMobileBlock.includes("<span>Acompanhar</span>"), "Acompanhar no mobile autenticado deve abrir Meus registros.");
+expect(app.includes('aria-label="Navegação da conta"') && app.includes('to="/meus-registros" className={publicNavClass("/meus-registros")}>Acompanhar</Link>'), "Acompanhar no desktop autenticado deve abrir Meus registros.");
 
 expect(records.includes("/api/minha-conta/demandas"), "Tela Meus registros deve carregar somente a API privada da conta.");
 expect(records.includes('to={`/protocolo?codigo='), "Cada registro deve abrir o acompanhamento pelo protocolo.");
 expect(records.includes("Você ainda não tem registros nesta conta."), "Tela deve ter estado vazio orientando novo registro.");
-expect(profile.includes("Perfil") && profile.includes("Faixa etária") && profile.includes("Localidade"), "Perfil deve exibir apenas dados básicos da conta.");
+expect(profile.includes("Perfil") && profile.includes("Faixa etária") && profile.includes("Localidade"), "Perfil deve exibir os dados básicos da conta.");
+expect(profile.includes('"/api/minha-conta/demandas"') && profile.includes("Seus registros") && profile.includes("Ver todos") && profile.includes("slice(0, 3)"), "Perfil deve mostrar resumo dos registros vinculados.");
+expect(demandForm.includes('user?.type === "cidadao"') && demandForm.includes('to="/meus-registros"') && demandForm.includes("Ver meus registros"), "Confirmação de envio autenticado deve oferecer Ver meus registros.");
+expect(app.includes('<NovaDemanda user={user} />'), "Shell deve informar a sessão cidadã ao formulário para exibir o atalho pós-envio.");
 
 for (const source of [postgres, local]) {
   expect(source.includes('app.get("/api/minha-conta/demandas"'), "Backend deve oferecer endpoint privado de Meus registros.");
