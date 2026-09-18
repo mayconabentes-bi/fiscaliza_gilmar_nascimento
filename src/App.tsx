@@ -224,7 +224,7 @@ function AppShell() {
       <header className="sticky top-0 z-30 border-b border-[#dde4ef] bg-[#f5f7fb]/95 backdrop-blur-xl">
         <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
           <Brand privateMode={isAdmin} citizenMode={isCitizen} />
-          {!isAdmin && !onDemandForm && <div className="lg:hidden"><Link to="/demandas/nova" className="primary-button min-h-10 rounded-lg px-4 py-2">Registrar</Link></div>}
+          {!isAdmin && !onDemandForm && location.pathname !== "/" && <div className="lg:hidden"><Link to="/demandas/nova" className="primary-button min-h-10 rounded-lg px-4 py-2">Registrar</Link></div>}
           {isAdmin ? (
             <nav className="hidden items-center gap-1 lg:flex" aria-label="Navegação privada">
               <Link to="/dashboard" className={privateNavClass("/dashboard")}><span className="flex items-center gap-2"><LayoutDashboard className="h-4 w-4" />Painel</span></Link>
