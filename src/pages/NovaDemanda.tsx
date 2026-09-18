@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Bookmark, Camera, Check, CheckCircle2, Clock3, Copy, FileText, Images, MapPin, RefreshCw, Search, Share2, ShieldCheck, Trash2, X } from "lucide-react";
+import { ArrowRight, Bookmark, Camera, Check, CheckCircle2, Copy, FileText, Images, MapPin, RefreshCw, Search, Share2, ShieldCheck, Trash2, X } from "lucide-react";
 import { getPulsoAttribution, trackPulsoEvent } from "../lib/mobileAnalytics";
 import { prepareMobileEvidence } from "../lib/mobileImage";
 import { clearSafeDemandDraft, readSafeDemandDraft, saveSafeDemandDraft } from "../lib/safeDemandDraft";
@@ -19,7 +19,7 @@ export default function NovaDemanda({ user }: { user?: any }) {
   const [publicIntake, setPublicIntake] = useState<boolean | null>(null);
   const [configError, setConfigError] = useState("");
   const [form, setForm] = useState({
-    nome_solicitante: "", contato: "", municipio: "Manaus", bairro: "", cep: "", logradouro: "", numero: "", complemento: "", uf: "AM", codigo_ibge: "",
+    nome_solicitante: user?.type === "cidadao" ? String(user?.nome_completo || "") : "", contato: "", municipio: "Manaus", bairro: "", cep: "", logradouro: "", numero: "", complemento: "", uf: "AM", codigo_ibge: "",
     categoria: DEMAND_TAXONOMY[0].code, tipo_problema: DEMAND_TAXONOMY[0].problems[0].code, prioridade: "MEDIA", descricao: "", faixa_etaria: "", aviso_privacidade_aceito: false
   });
   const [photos, setPhotos] = useState<PreparedPhoto[]>([]);
@@ -33,6 +33,9 @@ export default function NovaDemanda({ user }: { user?: any }) {
   const [copied, setCopied] = useState(false);
   const [draftAvailable, setDraftAvailable] = useState(false);
   const [draftMessage, setDraftMessage] = useState("");
+  const [mobileStep, setMobileStep] = useState<1 | 2 | 3>(1);
+  const [showReference, setShowReference] = useState(false);
+  const [showContact, setShowContact] = useState(false);
   const started = useRef(false);
   const trackedSteps = useRef(new Set<string>());
 
@@ -55,6 +58,64 @@ export default function NovaDemanda({ user }: { user?: any }) {
   ];
   const completedSteps = progressSteps.filter((step) => step.complete).length;
   const progressPercent = Math.round((completedSteps / progressSteps.length) * 100);
+  const mobileStepMeta = [
+    { step: 1, label: "Localize" },
+    { step: 2, label: "Descreva" },
+    { step: 3, label: "Confirme" },
+  ] as const;
+
+  const focusField = (name: string) => {
+    window.setTimeout(() => {
+      const field = document.querySelector<HTMLElement>(`[name="${name}"]`);
+      field?.scrollIntoView({ behavior: "smooth", block: "center" });
+      field?.focus();
+    }, 60);
+  };
+
+  const validateLocationStep = () => {
+    setError("");
+    if (!form.faixa_etaria) { setError("Informe sua faixa etária para continuar."); focusField("faixa_etaria"); return false; }
+    if (form.faixa_etaria === "UNDER_16") { setError("O envio autônomo de demandas no FISCALIZE está disponível a partir de 16 anos."); focusField("faixa_etaria"); return false; }
+    if (form.cep && form.cep.replace(/\D/g, "").length !== 8) { setError("Revise o CEP do local do problema."); focusField("cep"); return false; }
+    if (!form.logradouro.trim()) { setError("Informe o logradouro ou via da ocorrência."); focusField("logradouro"); return false; }
+    if (!form.bairro.trim()) { setError("Informe o bairro ou localidade da ocorrência."); focusField("bairro"); return false; }
+    return true;
+  };
+
+  const validateDetailsStep = () => {
+    setError("");
+    if (!form.nome_solicitante.trim()) { setError("Informe seu nome para continuar."); focusField("nome_solicitante"); return false; }
+    if (!form.categoria) { setError("Selecione a área do problema."); focusField("categoria"); return false; }
+    if (!form.tipo_problema) { setError("Selecione o tipo do problema."); focusField("tipo_problema"); return false; }
+    if (!form.descricao.trim()) { setError("Descreva o que aconteceu."); focusField("descricao"); return false; }
+    return true;
+  };
+
+  const goToStep = (step: 1 | 2 | 3) => {
+    setError("");
+    setMobileStep(step);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const continueFromLocation = () => {
+    if (!validateLocationStep()) return;
+    goToStep(2);
+  };
+
+  const continueToReview = () => {
+    if (!validateDetailsStep()) return;
+    goToStep(3);
+  };
+
+  const ageBandLabel = (value: string) => ({
+    UNDER_16: "Menos de 16 anos",
+    AGE_16_17: "16 a 17 anos",
+    AGE_18_24: "18 a 24 anos",
+    AGE_25_34: "25 a 34 anos",
+    AGE_35_44: "35 a 44 anos",
+    AGE_45_59: "45 a 59 anos",
+    AGE_60_PLUS: "60 anos ou mais",
+  }[value] || value);
 
   const loadPublicConfig = async () => {
     setConfigError("");
@@ -232,7 +293,11 @@ export default function NovaDemanda({ user }: { user?: any }) {
   };
 
   const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault(); setLoading(true); setError(""); setProtocolo(null);
+    event.preventDefault(); setError(""); setProtocolo(null);
+    const mobileFlow = typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches;
+    if (mobileFlow && mobileStep === 1) { continueFromLocation(); return; }
+    if (mobileFlow && mobileStep === 2) { continueToReview(); return; }
+    setLoading(true);
     if (!form.faixa_etaria) { setError("Informe sua faixa etária para continuar."); setLoading(false); return; }
     if (form.faixa_etaria === "UNDER_16") { setError("O envio autônomo de demandas no FISCALIZE está disponível a partir de 16 anos."); setLoading(false); return; }
     if (form.cep && form.cep.replace(/\D/g, "").length !== 8) { setError("Revise o CEP do local do problema."); setLoading(false); return; }
@@ -283,39 +348,74 @@ export default function NovaDemanda({ user }: { user?: any }) {
 
   return (
     <div className="mx-auto max-w-3xl py-2 sm:py-8">
-      <div className="mb-6 sm:mb-8">
-        <div className="flex flex-wrap gap-2"><span className="section-kicker rounded-full border border-[#d7e0f2] bg-white px-3 py-1.5"><FileText className="h-3.5 w-3.5" /> FISCALIZE · Registrar</span><span className="inline-flex items-center gap-2 rounded-full bg-[#fff0e5] px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#b84405]"><Clock3 className="h-3.5 w-3.5" /> leva poucos minutos</span></div>
-        <h1 className="mt-5 text-3xl font-extrabold tracking-[-0.045em] text-[#172033] sm:text-4xl">Registre uma situação do seu bairro.</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#657089] sm:text-base">Informe o local e descreva o que aconteceu. O FISCALIZE organiza o relato e gera um protocolo para você acompanhar depois.</p>
+      <div className="mb-4 sm:mb-8">
+        <div className="flex items-center justify-between gap-3">
+          <span className="section-kicker rounded-full border border-[#d7e0f2] bg-white px-3 py-1.5"><FileText className="h-3.5 w-3.5" /> FISCALIZE · Registrar</span>
+          <span className="text-xs font-extrabold text-[#657089] sm:hidden">Etapa {mobileStep} de 3</span>
+        </div>
+        <h1 className="mt-4 text-3xl font-extrabold tracking-[-0.045em] text-[#172033] sm:mt-5 sm:text-4xl">
+          <span className="sm:hidden">Registrar ocorrência</span>
+          <span className="hidden sm:inline">Registre uma situação do seu bairro.</span>
+        </h1>
+        <p className="mt-2 text-sm leading-relaxed text-[#657089] sm:mt-3 sm:max-w-2xl sm:text-base">
+          <span className="sm:hidden">{mobileStep === 1 ? "Informe sua faixa etária e localize o ponto da ocorrência." : mobileStep === 2 ? "Descreva o problema e, se quiser, adicione evidências." : "Revise as informações e confirme o aviso de privacidade antes de enviar."}</span>
+          <span className="hidden sm:inline">Informe o local e descreva o que aconteceu. O FISCALIZE organiza o relato e gera um protocolo para você acompanhar depois.</span>
+        </p>
 
-        <div data-engagement-progress="transparent" className="mt-5 rounded-2xl border border-[#d7e0f2] bg-[#eef2fb] p-4 sm:p-5">
-          <div className="flex items-center justify-between gap-4 text-xs font-bold text-[#526078] sm:text-sm">
-            <span>Seu progresso no registro</span>
-            <span>{completedSteps} de {progressSteps.length} etapas</span>
+        <div data-engagement-progress="transparent" className="mt-4 rounded-2xl border border-[#d7e0f2] bg-[#eef2fb] p-3.5 sm:mt-5 sm:p-5">
+          <div className="sm:hidden">
+            <div className="flex items-center justify-between gap-3 text-xs font-extrabold text-[#526078]">
+              <span>{mobileStepMeta[mobileStep - 1].label}</span>
+              <span>{mobileStep}/3</span>
+            </div>
+            <div role="progressbar" aria-label="Etapa do registro" aria-valuemin={1} aria-valuemax={3} aria-valuenow={mobileStep} className="mt-3 flex items-center gap-2">
+              {mobileStepMeta.map((item, index) => <div key={item.step} className="flex flex-1 items-center gap-2"><span className={`h-2.5 w-2.5 shrink-0 rounded-full ${item.step <= mobileStep ? "bg-[#1f2e6e]" : "bg-white ring-1 ring-[#c4cfe3]"}`} />{index < 2 && <span className={`h-0.5 flex-1 ${item.step < mobileStep ? "bg-[#1f2e6e]" : "bg-white"}`} />}</div>)}
+            </div>
           </div>
-          <div role="progressbar" aria-label="Progresso do registro" aria-valuemin={0} aria-valuemax={progressSteps.length} aria-valuenow={completedSteps} className="mt-3 h-2 overflow-hidden rounded-full bg-white">
-            <div className="h-full rounded-full bg-[#1f2e6e] transition-[width] duration-300" style={{ width: `${progressPercent}%` }} />
+
+          <div className="hidden sm:block">
+            <div className="flex items-center justify-between gap-4 text-sm font-bold text-[#526078]">
+              <span>Seu progresso no registro</span>
+              <span>{completedSteps} de {progressSteps.length} etapas</span>
+            </div>
+            <div role="progressbar" aria-label="Progresso do registro" aria-valuemin={0} aria-valuemax={progressSteps.length} aria-valuenow={completedSteps} className="mt-3 h-2 overflow-hidden rounded-full bg-white">
+              <div className="h-full rounded-full bg-[#1f2e6e] transition-[width] duration-300" style={{ width: `${progressPercent}%` }} />
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              {progressSteps.map((step, index) => (
+                <div key={step.label} className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-bold ${step.complete ? "border-[#b7c6e8] bg-white text-[#1f2e6e]" : "border-transparent bg-[#f7f9fd] text-[#657089]"}`}>
+                  <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold ${step.complete ? "bg-[#1f2e6e] text-white" : "border border-[#c4cfe3] bg-white text-[#657089]"}`}>{step.complete ? <Check className="h-3.5 w-3.5" /> : `0${index + 1}`}</span>
+                  {step.label}
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 text-xs leading-relaxed text-[#657089]">O indicador é apenas orientativo: não há contagem regressiva, pontuação ou penalidade. Revise as informações no seu ritmo antes de enviar.</p>
           </div>
-          <div className="mt-4 grid gap-2 sm:grid-cols-3">
-            {progressSteps.map((step, index) => (
-              <div key={step.label} className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold sm:text-sm ${step.complete ? "border-[#b7c6e8] bg-white text-[#1f2e6e]" : "border-transparent bg-[#f7f9fd] text-[#657089]"}`}>
-                <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold ${step.complete ? "bg-[#1f2e6e] text-white" : "border border-[#c4cfe3] bg-white text-[#657089]"}`}>{step.complete ? <Check className="h-3.5 w-3.5" /> : `0${index + 1}`}</span>
-                {step.label}
-              </div>
-            ))}
-          </div>
-          <p className="mt-3 text-xs leading-relaxed text-[#657089]">O indicador é apenas orientativo: não há contagem regressiva, pontuação ou penalidade. Revise as informações no seu ritmo antes de enviar.</p>
         </div>
       </div>
 
-      <section data-safe-draft="explicit" className="mb-6 rounded-2xl border border-[#d7e0f2] bg-white p-4 sm:p-5">
+      <details data-safe-draft="explicit" className="mb-4 rounded-2xl border border-[#d7e0f2] bg-white sm:hidden">
+        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-extrabold text-[#172033]">
+          <span className="flex items-center gap-2"><Bookmark className="h-4 w-4 text-[#1f2e6e]" /> Salvar para continuar depois</span>
+          {draftAvailable && <span className="text-[11px] text-[#1f2e6e]">rascunho disponível</span>}
+        </summary>
+        <div className="border-t border-[#eef2fb] px-4 py-4">
+          <p className="text-xs leading-5 text-[#657089]">Somente bairro/localidade, área e tipo de problema são armazenados neste dispositivo por até 6 horas. CEP, endereço, nome, contato, descrição, fotos, faixa etária e aceite de privacidade não são salvos.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {draftAvailable && <button type="button" onClick={restoreDraft} className="secondary-button min-h-11 px-4 text-sm">Restaurar</button>}
+            <button type="button" onClick={saveDraft} className="secondary-button min-h-11 px-4 text-sm"><Bookmark className="h-4 w-4" /> {draftAvailable ? "Atualizar" : "Salvar rascunho"}</button>
+            {draftAvailable && <button type="button" onClick={deleteDraft} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold text-[#657089] hover:bg-[#f7f9fd]"><Trash2 className="h-4 w-4" /> Apagar</button>}
+          </div>
+          {draftMessage && <p aria-live="polite" className="mt-2 text-xs font-semibold text-[#1f2e6e]">{draftMessage}</p>}
+        </div>
+      </details>
+
+      <section data-safe-draft="explicit-desktop" className="mb-6 hidden rounded-2xl border border-[#d7e0f2] bg-white p-5 sm:block">
         <div className="flex items-start gap-3">
           <span className="icon-tile"><Bookmark className="h-4 w-4" /></span>
           <div className="min-w-0 flex-1">
             <h2 className="text-sm font-extrabold text-[#172033]">Rascunho seguro neste dispositivo</h2>
-            <p className="mt-1 text-xs leading-relaxed text-[#657089]">
-              Se você quiser, salve somente bairro/localidade, área e tipo de problema por até 6 horas. CEP, rua, número, complemento, nome, contato, descrição, foto, faixa etária e aceite de privacidade não são salvos.
-            </p>
+            <p className="mt-1 text-xs leading-relaxed text-[#657089]">Se você quiser, salve somente bairro/localidade, área e tipo de problema por até 6 horas. CEP, rua, número, complemento, nome, contato, descrição, foto, faixa etária e aceite de privacidade não são salvos.</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {draftAvailable && <button type="button" onClick={restoreDraft} className="secondary-button min-h-11 px-4 text-sm">Restaurar rascunho</button>}
               <button type="button" onClick={saveDraft} className="secondary-button min-h-11 px-4 text-sm"><Bookmark className="h-4 w-4" /> {draftAvailable ? "Atualizar rascunho" : "Salvar rascunho"}</button>
@@ -326,116 +426,147 @@ export default function NovaDemanda({ user }: { user?: any }) {
         </div>
       </section>
 
-      <form onSubmit={handleSubmit} className="surface-card space-y-6 p-5 sm:p-8">
-           {error && <div role="alert" className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm leading-relaxed text-red-700">{error}</div>}
-        <label className="block">
-          <span className="text-sm font-bold text-[#172033]">Faixa etária</span>
-          <select name="faixa_etaria" value={form.faixa_etaria} onChange={handleChange} required className="field">
-            <option value="">Selecione</option>
-            <option value="UNDER_16">Menos de 16 anos</option>
-            <option value="AGE_16_17">16 a 17 anos</option>
-            <option value="AGE_18_24">18 a 24 anos</option>
-            <option value="AGE_25_34">25 a 34 anos</option>
-            <option value="AGE_35_44">35 a 44 anos</option>
-            <option value="AGE_45_59">45 a 59 anos</option>
-            <option value="AGE_60_PLUS">60 anos ou mais</option>
-          </select>
-          <span className="mt-1.5 block text-xs leading-relaxed text-slate-500">Pedimos apenas a faixa etária para aplicar as proteções adequadas. O envio autônomo de demandas começa aos 16 anos.</span>
-        </label>
-        {form.faixa_etaria === "UNDER_16" && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-amber-900">Você pode consultar o conteúdo público do FISCALIZE, mas o envio autônomo de demandas está disponível a partir de 16 anos.</div>}
-        {form.faixa_etaria === "AGE_16_17" && <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 text-sm leading-relaxed text-indigo-900"><strong>Proteção reforçada:</strong> seu registro terá tratamento mais restrito. Evite informar escola, endereço residencial, dados de saúde, documentos ou outras informações pessoais que não sejam necessárias.</div>}
+      <form onSubmit={handleSubmit} className="surface-card space-y-5 p-4 sm:space-y-6 sm:p-8" data-mobile-register-flow="guided">
+        {error && <div role="alert" className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm leading-relaxed text-red-700">{error}</div>}
 
-        <section className="rounded-2xl border border-[#d7e0f2] bg-[#f7f9fd] p-4 sm:p-5">
-          <div className="flex items-start gap-3"><MapPin className="mt-0.5 h-5 w-5 shrink-0 text-[#1f2e6e]" /><div><h2 className="font-extrabold text-[#172033]">Local da ocorrência</h2><p className="mt-1 text-xs leading-relaxed text-slate-500">Informe o endereço do problema, não seu endereço residencial. O CEP é opcional, mas ajuda a preencher e padronizar a localização.</p></div></div>
-          <div className="mt-5 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-            <label className="block"><span className="text-sm font-bold text-[#172033]">CEP do local do problema <span className="font-normal text-slate-500">(opcional)</span></span><input name="cep" inputMode="numeric" autoComplete="postal-code" value={form.cep} onChange={handleCepChange} onBlur={() => { if (form.cep.replace(/\D/g, "").length === 8 && !cepResolved) void lookupCep(); }} className="field text-base" placeholder="69000-000" /></label>
-            <button type="button" onClick={() => void lookupCep()} disabled={cepBusy || !form.cep} className="secondary-button min-h-12 px-5 disabled:opacity-50">{cepBusy ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}{cepBusy ? "Consultando" : "Buscar CEP"}</button>
-          </div>
-          {cepError && <p className="mt-2 text-xs leading-relaxed text-amber-700">{cepError}</p>}
-          {cepResolved && <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-[#1f2e6e]"><Check className="h-3.5 w-3.5" /> CEP localizado. Revise o endereço antes de enviar.</p>}
-          <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_11rem]">
-            <label className="block"><span className="text-sm font-bold text-[#172033]">Logradouro ou via</span><input name="logradouro" value={form.logradouro} onChange={handleChange} required className="field text-base" placeholder="Ex.: Av. Torquato Tapajós" /></label>
-            <label className="block"><span className="text-sm font-bold text-[#172033]">Número ou referência <span className="font-normal text-slate-500">(opcional)</span></span><input name="numero" value={form.numero} onChange={handleChange} className="field text-base" placeholder="Ex.: 1200 ou s/n" /></label>
-          </div>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <label className="block"><span className="text-sm font-bold text-[#172033]">Bairro ou localidade</span><input name="bairro" value={form.bairro} onChange={handleChange} autoComplete="address-level3" required className="field text-base" placeholder="Ex.: Cidade Nova" /></label>
-            <label className="block"><span className="text-sm font-bold text-[#172033]">Complemento / ponto de referência <span className="font-normal text-slate-500">(opcional)</span></span><input name="complemento" value={form.complemento} onChange={handleChange} className="field text-base" placeholder="Ex.: em frente à escola" /></label>
-          </div>
-          <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-500"><MapPin className="h-3.5 w-3.5" /> Manaus / AM</p>
-          {locationComplete && <p aria-live="polite" className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-[#1f2e6e]"><Check className="h-3.5 w-3.5" /> Localização principal preenchida.</p>}
+        <section data-register-step="1" className={`${mobileStep === 1 ? "block" : "hidden"} space-y-5 sm:block`}>
+          <label className="block">
+            <span className="text-sm font-bold text-[#172033]">Faixa etária</span>
+            <select name="faixa_etaria" value={form.faixa_etaria} onChange={handleChange} required className="field text-base">
+              <option value="">Selecione</option>
+              <option value="UNDER_16">Menos de 16 anos</option>
+              <option value="AGE_16_17">16 a 17 anos</option>
+              <option value="AGE_18_24">18 a 24 anos</option>
+              <option value="AGE_25_34">25 a 34 anos</option>
+              <option value="AGE_35_44">35 a 44 anos</option>
+              <option value="AGE_45_59">45 a 59 anos</option>
+              <option value="AGE_60_PLUS">60 anos ou mais</option>
+            </select>
+            <span className="mt-1.5 block text-xs leading-relaxed text-slate-500">Pedimos apenas a faixa etária para aplicar as proteções adequadas. O envio autônomo de demandas começa aos 16 anos.</span>
+          </label>
+          {form.faixa_etaria === "UNDER_16" && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-amber-900">Você pode consultar o conteúdo público do FISCALIZE, mas o envio autônomo de demandas está disponível a partir de 16 anos.</div>}
+          {form.faixa_etaria === "AGE_16_17" && <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 text-sm leading-relaxed text-indigo-900"><strong>Proteção reforçada:</strong> seu registro terá tratamento mais restrito. Evite informar escola, endereço residencial, dados de saúde, documentos ou outras informações pessoais que não sejam necessárias.</div>}
+
+          <section className="rounded-2xl border border-[#d7e0f2] bg-[#f7f9fd] p-4 sm:p-5">
+            <div className="flex items-start gap-3"><MapPin className="mt-0.5 h-5 w-5 shrink-0 text-[#1f2e6e]" /><div><h2 className="font-extrabold text-[#172033]">Local da ocorrência</h2><p className="mt-1 text-xs leading-relaxed text-slate-500">Informe o endereço do problema, não seu endereço residencial. O CEP é opcional e pode preencher parte da localização automaticamente.</p></div></div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end sm:gap-4">
+              <label className="block"><span className="text-sm font-bold text-[#172033]">CEP do local <span className="font-normal text-slate-500">(opcional)</span></span><input name="cep" inputMode="numeric" autoComplete="postal-code" value={form.cep} onChange={handleCepChange} onBlur={() => { if (form.cep.replace(/\D/g, "").length === 8 && !cepResolved) void lookupCep(); }} className="field text-base" placeholder="69000-000" /></label>
+              <button type="button" onClick={() => void lookupCep()} disabled={cepBusy || !form.cep} className="secondary-button min-h-12 px-5 disabled:opacity-50">{cepBusy ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}{cepBusy ? "Consultando" : "Buscar CEP"}</button>
+            </div>
+            {cepError && <p className="mt-2 text-xs leading-relaxed text-amber-700">{cepError}</p>}
+            {cepResolved && <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-[#1f2e6e]"><Check className="h-3.5 w-3.5" /> CEP localizado. Revise o endereço.</p>}
+
+            <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_11rem]">
+              <label className="block"><span className="text-sm font-bold text-[#172033]">Logradouro ou via</span><input name="logradouro" value={form.logradouro} onChange={handleChange} required className="field text-base" placeholder="Ex.: Av. Torquato Tapajós" /></label>
+              <label className="block"><span className="text-sm font-bold text-[#172033]">Número <span className="font-normal text-slate-500">(opcional)</span></span><input name="numero" value={form.numero} onChange={handleChange} className="field text-base" placeholder="Ex.: 1200 ou s/n" /></label>
+            </div>
+            <div className="mt-4">
+              <label className="block"><span className="text-sm font-bold text-[#172033]">Bairro ou localidade</span><input name="bairro" value={form.bairro} onChange={handleChange} autoComplete="address-level3" required className="field text-base" placeholder="Ex.: Cidade Nova" /></label>
+            </div>
+
+            {!showReference && !form.complemento && <button type="button" onClick={() => setShowReference(true)} className="mt-3 min-h-11 text-sm font-extrabold text-[#1f2e6e] sm:hidden">+ Adicionar ponto de referência</button>}
+            <label className={`mt-4 ${showReference || form.complemento ? "block" : "hidden"} sm:block`}><span className="text-sm font-bold text-[#172033]">Complemento / ponto de referência <span className="font-normal text-slate-500">(opcional)</span></span><input name="complemento" value={form.complemento} onChange={handleChange} className="field text-base" placeholder="Ex.: em frente à escola" /></label>
+
+            <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-500"><MapPin className="h-3.5 w-3.5" /> Manaus / AM</p>
+            {locationComplete && <p aria-live="polite" className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-[#1f2e6e]"><Check className="h-3.5 w-3.5" /> Localização principal preenchida.</p>}
+          </section>
+
+          <button type="button" onClick={continueFromLocation} disabled={form.faixa_etaria === "UNDER_16"} className="primary-button min-h-14 w-full text-base disabled:cursor-not-allowed disabled:opacity-50 sm:hidden">Continuar <ArrowRight className="h-5 w-5" /></button>
         </section>
 
-        <label className="block"><span className="text-sm font-bold text-[#172033]">Seu nome</span><input name="nome_solicitante" value={form.nome_solicitante} onChange={handleChange} autoComplete="name" required className="field text-base" placeholder="Digite seu nome" /></label>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block">
-            <span className="text-sm font-bold text-[#172033]">Área do problema</span>
-            <select name="categoria" value={form.categoria} onChange={handleChange} required className="field text-base">
-              {DEMAND_TAXONOMY.map((item) => <option key={item.code} value={item.code}>{item.label}</option>)}
-            </select>
-          </label>
-          <label className="block">
-            <span className="text-sm font-bold text-[#172033]">Qual é o problema?</span>
-            <select name="tipo_problema" value={form.tipo_problema} onChange={handleChange} required className="field text-base">
-              {selectedCategory.problems.map((item) => <option key={item.code} value={item.code}>{item.label}</option>)}
-            </select>
-          </label>
-        </div>
-        <label className="block"><span className="text-sm font-bold text-[#172033]">O que aconteceu?</span><textarea name="descricao" value={form.descricao} onChange={handleChange} required rows={5} className="field min-h-36 text-base leading-relaxed" placeholder="Explique o problema. Se puder, informe há quanto tempo acontece e algum detalhe que ajude a localizar o ponto." /></label>
-        {detailsComplete && <p aria-live="polite" className="-mt-3 flex items-center gap-1.5 text-xs font-semibold text-[#1f2e6e]"><Check className="h-3.5 w-3.5" /> Informações principais do relato preenchidas.</p>}
-        <div>
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-sm font-bold text-[#172033]">Fotos <span className="font-normal text-slate-500">(opcional)</span></span>
-            <span className="text-xs font-bold text-[#657089]">{photos.length}/{MAX_PHOTOS}</span>
+        <section data-register-step="2" className={`${mobileStep === 2 ? "block" : "hidden"} space-y-5 sm:block`}>
+          <label className="block"><span className="text-sm font-bold text-[#172033]">Seu nome</span><input name="nome_solicitante" value={form.nome_solicitante} onChange={handleChange} autoComplete="name" required className="field text-base" placeholder="Digite seu nome" /></label>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-sm font-bold text-[#172033]">Área do problema</span>
+              <select name="categoria" value={form.categoria} onChange={handleChange} required className="field text-base">
+                {DEMAND_TAXONOMY.map((item) => <option key={item.code} value={item.code}>{item.label}</option>)}
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-sm font-bold text-[#172033]">Qual é o problema?</span>
+              <select name="tipo_problema" value={form.tipo_problema} onChange={handleChange} required className="field text-base">
+                {selectedCategory.problems.map((item) => <option key={item.code} value={item.code}>{item.label}</option>)}
+              </select>
+            </label>
           </div>
-          <div className="mt-2 grid gap-2 sm:grid-cols-2">
-            <div className={`relative flex min-h-16 items-center justify-center gap-3 overflow-hidden rounded-2xl border border-dashed border-[#c4cfe3] bg-[#f7f9fd] px-4 py-4 text-sm font-bold text-slate-700 transition hover:border-[#7d8fc1] hover:bg-[#eef2fb] ${photoDisabled ? "opacity-50" : ""}`}>
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-[#1f2e6e] shadow-sm"><Camera className="h-4.5 w-4.5" /></span>
-              <span>Tirar foto</span>
-              <input
-                name="camera_photo"
-                type="file"
-                accept="image/*"
-                capture="environment"
-                aria-label="Tirar foto com a câmera"
-                onClick={(event) => { event.currentTarget.value = ""; }}
-                onChange={handleCameraPhoto}
-                disabled={photoDisabled}
-                className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
-              />
+
+          <label className="block"><span className="text-sm font-bold text-[#172033]">O que aconteceu?</span><textarea name="descricao" value={form.descricao} onChange={handleChange} required rows={5} className="field min-h-36 text-base leading-relaxed" placeholder="O que aconteceu? Onde exatamente? Há quanto tempo?" /><span className="mt-1.5 block text-xs leading-5 text-slate-500">Evite informar documentos, dados de saúde ou dados pessoais de terceiros que não sejam necessários para descrever o problema.</span></label>
+          {detailsComplete && <p aria-live="polite" className="-mt-2 flex items-center gap-1.5 text-xs font-semibold text-[#1f2e6e]"><Check className="h-3.5 w-3.5" /> Informações principais do relato preenchidas.</p>}
+
+          <div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm font-bold text-[#172033]">Adicionar evidências <span className="font-normal text-slate-500">(opcional)</span></span>
+              <span className="text-xs font-bold text-[#657089]">{photos.length} de {MAX_PHOTOS}</span>
             </div>
-            <div className={`relative flex min-h-16 items-center justify-center gap-3 overflow-hidden rounded-2xl border border-dashed border-[#c4cfe3] bg-[#f7f9fd] px-4 py-4 text-sm font-bold text-slate-700 transition hover:border-[#7d8fc1] hover:bg-[#eef2fb] ${photoDisabled ? "opacity-50" : ""}`}>
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-[#1f2e6e] shadow-sm"><Images className="h-4.5 w-4.5" /></span>
-              <span>Escolher da galeria</span>
-              <input
-                name="gallery_photos"
-                type="file"
-                accept="image/*"
-                multiple
-                aria-label="Escolher fotos da galeria"
-                onClick={(event) => { event.currentTarget.value = ""; }}
-                onChange={handleGalleryPhotos}
-                disabled={photoDisabled}
-                className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
-              />
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <div className={`relative flex min-h-14 items-center justify-center gap-2 overflow-hidden rounded-2xl border border-dashed border-[#c4cfe3] bg-[#f7f9fd] px-3 py-3 text-sm font-bold text-slate-700 transition hover:border-[#7d8fc1] hover:bg-[#eef2fb] ${photoDisabled ? "opacity-50" : ""}`}>
+                <Camera className="h-4.5 w-4.5 text-[#1f2e6e]" /><span>Câmera</span>
+                <input name="camera_photo" type="file" accept="image/*" capture="environment" aria-label="Tirar foto com a câmera" onClick={(event) => { event.currentTarget.value = ""; }} onChange={handleCameraPhoto} disabled={photoDisabled} className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed" />
+              </div>
+              <div className={`relative flex min-h-14 items-center justify-center gap-2 overflow-hidden rounded-2xl border border-dashed border-[#c4cfe3] bg-[#f7f9fd] px-3 py-3 text-sm font-bold text-slate-700 transition hover:border-[#7d8fc1] hover:bg-[#eef2fb] ${photoDisabled ? "opacity-50" : ""}`}>
+                <Images className="h-4.5 w-4.5 text-[#1f2e6e]" /><span>Galeria</span>
+                <input name="gallery_photos" type="file" accept="image/*" multiple aria-label="Escolher fotos da galeria" onClick={(event) => { event.currentTarget.value = ""; }} onChange={handleGalleryPhotos} disabled={photoDisabled} className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed" />
+              </div>
             </div>
+            {photoBusy && <p className="mt-2 text-xs font-semibold text-[#1f2e6e]">Preparando foto(s) para envio...</p>}
+            {photos.length > 0 && <div className="mt-3 flex gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:overflow-visible sm:pb-0">
+              {photos.map((photo, index) => <div key={photo.id} className="relative w-36 shrink-0 overflow-hidden rounded-2xl border border-[#d7e0f2] bg-white sm:w-auto">
+                <img src={photo.dataUrl} alt={`Prévia da foto ${index + 1}`} className="h-24 w-full object-cover sm:h-28" />
+                <button type="button" onClick={() => removePhoto(photo.id)} className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-slate-950/70 text-white" aria-label={`Remover foto ${index + 1}`}><X className="h-4 w-4" /></button>
+                <div className="px-3 py-2"><p className="text-[11px] font-bold text-[#34425b]">Foto {index + 1}</p><p className="text-[10px] text-[#7b8599]">{Math.round(photo.bytes / 1024)} KB</p></div>
+              </div>)}
+            </div>}
+            <p className="mt-2 text-xs leading-relaxed text-slate-500"><strong>Privacidade das fotos:</strong> até 7 imagens em armazenamento privado para análise administrativa. Elas não aparecem na consulta pública por protocolo. Evite fotografar pessoas, documentos ou placas quando isso não for necessário.</p>
           </div>
-          {photoBusy && <p className="mt-2 text-xs font-semibold text-[#1f2e6e]">Preparando foto(s) para envio...</p>}
-          {photos.length > 0 && <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {photos.map((photo, index) => <div key={photo.id} className="relative overflow-hidden rounded-2xl border border-[#d7e0f2] bg-white">
-              <img src={photo.dataUrl} alt={`Prévia da foto ${index + 1}`} className="h-28 w-full object-cover" />
-              <button type="button" onClick={() => removePhoto(photo.id)} className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-slate-950/70 text-white" aria-label={`Remover foto ${index + 1}`}><X className="h-4 w-4" /></button>
-              <div className="px-3 py-2"><p className="text-[11px] font-bold text-[#34425b]">Foto {index + 1}</p><p className="text-[10px] text-[#7b8599]">{Math.round(photo.bytes / 1024)} KB</p></div>
-            </div>)}
-          </div>}
-          <p className="mt-2 text-xs leading-relaxed text-slate-500"><strong>Privacidade das fotos:</strong> você pode enviar até 7 imagens. Elas ficam em armazenamento privado para análise administrativa e não aparecem na consulta pública por protocolo. Evite fotografar pessoas, documentos ou placas quando isso não for necessário.</p>
-        </div>
-        <label className="block"><span className="text-sm font-bold text-[#172033]">Contato <span className="font-normal text-slate-500">(opcional)</span></span><input name="contato" value={form.contato} onChange={handleChange} autoComplete="tel" placeholder="Telefone ou e-mail, se quiser receber retorno" className="field text-base" /></label>
+
+          {!showContact && !form.contato && <button type="button" onClick={() => setShowContact(true)} className="min-h-11 text-sm font-extrabold text-[#1f2e6e] sm:hidden">+ Adicionar contato para retorno</button>}
+          <label className={`${showContact || form.contato ? "block" : "hidden"} sm:block`}><span className="text-sm font-bold text-[#172033]">Contato <span className="font-normal text-slate-500">(opcional)</span></span><input name="contato" value={form.contato} onChange={handleChange} autoComplete="tel" placeholder="Telefone ou e-mail, se quiser receber retorno" className="field text-base" /><span className="mt-1.5 block text-xs leading-5 text-slate-500">O protocolo é gerado mesmo sem contato.</span></label>
+
+          <div className="grid grid-cols-2 gap-2 sm:hidden">
+            <button type="button" onClick={() => goToStep(1)} className="secondary-button min-h-14 w-full text-base">Voltar</button>
+            <button type="button" onClick={continueToReview} className="primary-button min-h-14 w-full text-base">Revisar <ArrowRight className="h-5 w-5" /></button>
+          </div>
+        </section>
+
         <input type="hidden" name="municipio" value={form.municipio} /><input type="hidden" name="uf" value={form.uf} /><input type="hidden" name="codigo_ibge" value={form.codigo_ibge} /><input type="hidden" name="prioridade" value={form.prioridade} />
-        <div className="rounded-2xl border border-[#d7e0f2] bg-[#eef2fb] p-4 sm:p-5"><div className="flex gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#1f2e6e]" /><div className="space-y-3"><p className="text-xs leading-relaxed text-[#526078] sm:text-sm">A localização detalhada é usada para identificar o ponto da ocorrência e permanece restrita ao fluxo administrativo. Evite informar endereço residencial se ele não for o local do problema.</p><label className="flex cursor-pointer items-start gap-3 text-sm text-[#33466f]"><input type="checkbox" name="aviso_privacidade_aceito" checked={form.aviso_privacidade_aceito} onChange={handleChange} className="mt-0.5 h-5 w-5 shrink-0 rounded border-[#7d8fc1]" required /><span>Entendi que meus dados serão tratados no FISCALIZE para registrar e acompanhar este caso. Gilmar Nascimento é o controlador dos dados das demandas. <Link to="/privacidade" className="font-extrabold underline">Ver privacidade</Link>.</span></label></div></div></div>
-        {reviewComplete && <p aria-live="polite" className="-mt-3 flex items-center justify-center gap-1.5 text-xs font-semibold text-[#1f2e6e]"><Check className="h-3.5 w-3.5" /> Etapas preenchidas. Revise e envie quando estiver pronto.</p>}
-        <button disabled={loading || photoBusy || form.faixa_etaria === "UNDER_16"} className="primary-button min-h-14 w-full text-base disabled:cursor-not-allowed disabled:opacity-50">{loading ? "Enviando..." : "Enviar e gerar protocolo"}<ArrowRight className="h-5 w-5" /></button>
-        <p className="text-center text-xs leading-relaxed text-slate-500">O FISCALIZE registra, organiza e acompanha demandas por protocolo. A plataforma não substitui canais oficiais nem garante, por si só, a solução de um problema.</p>
+
+        <section data-register-step="3" className={`${mobileStep === 3 ? "block" : "hidden"} space-y-4 sm:block`}>
+          <div className="rounded-2xl border border-[#d7e0f2] bg-white sm:hidden" data-register-review>
+            <div className="border-b border-[#eef2fb] px-4 py-3"><p className="text-xs font-extrabold uppercase tracking-[0.12em] text-[#657089]">Revise antes de enviar</p></div>
+            <div className="divide-y divide-[#eef2fb]">
+              <div className="px-4 py-3">
+                <div className="flex items-center justify-between gap-3"><p className="text-xs font-extrabold uppercase tracking-wide text-[#657089]">Local</p><button type="button" onClick={() => goToStep(1)} className="min-h-11 px-2 text-xs font-extrabold text-[#1f2e6e]">Editar</button></div>
+                <p className="text-sm font-bold text-[#172033]">{form.logradouro}{form.numero ? `, ${form.numero}` : ""}</p><p className="mt-0.5 text-xs text-[#657089]">{form.bairro} · Manaus/AM</p>
+              </div>
+              <div className="px-4 py-3">
+                <div className="flex items-center justify-between gap-3"><p className="text-xs font-extrabold uppercase tracking-wide text-[#657089]">Problema</p><button type="button" onClick={() => goToStep(2)} className="min-h-11 px-2 text-xs font-extrabold text-[#1f2e6e]">Editar</button></div>
+                <p className="text-sm font-bold text-[#172033]">{selectedCategory.label}</p><p className="mt-0.5 text-xs text-[#657089]">{selectedCategory.problems.find((item) => item.code === form.tipo_problema)?.label || form.tipo_problema}</p>
+              </div>
+              <div className="px-4 py-3">
+                <div className="flex items-center justify-between gap-3"><p className="text-xs font-extrabold uppercase tracking-wide text-[#657089]">Relato</p><button type="button" onClick={() => goToStep(2)} className="min-h-11 px-2 text-xs font-extrabold text-[#1f2e6e]">Editar</button></div>
+                <p className="line-clamp-4 text-sm leading-5 text-[#34425b]">{form.descricao}</p>
+              </div>
+              <div className="grid grid-cols-2 divide-x divide-[#eef2fb]">
+                <div className="px-4 py-3"><p className="text-xs font-extrabold uppercase tracking-wide text-[#657089]">Evidências</p><p className="mt-1 text-sm font-bold text-[#172033]">{photos.length ? `${photos.length} foto${photos.length === 1 ? "" : "s"}` : "Nenhuma"}</p></div>
+                <div className="px-4 py-3"><p className="text-xs font-extrabold uppercase tracking-wide text-[#657089]">Contato</p><p className="mt-1 truncate text-sm font-bold text-[#172033]">{form.contato || "Não informado"}</p></div>
+              </div>
+              <div className="px-4 py-3"><p className="text-xs font-extrabold uppercase tracking-wide text-[#657089]">Faixa etária</p><p className="mt-1 text-sm font-bold text-[#172033]">{ageBandLabel(form.faixa_etaria)}</p></div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-[#d7e0f2] bg-[#eef2fb] p-4 sm:p-5">
+            <div className="flex gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#1f2e6e]" /><div className="space-y-3"><p className="text-xs leading-relaxed text-[#526078] sm:text-sm">A localização detalhada é usada para identificar o ponto da ocorrência e permanece restrita ao fluxo administrativo. Evite informar endereço residencial se ele não for o local do problema.</p><label className="flex cursor-pointer items-start gap-3 text-sm text-[#33466f]"><input type="checkbox" name="aviso_privacidade_aceito" checked={form.aviso_privacidade_aceito} onChange={handleChange} className="mt-0.5 h-5 w-5 shrink-0 rounded border-[#7d8fc1]" required /><span>Entendi que meus dados serão tratados no FISCALIZE para registrar e acompanhar este caso. Gilmar Nascimento é o controlador dos dados das demandas. <Link to="/privacidade" className="font-extrabold underline">Ver privacidade</Link>.</span></label></div></div>
+          </div>
+          {reviewComplete && <p aria-live="polite" className="flex items-center justify-center gap-1.5 text-xs font-semibold text-[#1f2e6e]"><Check className="h-3.5 w-3.5" /> Etapas preenchidas. Envie quando estiver pronto.</p>}
+
+          <div className="grid gap-2 sm:block">
+            <button type="button" onClick={() => goToStep(2)} className="secondary-button min-h-14 w-full text-base sm:hidden">Voltar e editar</button>
+            <button disabled={loading || photoBusy || form.faixa_etaria === "UNDER_16"} className="primary-button min-h-14 w-full text-base disabled:cursor-not-allowed disabled:opacity-50">{loading ? "Enviando..." : "Enviar e gerar protocolo"}<ArrowRight className="h-5 w-5" /></button>
+          </div>
+          <p className="text-center text-xs leading-relaxed text-slate-500">O FISCALIZE registra, organiza e acompanha demandas por protocolo. A plataforma não substitui canais oficiais nem garante, por si só, a solução de um problema.</p>
+        </section>
       </form>
     </div>
-  );
-}
+  );}
