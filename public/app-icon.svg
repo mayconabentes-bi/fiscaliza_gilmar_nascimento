@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">FISCALIZE — GN</title>
+  <desc id="desc">Ícone do FISCALIZE com monograma GN e cúpula colorida.</desc>
+  <rect width="512" height="512" rx="96" fill="#032673"/>
+  <g transform="translate(0 2)">
+    <g>
+      <path d="M256 54v32" stroke="#fff" stroke-width="10" stroke-linecap="round"/>
+      <circle cx="256" cy="100" r="15" fill="none" stroke="#fff" stroke-width="8"/>
+      <path d="M238 124c0-12 8-21 18-21s18 9 18 21" fill="#fff"/>
+      <path d="M92 205c21-68 82-112 164-112s143 44 164 112" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round"/>
+      <path d="M105 205c18-58 73-96 151-96s133 38 151 96" fill="#ffcf16"/>
+      <path d="M133 184l36-38 33 36 35-39 37 40 35-38 36 38 28-23 24 45H115z" fill="#17a8ff"/>
+      <path d="M119 199l32-33 24 25 29-30 30 32 27-28 28 29 28-28 28 32z" fill="#54c431"/>
+      <path d="M109 206l34-43 20 21 23-30 26 29 25-36 29 37 28-33 27 33 23-27 39 49z" fill="none" stroke="#032673" stroke-width="8" stroke-linejoin="round"/>
+      <path d="M111 208c44-19 92-29 145-29s101 10 145 29l-14 31c-41-17-84-25-131-25s-90 8-131 25z" fill="#ff5a00"/>
+      <path d="M126 237c33-14 76-23 130-23s97 9 130 23c-12 6-24 12-35 20-30-9-62-14-95-14s-65 5-95 14c-11-8-23-14-35-20z" fill="#032673"/>
+    </g>
+    <g fill="#fff" font-family="Arial, Helvetica, sans-serif" font-weight="800" text-anchor="middle">
+      <text x="256" y="365" font-size="144" letter-spacing="-7">GN</text>
+      <text x="256" y="438" font-size="50" letter-spacing="2">FISCALIZE</text>
+    </g>
+  </g>
+</svg>
