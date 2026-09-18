@@ -77,5 +77,5 @@ export function publicAgeBandLabel(ageBand: AgeBand) {
   if (ageBand === "AGE_35_44") return "35 a 44 anos";
   if (ageBand === "AGE_45_59") return "45 a 59 anos";
   if (ageBand === "AGE_60_PLUS") return "60 anos ou mais";
-  return "18 anos ou mais (classificação anterior)";
+  throw new AgePolicyError("Faixa etária inválida.", 400, "AGE_BAND_INVALID");
 }
