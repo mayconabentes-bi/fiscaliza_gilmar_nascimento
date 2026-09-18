@@ -113,6 +113,69 @@ async function demandAggregates() {
   return { porBairro, porTema, porTipo };
 }
 
+async function fastSummaryAggregate() {
+  const sql = await getHealthyPostgres();
+  const [row] = await sql`
+    select
+      coalesce((
+        select json_agg(x order by x.total desc)
+        from (
+          select coalesce(nullif(trim(bairro), ''), 'Não informado') as bairro,
+                 count(*)::int as total,
+                 count(*) filter (where prioridade in ('ALTA','CRITICA'))::int as prioritarias,
+                 count(*) filter (where status = 'CONCLUIDA')::int as concluidas,
+                 count(distinct categoria)::int as temas
+          from public.demandas
+          where lower(municipio) = 'manaus'
+          group by coalesce(nullif(trim(bairro), ''), 'Não informado')
+        ) x
+      ), '[]'::json) as por_bairro,
+      coalesce((
+        select json_agg(x order by x.total desc)
+        from (
+          select categoria, count(*)::int as total
+          from public.demandas
+          where lower(municipio) = 'manaus'
+          group by categoria
+        ) x
+      ), '[]'::json) as por_tema,
+      coalesce((
+        select json_agg(x order by x.total desc, x.categoria asc, x.tipo_problema asc)
+        from (
+          select categoria, tipo_problema, count(*)::int as total
+          from public.demandas
+          where lower(municipio) = 'manaus'
+          group by categoria, tipo_problema
+        ) x
+      ), '[]'::json) as por_tipo,
+      coalesce((
+        select json_agg(x order by x.faixa_etaria asc)
+        from (
+          select coalesce(faixa_etaria, 'NAO_INFORMADA') as faixa_etaria,
+                 count(*)::int as total
+          from public.demandas
+          where lower(municipio) = 'manaus'
+          group by coalesce(faixa_etaria, 'NAO_INFORMADA')
+        ) x
+      ), '[]'::json) as idade
+  `;
+
+  const porBairro = Array.isArray(row?.por_bairro) ? row.por_bairro : [];
+  const porTema = Array.isArray(row?.por_tema) ? row.por_tema : [];
+  const porTipo = Array.isArray(row?.por_tipo) ? row.por_tipo : [];
+  const idadeRows = Array.isArray(row?.idade) ? row.idade : [];
+
+  const demografiaEtaria = buildAgeIntelligenceAggregate(
+    idadeRows.map((item: any) => ({
+      faixa_etaria: String(item.faixa_etaria),
+      total: Number(item.total || 0),
+    })),
+    process.env.CIVIC_AGGREGATE_MIN_GROUP_SIZE,
+  );
+
+  return { porBairro, porTema, porTipo, demografiaEtaria };
+}
+
 export function setupProductionRadarRoutes(app: Express) {
   app.get("/api/radar/manaus/fontes", (_req, res) => {
     res.setHeader("Cache-Control", "private, max-age=60");
@@ -226,10 +289,8 @@ export function setupProductionRadarRoutes(app: Express) {
   // progressivas separadas.
   app.get("/api/radar/manaus/resumo", async (_req, res) => {
     try {
-      const [demandas, demografiaEtaria] = await Promise.all([
-        demandAggregates(),
-        ageIntelligenceAggregate(),
-      ]);
+      const demandas = await fastSummaryAggregate();
+      const demografiaEtaria = demandas.demografiaEtaria;
       const demandasTotal = (demandas.porBairro as any[]).reduce((sum, item) => sum + Number(item.total || 0), 0);
       res.setHeader("Cache-Control", "no-store, private");
       return res.json({
