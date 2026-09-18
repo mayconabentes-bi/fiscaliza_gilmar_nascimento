@@ -62,6 +62,27 @@ try {
     assert(exists === true, `Tabela ausente após migrations: ${schema}.${table}`);
   }
 
+  const expectedColumns = [
+    ["private", "admins", "perfil_acesso"],
+    ["public", "usuarios", "faixa_etaria"],
+    ["public", "usuarios", "protecao_reforcada"],
+    ["public", "demandas", "cep"],
+    ["public", "demandas", "codigo_ibge"],
+    ["public", "demandas", "revisao_reforcada"],
+  ];
+  for (const [schema, table, column] of expectedColumns) {
+    const exists = await scalar(`
+      select exists(
+        select 1
+        from information_schema.columns
+        where table_schema = '${schema}'
+          and table_name = '${table}'
+          and column_name = '${column}'
+      ) as ok
+    `);
+    assert(exists === true, `Coluna ausente após migrations: ${schema}.${table}.${column}`);
+  }
+
   const rlsTables = [
     "usuarios",
     "demandas",
