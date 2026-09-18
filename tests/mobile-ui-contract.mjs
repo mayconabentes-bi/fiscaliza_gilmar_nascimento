@@ -29,6 +29,7 @@ expect(app.includes('to="/login"') && app.includes('<span>Entrar</span>'), 'Visi
 expect(home.includes('min-h-14') && form.includes('min-h-14') && protocol.includes('min-h-14'), 'CTAs críticos devem manter área de toque confortável.');
 expect(form.includes('text-base') && protocol.includes('text-base'), 'Campos críticos devem usar fonte de 16px para evitar zoom involuntário no iOS.');
 expect(form.includes('capture="environment"'), 'Captura de evidência deve favorecer a câmera traseira no celular.');
+expect(form.includes('name="camera_photo"') && form.includes('name="gallery_photos"') && form.includes('opacity-0 disabled:cursor-not-allowed'), 'Câmera e galeria devem usar inputs file nativos diretamente tocáveis.');
 expect(form.includes('data-engagement-progress="transparent"') && form.includes('role="progressbar"'), 'O formulário deve mostrar progresso transparente, sem urgência artificial.');
 expect(form.includes('form_step_location') && form.includes('form_step_details') && form.includes('form_step_review'), 'O funil deve medir apenas conclusão agregada das etapas cívicas.');
 expect(html.includes('width=device-width'), 'Viewport mobile deve estar configurado.');
