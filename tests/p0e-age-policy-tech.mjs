@@ -8,7 +8,8 @@ const expectIncludes = (text, snippets, label) => {
 const agePolicy = read('src/server/agePolicy.ts');
 const auth = read('src/server/citizenAuthPostgres.ts');
 const demand = read('src/server/citizenDemandPostgres.ts');
-const migration = read('supabase/migrations/20260918145150_age_intelligence_bands_only.sql');
+const foundationMigration = read('supabase/migrations/20260915160000_p0e_age_protection.sql');
+const effectiveMigration = read('supabase/migrations/20260918145150_age_intelligence_bands_only.sql');
 
 expectIncludes(agePolicy, [
   'UNDER_16', 'AGE_16_17', 'AGE_18_24', 'AGE_25_34', 'AGE_35_44', 'AGE_45_59', 'AGE_60_PLUS',
@@ -29,12 +30,24 @@ expectIncludes(demand, [
   'Participante adolescente de 16 a 17 anos',
 ], 'intake de demandas');
 
-expectIncludes(migration, [
+expectIncludes(foundationMigration, [
   'add column if not exists faixa_etaria text',
   'add column if not exists protecao_reforcada boolean',
   'add column if not exists revisao_reforcada boolean',
-  "faixa_etaria in ('AGE_16_17', 'AGE_18_PLUS')",
   'Nenhuma data de nascimento, documento ou biometria',
-], 'migration P0-E');
+], 'migration P0-E foundation');
+
+expectIncludes(effectiveMigration, [
+  "'AGE_16_17'",
+  "'AGE_18_24'",
+  "'AGE_25_34'",
+  "'AGE_35_44'",
+  "'AGE_45_59'",
+  "'AGE_60_PLUS'",
+], 'migration P0-E effective bands');
+
+if (effectiveMigration.includes('AGE_18_PLUS')) {
+  throw new Error('migration P0-E efetiva não deve aceitar AGE_18_PLUS.');
+}
 
 console.log('P0-E age policy technical contract: OK');
