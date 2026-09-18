@@ -325,7 +325,11 @@ export default function NovaDemanda() {
             <option value="">Selecione</option>
             <option value="UNDER_16">Menos de 16 anos</option>
             <option value="AGE_16_17">16 a 17 anos</option>
-            <option value="AGE_18_PLUS">18 anos ou mais</option>
+            <option value="AGE_18_24">18 a 24 anos</option>
+            <option value="AGE_25_34">25 a 34 anos</option>
+            <option value="AGE_35_44">35 a 44 anos</option>
+            <option value="AGE_45_59">45 a 59 anos</option>
+            <option value="AGE_60_PLUS">60 anos ou mais</option>
           </select>
           <span className="mt-1.5 block text-xs leading-relaxed text-slate-500">Pedimos apenas a faixa etária para aplicar as proteções adequadas. O envio autônomo de demandas começa aos 16 anos.</span>
         </label>
