@@ -8,7 +8,7 @@ function normalize(value: unknown) {
 }
 
 function neighborhoodValue(item: Record<string, unknown>) {
-  const preferred = ["BAIRRO", "NM_BAIRRO", "NOME_BAIRRO", "NOMEBAIRRO", "BAIRRO_NOME", "DS_BAIRRO"];
+  const preferred = ["BAIRRO", "NM_BAIRRO", "NOME_BAIRR", "NOME_BAIRRO", "NOMEBAIRRO", "BAIRRO_NOME", "DS_BAIRRO"];
   for (const key of preferred) if (item[key] != null && String(item[key]).trim()) return String(item[key]).trim();
   const dynamic = Object.keys(item).find((key) => normalize(key).includes("BAIRRO"));
   return dynamic && item[dynamic] != null ? String(item[dynamic]).trim() : "";
