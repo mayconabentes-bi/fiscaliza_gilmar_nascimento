@@ -25,6 +25,8 @@ expect(spec.includes("capture(page, 'home-privacidade'"), 'Aviso de privacidade 
 expect(spec.includes("register.boundingBox()") && spec.includes("follow.boundingBox()"), 'QA visual deve validar os dois CTAs principais na primeira dobra.');
 expect(spec.includes("data-privacy-notice") && spec.includes("< 1024"), 'QA visual deve validar o aviso de privacidade acima da navegação touch em mobile e tablet.');
 expect(spec.includes("capture(page, 'registro-publico'"), 'Registro deve ter captura dedicada.');
+expect(spec.includes("capture(page, 'registro-etapa-1'") && spec.includes("capture(page, 'registro-etapa-2'") && spec.includes("capture(page, 'registro-etapa-3'"), 'Registrar mobile deve ter capturas dedicadas das três etapas em telefone.');
+expect(spec.includes("data-register-review") && spec.includes("getByRole('button', { name: /^continuar$/i })") && spec.includes("getByRole('button', { name: /^revisar/i })"), 'QA visual deve percorrer Localize, Descreva e Confirme no mobile.');
 expect(spec.includes("capture(page, 'acompanhamento-publico'"), 'Acompanhamento deve ter captura dedicada.');
 expect(spec.includes("test-results/visual"), 'Capturas devem ser gravadas em diretório de artefatos.');
 expect(!spec.includes('vercel.app'), 'O QA visual deve rodar localmente e não consumir deploy Vercel.');
