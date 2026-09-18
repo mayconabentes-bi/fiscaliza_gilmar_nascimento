@@ -4,6 +4,7 @@ const app = fs.readFileSync('src/App.tsx', 'utf8');
 const home = fs.readFileSync('src/pages/Home.tsx', 'utf8');
 const form = fs.readFileSync('src/pages/NovaDemanda.tsx', 'utf8');
 const protocol = fs.readFileSync('src/pages/ConsultaProtocolo.tsx', 'utf8');
+const records = fs.readFileSync('src/pages/MeusRegistros.tsx', 'utf8');
 const triage = fs.readFileSync('src/pages/AdminDemandas.tsx', 'utf8');
 const strategy = fs.readFileSync('src/pages/Estrategia2028.tsx', 'utf8');
 const strategyRefresh = fs.readFileSync('src/components/IntelligenceRefreshPanel.tsx', 'utf8');
@@ -74,6 +75,12 @@ expect(form.includes('overflow-x-auto') && form.includes('{photos.length} de {MA
 expect(form.includes('O protocolo é gerado mesmo sem contato.'), 'Contato deve permanecer claramente opcional.');
 expect(form.includes('Evite informar documentos, dados de saúde ou dados pessoais de terceiros'), 'Descrição deve reforçar minimização de dados pessoais.');
 expect(form.includes('data-safe-draft="explicit"') && form.includes('Somente bairro/localidade, área e tipo de problema'), 'Rascunho mobile deve comunicar minimização e prazo local.');
+expect(protocol.includes('data-followup-search') && protocol.includes('data-followup-status') && protocol.includes('data-followup-history'), 'Acompanhar mobile deve priorizar busca, situação atual e histórico.');
+expect(protocol.includes('PROTOCOL_RE') && protocol.includes('Limpar protocolo'), 'Consulta mobile deve validar formato localmente e permitir limpar o campo com alvo touch.');
+expect(protocol.includes('sm:hidden') && protocol.includes('historyNewestFirst.map'), 'Histórico mobile deve mostrar a atualização mais recente primeiro sem alterar o histórico persistido.');
+expect(protocol.includes('Consulta pública protegida.') && protocol.includes('endereço detalhado'), 'Acompanhar deve comunicar claramente a minimização da resposta pública.');
+expect(records.includes('data-citizen-followup-list') && records.includes('Registrar nova ocorrência') && records.includes('Consultar outro protocolo'), 'Conta cidadã deve priorizar registros vinculados e deixar consulta manual como ação secundária.');
+expect(!records.includes('Novo problema') && !records.includes('Consultar protocolo</span>'), 'Meus registros mobile não deve repetir cards de navegação já presentes no shell.');
 expect(html.includes('width=device-width'), 'Viewport mobile deve estar configurado.');
 
 const targetViewports = ['344x882', '375x667', '393x852', '412x915', '440x956', '744x1133', '768x968', '800x1080', '1032x1376'];
