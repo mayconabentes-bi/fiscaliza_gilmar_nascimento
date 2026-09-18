@@ -116,11 +116,11 @@ function MapaBairros({ mapa, selecionado, onSelect }: { mapa: MapaResponse | nul
     });
   }, [mapa]);
 
-  const bairroOptions = useMemo(
-    () => Array.from(new Set(shapes.map((shape) => shape.bairro).filter(Boolean)))
-      .sort((a, b) => a.localeCompare(b, "pt-BR")),
-    [shapes]
-  );
+  const bairroOptions = useMemo<string[]>(() => {
+    const unique = new Set<string>();
+    for (const shape of shapes) if (shape.bairro) unique.add(shape.bairro);
+    return [...unique].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [shapes]);
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
