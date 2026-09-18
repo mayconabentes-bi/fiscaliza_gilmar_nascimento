@@ -12,7 +12,7 @@ const radarPage = read("src/pages/RadarTerritorial.tsx");
 const app = read("src/server/app.ts");
 const migration = read("supabase/migrations/20260918143000_age_intelligence_bands.sql");
 
-for (const code of ["AGE_16_17", "AGE_18_24", "AGE_25_34", "AGE_35_44", "AGE_45_59", "AGE_60_PLUS", "AGE_18_PLUS"]) {
+for (const code of ["AGE_16_17", "AGE_18_24", "AGE_25_34", "AGE_35_44", "AGE_45_59", "AGE_60_PLUS"]) {
   expect(agePolicy.includes(code), `agePolicy deve aceitar ${code}.`);
   expect(migration.includes(code), `migration deve aceitar ${code}.`);
 }
@@ -43,4 +43,4 @@ expect(radarPage.includes("Classificação detalhada"), "UI deve separar cobertu
 expect(radarPage.includes("Diversidade geracional"), "UI deve preparar índice de diversidade.");
 expect(!radarPage.includes("faixa etária por bairro"), "UI não deve apresentar cruzamento idade x bairro.");
 
-console.log("Age intelligence contract OK: faixas detalhadas, legado preservado, ADMIN-only e agregação protegida.");
+expect(!agePolicy.includes("AGE_18_PLUS"), "Backend não deve aceitar a faixa legada AGE_18_PLUS.");\nconsole.log("Age intelligence contract OK: apenas faixas detalhadas, ADMIN-only e agregação protegida.");
