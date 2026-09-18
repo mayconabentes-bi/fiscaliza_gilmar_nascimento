@@ -157,7 +157,7 @@ export default function RadarTerritorial() {
       const resumoResponse = await fetchWithTimeout(
         "/api/radar/manaus/resumo",
         { credentials: "same-origin", cache: "no-store", signal: controller.signal },
-        8000
+        12000
       );
       if (resumoResponse.status === 401 || resumoResponse.status === 403) {
         setHasAccess(false);
