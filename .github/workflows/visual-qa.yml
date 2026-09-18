@@ -5,11 +5,10 @@ on:
     branches:
       - main
     paths:
-      - 'src/pages/Home.tsx'
-      - 'src/pages/NovaDemanda.tsx'
-      - 'src/pages/ConsultaProtocolo.tsx'
-      - 'src/lib/safeDemandDraft.ts'
-      - 'src/index.css'
+      - 'src/**/*.tsx'
+      - 'src/**/*.css'
+      - 'src/lib/**'
+      - 'public/**'
       - 'tests/visual/**'
       - 'tests/*contract.mjs'
       - 'playwright.visual.config.ts'
