@@ -7,6 +7,10 @@ function imageFileLooksValid(file: File) {
   return /\.(?:jpe?g|png|webp|heic|heif)$/i.test(file.name);
 }
 
+function isHeicFile(file: File) {
+  return /heic|heif/i.test(file.type) || /\.(?:heic|heif)$/i.test(file.name);
+}
+
 function loadImageElement(file: File) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
     const objectUrl = URL.createObjectURL(file);
@@ -58,7 +62,15 @@ export async function prepareMobileEvidence(file: File) {
   if (!imageFileLooksValid(file)) throw new Error("Selecione uma imagem válida.");
   if (file.size > MAX_ORIGINAL_BYTES) throw new Error("A foto original é muito grande. Use uma imagem de até 30 MB.");
 
-  const image = await loadImageElement(file);
+  let image: HTMLImageElement;
+  try {
+    image = await loadImageElement(file);
+  } catch (error) {
+    if (isHeicFile(file)) {
+      throw new Error("Esta foto está em HEIC/HEIF e o navegador não conseguiu convertê-la. Tente outra foto ou use JPEG/PNG.");
+    }
+    throw error;
+  }
   const sourceWidth = image.naturalWidth || image.width;
   const sourceHeight = image.naturalHeight || image.height;
   if (!sourceWidth || !sourceHeight) throw new Error("Não foi possível identificar as dimensões da foto.");
