@@ -21,7 +21,7 @@ export default function LGPDConsent() {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed bottom-[calc(76px+env(safe-area-inset-bottom))] left-3 right-3 z-50 lg:bottom-5 lg:left-auto lg:right-5 lg:w-[430px]">
+    <div data-privacy-notice className="fixed bottom-[calc(76px+env(safe-area-inset-bottom))] left-3 right-3 z-50 lg:bottom-5 lg:left-auto lg:right-5 lg:w-[430px]">
       <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xl">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 rounded-lg bg-emerald-50 p-2 text-emerald-700"><Info className="h-4 w-4" /></div>
