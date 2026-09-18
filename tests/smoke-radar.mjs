@@ -109,6 +109,9 @@ async function main() {
   if (!radarPageSource.includes('data-bairro={shape.bairro || undefined}') || !radarPageSource.includes('onPointerUp={(event) => {')) {
     throw new Error("Mapa deve selecionar bairros por evento pointer delegado no SVG.");
   }
+  if (!radarPageSource.includes('id="radar-bairro-mobile"') || !radarPageSource.includes("bairroOptions.map")) {
+    throw new Error("Radar deve oferecer seleção nativa de bairro como fallback no mobile.");
+  }
   if (!productionRadarSource.includes('classificados: features.filter') || !productionRadarSource.includes('bairro: featureNeighborhood(feature)')) {
     throw new Error("Payload do mapa deve enviar bairro normalizado explicitamente por feature.");
   }
