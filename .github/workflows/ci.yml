@@ -50,6 +50,8 @@ jobs:
         run: npm run test:age-intelligence
       - name: Demand taxonomy structure and validation
         run: npm run test:demand-taxonomy
+      - name: Citizen account structure, age bands and CEP
+        run: npm run test:citizen-account
       - name: P0-E age flow runtime
         run: npm run test:p0e-age-flow
       - name: P0-E data boundary
@@ -114,6 +116,8 @@ jobs:
         run: npm run test:age-intelligence
       - name: Demand taxonomy structure and validation
         run: npm run test:demand-taxonomy
+      - name: Citizen account structure, age bands and CEP
+        run: npm run test:citizen-account
       - name: P0-E age flow runtime
         run: npm run test:p0e-age-flow
       - name: P0-E data boundary
