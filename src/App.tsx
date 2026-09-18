@@ -29,7 +29,7 @@ function RouteFallback() {
 function Brand({ privateMode = false }: { privateMode?: boolean }) {
   return (
     <Link to={privateMode ? "/dashboard" : "/"} className="flex min-w-0 items-center gap-2.5 sm:gap-3" aria-label={privateMode ? "FISCALIZE - núcleo privado" : "FISCALIZE - início"}>
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#d7e0f2] bg-white text-[#1f2e6e] shadow-sm"><Radar className="h-[18px] w-[18px]" strokeWidth={2.2} /></span>
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#d7e0f2] bg-[#032673] shadow-sm"><img src="/app-icon.svg" alt="" className="h-full w-full object-cover" /></span>
       <span className="min-w-0"><span className="block text-[18px] font-extrabold tracking-[-0.045em] text-[#1f2e6e] sm:text-[19px]">FISCALIZE</span>{privateMode && <span className="hidden text-[10px] font-bold uppercase tracking-[0.12em] text-[#657089] sm:block">Núcleo privado</span>}</span>
       {!privateMode && <span className="brand-signature-mark hidden sm:block" aria-hidden="true"><img src="/brand/gilmar-nascimento-oficial.png" alt="" /></span>}
     </Link>
