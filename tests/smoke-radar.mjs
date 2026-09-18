@@ -112,6 +112,9 @@ async function main() {
   if (!productionRadarSource.includes('classificados: features.filter') || !productionRadarSource.includes('bairro: featureNeighborhood(feature)')) {
     throw new Error("Payload do mapa deve enviar bairro normalizado explicitamente por feature.");
   }
+  if (!productionRadarSource.includes('"NOME_BAIRR"') || !radarPageSource.includes('"NOME_BAIRR"')) {
+    throw new Error("Mapa deve reconhecer o campo oficial NOME_BAIRR da camada Bairros - IMPLURB.");
+  }
 
   await waitForServer();
   seedAdminAndDemand();

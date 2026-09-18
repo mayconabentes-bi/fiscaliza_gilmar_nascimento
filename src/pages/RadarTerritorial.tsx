@@ -80,7 +80,7 @@ function qualityLabel(key: string) {
 function bairroDaFeature(feature: MapFeature) {
   if (feature.bairro && feature.bairro.trim()) return feature.bairro.trim();
   const attrs = feature.attributes || {};
-  for (const key of ["BAIRRO", "NM_BAIRRO", "NOME_BAIRRO", "NOMEBAIRRO", "BAIRRO_NOME", "DS_BAIRRO"]) {
+  for (const key of ["BAIRRO", "NM_BAIRRO", "NOME_BAIRR", "NOME_BAIRRO", "NOMEBAIRRO", "BAIRRO_NOME", "DS_BAIRRO"]) {
     if (attrs[key] != null && String(attrs[key]).trim()) return String(attrs[key]).trim();
   }
   const dynamic = Object.keys(attrs).find((key) => normalize(key).includes("BAIRRO"));

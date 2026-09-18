@@ -16,7 +16,7 @@ export function pickField(item: Record<string, unknown>, candidates: string[]) {
 }
 
 export function neighborhoodValue(item: Record<string, unknown>) {
-  const value = pickField(item, ["BAIRRO", "NM_BAIRRO", "NOME_BAIRRO", "NOMEBAIRRO", "BAIRRO_NOME", "DS_BAIRRO", "bairro", "nome_bairro"]);
+  const value = pickField(item, ["BAIRRO", "NM_BAIRRO", "NOME_BAIRR", "NOME_BAIRRO", "NOMEBAIRRO", "BAIRRO_NOME", "DS_BAIRRO", "bairro", "nome_bairro"]);
   if (value != null && String(value).trim()) return String(value).trim();
   const dynamic = Object.keys(item).find((key) => normalizeText(key).includes("BAIRRO"));
   return dynamic && item[dynamic] != null ? String(item[dynamic]).trim() : "";
