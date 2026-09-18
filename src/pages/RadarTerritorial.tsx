@@ -1,6 +1,29 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { BarChart3, Database, GraduationCap, HeartPulse, MapPinned, RefreshCw, ShieldCheck, Wrench } from "lucide-react";
+import { BarChart3, Database, GraduationCap, HeartPulse, MapPinned, RefreshCw, ShieldCheck, UsersRound, Wrench } from "lucide-react";
 import { fetchWithTimeout } from "../lib/request";
+
+type AgeIntelligenceBand = {
+  codigo: string;
+  label: string;
+  total: number | null;
+  percentual: number | null;
+  suprimido: boolean;
+  legado: boolean;
+};
+
+type DemografiaEtaria = {
+  total: number;
+  classificados: number;
+  naoInformados: number;
+  legado: number;
+  detalhados: number;
+  coberturaPercentual: number;
+  coberturaDetalhadaPercentual: number;
+  limiarMinimo: number;
+  diversidadeGeracional: number | null;
+  faixas: AgeIntelligenceBand[];
+  metodologia: string;
+};
 
 type Resumo = {
   municipio: string;
@@ -8,6 +31,7 @@ type Resumo = {
   indicadores: { bairros: number | null; obras: number | null; unidadesSaude: number | null; escolasMunicipais: number | null; demandasRegistradas: number };
   demandasPorBairro: Array<{ bairro: string; total: number }>;
   demandasPorTema: Array<{ categoria: string; total: number }>;
+  demografiaEtaria?: DemografiaEtaria;
   disponibilidade: Array<{ name: string; available: boolean; error?: string | null }>;
   fontesExternas: Array<{ key: string; etapa: string; nome: string; status: string; endpoint?: string | null }>;
 };
@@ -192,6 +216,7 @@ export default function RadarTerritorial() {
   const maxBairro = useMemo(() => Math.max(1, ...(resumo?.demandasPorBairro || []).map((item) => Number(item.total) || 0)), [resumo]);
   const territorioSelecionado = useMemo(() => territorios.find((item) => normalize(item.bairro) === normalize(bairroSelecionado)) || null, [territorios, bairroSelecionado]);
   const externalObserved = (needle: string) => indicadoresExternos.find((item) => normalize(item.nome).includes(needle))?.registrosObservados ?? null;
+  const ageIntelligence = resumo?.demografiaEtaria || null;
 
   if (loading && !resumo) return <div className="py-16 text-center text-sm text-slate-500">Carregando Radar Territorial…</div>;
   if (!hasAccess) return <div className="max-w-3xl mx-auto bg-white border border-slate-200 rounded-2xl p-8 text-center shadow-sm"><ShieldCheck className="w-12 h-12 text-slate-400 mx-auto mb-4" /><h1 className="text-2xl font-bold text-slate-900">Radar territorial restrito</h1><p className="mt-3 text-slate-600">Este módulo pertence ao núcleo privado e é exclusivo do administrador.</p></div>;
@@ -213,6 +238,45 @@ export default function RadarTerritorial() {
       {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
 
       <section className="grid grid-cols-2 xl:grid-cols-5 gap-3 sm:gap-4">{cards.map((card) => { const Icon = card.icon; return <div key={card.label} className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm"><Icon className="w-5 h-5 text-indigo-600 mb-3" /><p className="text-xs sm:text-sm text-slate-500">{card.label}</p><p className="mt-1 text-xl sm:text-2xl font-bold text-slate-900">{card.value == null ? "—" : Number(card.value).toLocaleString("pt-BR")}</p></div>; })}</section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
+        <div className="flex items-start gap-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-indigo-50 text-indigo-700"><UsersRound className="h-5 w-5" /></span>
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">Perfil etário dos registros</h2>
+            <p className="mt-1 text-sm leading-relaxed text-slate-500">Leitura municipal agregada para compreender a cobertura geracional do FISCALIZE, sem idade exata ou identificação individual.</p>
+          </div>
+        </div>
+
+        {ageIntelligence ? <>
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-xl border border-slate-200 p-3"><p className="text-[11px] text-slate-500">Cobertura etária</p><p className="mt-1 text-lg font-bold text-slate-900">{ageIntelligence.coberturaPercentual.toFixed(1)}%</p></div>
+            <div className="rounded-xl border border-slate-200 p-3"><p className="text-[11px] text-slate-500">Classificação detalhada</p><p className="mt-1 text-lg font-bold text-slate-900">{ageIntelligence.coberturaDetalhadaPercentual.toFixed(1)}%</p></div>
+            <div className="rounded-xl border border-slate-200 p-3"><p className="text-[11px] text-slate-500">Não informado</p><p className="mt-1 text-lg font-bold text-slate-900">{ageIntelligence.naoInformados.toLocaleString("pt-BR")}</p></div>
+            <div className="rounded-xl border border-slate-200 p-3"><p className="text-[11px] text-slate-500">Diversidade geracional</p><p className="mt-1 text-lg font-bold text-slate-900">{ageIntelligence.diversidadeGeracional == null ? "Base em formação" : ageIntelligence.diversidadeGeracional.toFixed(3)}</p></div>
+          </div>
+
+          <div className="mt-5 space-y-3">
+            {ageIntelligence.faixas.map((faixa) => (
+              <div key={faixa.codigo} className="rounded-xl border border-slate-200 p-3 sm:p-4">
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-slate-800">{faixa.label}</p>
+                    {faixa.legado && <p className="mt-0.5 text-[11px] text-slate-500">Mantida apenas para registros históricos anteriores às novas faixas.</p>}
+                  </div>
+                  <span className="shrink-0 font-semibold text-slate-600">{faixa.suprimido ? "Amostra protegida" : `${faixa.total?.toLocaleString("pt-BR") || 0} · ${(faixa.percentual || 0).toFixed(1)}%`}</span>
+                </div>
+                {!faixa.suprimido && <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-indigo-500" style={{ width: `${Math.max(faixa.total ? 3 : 0, faixa.percentual || 0)}%` }} /></div>}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 rounded-xl bg-slate-50 p-3 text-xs leading-relaxed text-slate-600">
+            <strong>Proteção estatística:</strong> grupos abaixo de {ageIntelligence.limiarMinimo} registros recebem supressão complementar. O Radar não cruza faixa etária com nome, protocolo, endereço ou identidade.
+          </div>
+          <p className="mt-3 text-xs leading-relaxed text-slate-500">{ageIntelligence.metodologia}</p>
+        </> : <p className="mt-5 text-sm text-slate-500">A inteligência etária ainda não está disponível neste ambiente.</p>}
+      </section>
 
       {quality?.dimensions?.length ? <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm"><h2 className="text-lg font-bold text-slate-900">Qualidade da territorialização</h2><p className="mt-1 text-sm text-slate-500">Mostra quantos registros recebidos das fontes puderam ser associados a um território.</p><div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-3">{quality.dimensions.map((item) => <div key={item.key} className="rounded-xl border border-slate-200 p-4"><p className="font-semibold text-slate-900">{qualityLabel(item.key)}</p><p className="mt-2 text-sm text-slate-600">Recebidos: {item.received.toLocaleString("pt-BR")}</p><p className="text-sm text-slate-600">Territorializados: {item.classified.toLocaleString("pt-BR")}</p><p className="text-sm text-slate-600">Sem classificação: {item.unclassified.toLocaleString("pt-BR")}</p><p className="mt-2 text-lg font-bold text-indigo-700">{(item.coverage * 100).toFixed(1)}%</p></div>)}</div><p className="mt-3 text-xs text-slate-500">{quality.methodology}</p></section> : null}
 

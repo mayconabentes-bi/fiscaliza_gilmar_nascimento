@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { loadHealthUnits, loadMunicipalWorks, loadNeighborhoods, loadSchools } from "../intelligence/sources.js";
 import { getHealthyPostgres } from "./postgres.js";
+import { buildAgeIntelligenceAggregate } from "./ageIntelligence.js";
 
 function normalize(value: unknown) {
   return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
@@ -57,6 +58,27 @@ async function safeLoad(loader: () => Promise<any>, name: string, timeoutMs = 4_
   } finally {
     if (timer) clearTimeout(timer);
   }
+}
+
+async function ageIntelligenceAggregate() {
+  const sql = await getHealthyPostgres();
+  const rows = await sql`
+    select coalesce(faixa_etaria, 'NAO_INFORMADA') as faixa_etaria,
+           count(*)::int as total
+    from public.demandas
+    where lower(municipio) = 'manaus'
+    group by coalesce(faixa_etaria, 'NAO_INFORMADA')
+  `;
+
+  const normalizedRows = Array.from(rows, (row: any) => ({
+    faixa_etaria: String(row.faixa_etaria),
+    total: Number(row.total || 0),
+  }));
+
+  return buildAgeIntelligenceAggregate(
+    normalizedRows,
+    process.env.CIVIC_AGGREGATE_MIN_GROUP_SIZE,
+  );
 }
 
 async function demandAggregates() {
@@ -197,7 +219,10 @@ export function setupProductionRadarRoutes(app: Express) {
   // progressivas separadas.
   app.get("/api/radar/manaus/resumo", async (_req, res) => {
     try {
-      const demandas = await demandAggregates();
+      const [demandas, demografiaEtaria] = await Promise.all([
+        demandAggregates(),
+        ageIntelligenceAggregate(),
+      ]);
       const demandasTotal = (demandas.porBairro as any[]).reduce((sum, item) => sum + Number(item.total || 0), 0);
       res.setHeader("Cache-Control", "no-store, private");
       return res.json({
@@ -212,6 +237,7 @@ export function setupProductionRadarRoutes(app: Express) {
         },
         demandasPorBairro: (demandas.porBairro as any[]).slice(0, 20),
         demandasPorTema: (demandas.porTema as any[]).slice(0, 20),
+        demografiaEtaria,
         disponibilidade: [],
         fontesExternas: [],
       });

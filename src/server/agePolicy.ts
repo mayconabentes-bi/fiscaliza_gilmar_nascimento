@@ -1,4 +1,23 @@
-export const AGE_BANDS = ["UNDER_16", "AGE_16_17", "AGE_18_PLUS"] as const;
+export const AGE_BANDS = [
+  "UNDER_16",
+  "AGE_16_17",
+  "AGE_18_24",
+  "AGE_25_34",
+  "AGE_35_44",
+  "AGE_45_59",
+  "AGE_60_PLUS",
+  // Compatibilidade histórica: contas e demandas anteriores à classificação detalhada.
+  "AGE_18_PLUS",
+] as const;
+
+export const DETAILED_PARTICIPATION_AGE_BANDS = [
+  "AGE_16_17",
+  "AGE_18_24",
+  "AGE_25_34",
+  "AGE_35_44",
+  "AGE_45_59",
+  "AGE_60_PLUS",
+] as const;
 
 export type AgeBand = (typeof AGE_BANDS)[number];
 
@@ -53,5 +72,10 @@ export function ageBandForActiveParticipation(value: unknown) {
 export function publicAgeBandLabel(ageBand: AgeBand) {
   if (ageBand === "UNDER_16") return "Menos de 16 anos";
   if (ageBand === "AGE_16_17") return "16 a 17 anos";
-  return "18 anos ou mais";
+  if (ageBand === "AGE_18_24") return "18 a 24 anos";
+  if (ageBand === "AGE_25_34") return "25 a 34 anos";
+  if (ageBand === "AGE_35_44") return "35 a 44 anos";
+  if (ageBand === "AGE_45_59") return "45 a 59 anos";
+  if (ageBand === "AGE_60_PLUS") return "60 anos ou mais";
+  return "18 anos ou mais (classificação anterior)";
 }
