@@ -249,7 +249,7 @@ export default function NovaDemanda() {
 
   const shareProtocol = async () => {
     if (!protocolo) return;
-    const url = `${window.location.origin}/protocolo?codigo=${encodeURIComponent(protocolo)}`;
+    const url = `${window.location.origin}/protocolo?codigo=${encodeURIComponent(protocolo)}&share=2`;
     const text = `Meu registro no FISCALIZE. Protocolo: ${protocolo}`;
     trackPulsoEvent("protocolo_share", attribution);
     if (navigator.share) await navigator.share({ title: "FISCALIZE Manaus", text, url });
