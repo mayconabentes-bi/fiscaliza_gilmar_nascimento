@@ -330,7 +330,7 @@ export default function AdminDemandas() {
 
       <div className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:block">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
+          <table className="w-full min-w-[1180px] text-sm text-left">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
               <tr>
                 <th className="px-4 py-3 font-semibold">Protocolo</th>
@@ -340,7 +340,7 @@ export default function AdminDemandas() {
                 <th className="px-4 py-3 font-semibold">Status</th>
                 <th className="px-4 py-3 font-semibold">Descrição</th>
                 <th className="px-4 py-3 font-semibold">Evidência</th>
-                <th className="px-4 py-3 font-semibold text-right">Ação</th>
+                <th className="min-w-[128px] whitespace-nowrap px-4 py-3 font-semibold text-right">Ação</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -368,8 +368,8 @@ export default function AdminDemandas() {
                       </div>
                     ) : <span className="text-xs text-slate-400">Sem foto</span>}
                   </td>
-                  <td className="px-4 py-4 text-right">
-                    <button onClick={() => abrirAlteracaoStatus(demanda)} className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700">Alterar status</button>
+                  <td className="px-4 py-4 text-right whitespace-nowrap">
+                    <button onClick={() => abrirAlteracaoStatus(demanda)} className="inline-flex min-w-[112px] items-center justify-center whitespace-nowrap rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700">Alterar status</button>
                   </td>
                 </tr>
               ))}
