@@ -114,7 +114,7 @@ test('registro mantém fluxo guiado, privacidade e revisão no mobile', async ({
     await page.getByLabel('Seu nome').fill('Pessoa QA Visual');
     await page.getByLabel('O que aconteceu?').fill('Ocorrência de teste visual para validar o fluxo guiado no celular.');
     await expect(page.getByText(/adicionar evidências/i)).toBeVisible();
-    await expect(page.getByText(/o protocolo é gerado mesmo sem contato/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /adicionar contato para retorno/i })).toBeVisible();
     await capture(page, 'registro-etapa-2', testInfo.project.name);
 
     await page.getByRole('button', { name: /^revisar/i }).click();
