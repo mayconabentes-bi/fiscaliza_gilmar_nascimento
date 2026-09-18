@@ -80,7 +80,8 @@ test('acompanhamento usa somente status público determinístico', async ({ page
         demanda: {
           protocolo: 'AM-VISUAL-QA',
           municipio: 'Manaus',
-          categoria: 'Infraestrutura',
+          categoria: 'INFRAESTRUTURA_URBANA',
+          tipo_problema: 'BURACO_PAVIMENTACAO',
           status: 'EM_ANALISE',
           created_at: '2026-09-17T12:00:00.000Z',
           updated_at: '2026-09-17T16:30:00.000Z',
