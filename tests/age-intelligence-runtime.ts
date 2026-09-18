@@ -30,6 +30,26 @@ const protectedSmallGroup = buildAgeIntelligenceAggregate([
 
 const suppressed = protectedSmallGroup.faixas.filter((x) => x.suprimido).map((x) => x.codigo);
 assert.deepEqual(suppressed.sort(), ["AGE_18_24", "AGE_25_34"].sort());
+assert.equal(protectedSmallGroup.supressaoComplementarAplicada, true);
+assert.equal(protectedSmallGroup.registrosProtegidos, 9);
+
+const currentLike = buildAgeIntelligenceAggregate([
+  { faixa_etaria: "AGE_16_17", total: 2 },
+  { faixa_etaria: "AGE_18_24", total: 10 },
+  { faixa_etaria: "AGE_25_34", total: 2 },
+  { faixa_etaria: "AGE_35_44", total: 1 },
+  { faixa_etaria: "AGE_45_59", total: 1 },
+  { faixa_etaria: "AGE_60_PLUS", total: 1 },
+], 5);
+
+const currentVisible = currentLike.faixas.filter((x) => !x.suprimido && Number(x.total || 0) > 0).map((x) => x.codigo);
+assert.deepEqual(currentVisible, ["AGE_18_24"]);
+assert.equal(currentLike.faixasVisiveis, 1);
+assert.equal(currentLike.faixasProtegidas, 5);
+assert.equal(currentLike.registrosProtegidos, 7);
+assert.equal(currentLike.supressaoComplementarAplicada, false);
+assert.equal(currentLike.registrosParaDiversidade, 3);
+assert.equal(currentLike.diversidadeGeracional, null);
 
 const robust = buildAgeIntelligenceAggregate([
   { faixa_etaria: "AGE_16_17", total: 10 },
@@ -46,4 +66,4 @@ assert.equal(robust.coberturaDetalhadaPercentual, 100);
 assert.equal(robust.diversidadeGeracional, 1);
 assert.equal(demographicDiversity([10, 10, 10, 10, 10, 10]), 1);
 
-console.log("Age intelligence runtime OK: fresh start, supressão complementar e diversidade geracional.");
+console.log("Age intelligence runtime OK: leitura útil, proteção de grupos pequenos e diversidade geracional.");
