@@ -17,6 +17,7 @@ const migrations = [
   "supabase/migrations/20260915160000_p0e_age_protection.sql",
   "supabase/migrations/20260917123000_demand_location_cep.sql",
   "supabase/migrations/20260918110000_demand_multi_evidence.sql",
+  "supabase/migrations/20260918133926_p0_security_hardening_private_rls.sql",
 ];
 
 function assert(condition, message) {
@@ -34,8 +35,18 @@ try {
     begin
       if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon nologin; end if;
       if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated nologin; end if;
+      if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role nologin bypassrls; end if;
     end
     $$;
+  `);
+
+  await sql.unsafe(`
+    create or replace function public.rls_auto_enable()
+    returns void
+    language sql
+    security definer
+    set search_path = pg_catalog
+    as 'select null::void';
   `);
 
   for (const file of migrations) {
@@ -112,6 +123,23 @@ try {
       assert(!row.sel && !row.ins && !row.upd && !row.del, `${role} possui privilégio direto indevido em public.${table}`);
     }
   }
+
+  for (const table of ["admins", "intelligence_source_health", "intelligence_snapshots", "intelligence_refresh_runs"]) {
+    const enabled = await scalar(`
+      select c.relrowsecurity
+      from pg_class c
+      join pg_namespace n on n.oid = c.relnamespace
+      where n.nspname = 'private' and c.relname = '${table}'
+    `);
+    assert(enabled === true, `RLS não habilitado em private.${table}`);
+  }
+
+  const anonFunctionExecute = await scalar("select has_function_privilege('anon', 'public.rls_auto_enable()', 'execute') as ok");
+  const authFunctionExecute = await scalar("select has_function_privilege('authenticated', 'public.rls_auto_enable()', 'execute') as ok");
+  const postgresFunctionExecute = await scalar("select has_function_privilege('postgres', 'public.rls_auto_enable()', 'execute') as ok");
+  const serviceFunctionExecute = await scalar("select has_function_privilege('service_role', 'public.rls_auto_enable()', 'execute') as ok");
+  assert(anonFunctionExecute === false && authFunctionExecute === false, "Função SECURITY DEFINER exposta a anon/authenticated.");
+  assert(postgresFunctionExecute === true && serviceFunctionExecute === true, "Papéis backend perderam execução da função protegida.");
 
   const privateUsageAnon = await scalar("select has_schema_privilege('anon', 'private', 'usage') as ok");
   const privateUsageAuth = await scalar("select has_schema_privilege('authenticated', 'private', 'usage') as ok");
