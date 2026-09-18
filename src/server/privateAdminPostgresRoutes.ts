@@ -13,7 +13,7 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
   app.get("/api/demandas/metricas", async (_req, res) => {
     try {
       const sql = getPostgres();
-      const [summaryRows, statusRows, municipioRows, categoriaRows] = await Promise.all([
+      const [summaryRows, statusRows, municipioRows, categoriaRows, tipoProblemaRows] = await Promise.all([
         sql`
           select
             count(*)::int as total,
@@ -25,6 +25,7 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
         sql`select status, count(*)::int as total from public.demandas group by status order by total desc, status asc`,
         sql`select municipio, count(*)::int as total from public.demandas group by municipio order by total desc, municipio asc limit 50`,
         sql`select categoria, count(*)::int as total from public.demandas group by categoria order by total desc, categoria asc limit 50`,
+        sql`select categoria, tipo_problema, count(*)::int as total from public.demandas group by categoria, tipo_problema order by total desc, categoria asc, tipo_problema asc limit 100`,
       ]);
       res.setHeader("Cache-Control", "no-store, private");
       return res.json({
@@ -32,6 +33,7 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
         porStatus: statusRows,
         porMunicipio: municipioRows,
         porCategoria: categoriaRows,
+        porTipoProblema: tipoProblemaRows,
       });
     } catch (error) {
       console.error("Falha ao carregar métricas administrativas:", error);
@@ -48,7 +50,7 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
       const tema = String(filtros.tema || "").trim();
       const sql = getPostgres();
       const rows = await sql`
-        select protocolo, municipio, bairro, categoria, descricao, prioridade, status, created_at
+        select protocolo, municipio, bairro, categoria, tipo_problema, descricao, prioridade, status, created_at
         from public.demandas
         where (${dataInicio} = '' or created_at >= ${dataInicio || '1900-01-01'}::date)
           and (${dataFim} = '' or created_at < (${dataFim || '2999-12-31'}::date + interval '1 day'))
@@ -71,15 +73,17 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
       const status = typeof req.query.status === "string" ? req.query.status.trim() : "";
       const municipio = typeof req.query.municipio === "string" ? req.query.municipio.trim() : "";
       const categoria = typeof req.query.categoria === "string" ? req.query.categoria.trim() : "";
+      const tipoProblema = typeof req.query.tipo_problema === "string" ? req.query.tipo_problema.trim() : "";
       if (status && !STATUS_VALIDOS.includes(status)) return res.status(400).json({ error: "Status inválido." });
       const rows = await sql`
-        select id, protocolo, nome_solicitante, contato, municipio, bairro, categoria, descricao,
+        select id, protocolo, nome_solicitante, contato, municipio, bairro, categoria, tipo_problema, descricao,
                prioridade, status, observacao_interna, usuario_id, evidencia_moderacao_status,
                (evidencia_foto_path is not null) as tem_evidencia_foto, created_at, updated_at
         from public.demandas
         where (${status} = '' or status = ${status})
           and (${municipio} = '' or municipio ilike ${`%${municipio}%`})
-          and (${categoria} = '' or categoria ilike ${`%${categoria}%`})
+          and (${categoria} = '' or categoria = ${categoria})
+          and (${tipoProblema} = '' or tipo_problema = ${tipoProblema})
         order by created_at desc limit 500
       `;
       res.setHeader("Cache-Control", "no-store, private");
@@ -197,7 +201,7 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
     try {
       const sql = getPostgres();
       const rows = await sql`
-        select id, protocolo, municipio, bairro, categoria, evidencia_foto_mime,
+        select id, protocolo, municipio, bairro, categoria, tipo_problema, evidencia_foto_mime,
                evidencia_moderacao_status, created_at
         from public.demandas
         where evidencia_foto_path is not null

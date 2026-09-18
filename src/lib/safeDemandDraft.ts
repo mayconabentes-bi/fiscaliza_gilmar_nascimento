@@ -1,13 +1,14 @@
-export const SAFE_DEMAND_DRAFT_KEY = "fiscalize_public_demand_draft_v1";
+export const SAFE_DEMAND_DRAFT_KEY = "fiscalize_public_demand_draft_v2";
 export const SAFE_DEMAND_DRAFT_TTL_MS = 6 * 60 * 60 * 1000;
 
 export type SafeDemandDraftValues = {
   bairro: string;
   categoria: string;
+  tipo_problema: string;
 };
 
 type StoredSafeDemandDraft = {
-  version: 1;
+  version: 2;
   savedAt: number;
   expiresAt: number;
   values: SafeDemandDraftValues;
@@ -20,6 +21,7 @@ function sanitizeValues(values: Partial<SafeDemandDraftValues>): SafeDemandDraft
   return {
     bairro: safeText(values.bairro, 160),
     categoria: safeText(values.categoria, 120),
+    tipo_problema: safeText(values.tipo_problema, 120),
   };
 }
 
@@ -29,7 +31,7 @@ export function saveSafeDemandDraft(
   now = Date.now(),
 ) {
   const draft: StoredSafeDemandDraft = {
-    version: 1,
+    version: 2,
     savedAt: now,
     expiresAt: now + SAFE_DEMAND_DRAFT_TTL_MS,
     values: sanitizeValues(values),
@@ -48,7 +50,7 @@ export function readSafeDemandDraft(
 
   try {
     const parsed = JSON.parse(raw) as Partial<StoredSafeDemandDraft>;
-    if (parsed.version !== 1 || typeof parsed.expiresAt !== "number" || !parsed.values) {
+    if (parsed.version !== 2 || typeof parsed.expiresAt !== "number" || !parsed.values) {
       storage.removeItem(SAFE_DEMAND_DRAFT_KEY);
       return null;
     }
@@ -59,7 +61,7 @@ export function readSafeDemandDraft(
     }
 
     return {
-      version: 1,
+      version: 2,
       savedAt: typeof parsed.savedAt === "number" ? parsed.savedAt : now,
       expiresAt: parsed.expiresAt,
       values: sanitizeValues(parsed.values),

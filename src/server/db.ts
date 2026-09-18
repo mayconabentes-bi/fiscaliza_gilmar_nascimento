@@ -99,6 +99,7 @@ export function setupDatabase() {
       municipio TEXT NOT NULL,
       bairro TEXT,
       categoria TEXT NOT NULL,
+      tipo_problema TEXT,
       descricao TEXT NOT NULL,
       prioridade TEXT DEFAULT 'MEDIA' CHECK(prioridade IN ('BAIXA', 'MEDIA', 'ALTA', 'CRITICA')),
       status TEXT DEFAULT 'RECEBIDA' CHECK(status IN ('RECEBIDA', 'EM_TRIAGEM', 'ENCAMINHADA', 'EM_ANALISE', 'EM_EXECUCAO', 'CONCLUIDA', 'INDEFERIDA')),
@@ -221,12 +222,14 @@ export function setupDatabase() {
     CREATE INDEX IF NOT EXISTS idx_demandas_status ON demandas(status);
     CREATE INDEX IF NOT EXISTS idx_demandas_municipio ON demandas(municipio);
     CREATE INDEX IF NOT EXISTS idx_demandas_categoria ON demandas(categoria);
+    CREATE INDEX IF NOT EXISTS idx_demandas_tipo_problema ON demandas(tipo_problema);
     CREATE INDEX IF NOT EXISTS idx_historico_demandas_demanda ON historico_status_demandas(demanda_id);
   `);
 
   try { db.exec(`ALTER TABLE usuarios ADD COLUMN versao_consentimento TEXT;`); } catch (_) {}
   try { db.exec(`ALTER TABLE demandas ADD COLUMN aviso_privacidade_versao TEXT;`); } catch (_) {}
   try { db.exec(`ALTER TABLE demandas ADD COLUMN aviso_privacidade_aceito_em DATETIME;`); } catch (_) {}
+  try { db.exec(`ALTER TABLE demandas ADD COLUMN tipo_problema TEXT;`); } catch (_) {}
 
   const propostasColumns = [
     "latitude REAL",

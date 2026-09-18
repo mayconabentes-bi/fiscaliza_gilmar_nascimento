@@ -73,6 +73,7 @@ export function setupProductionFastAdminRoutes(app: Express) {
       const status = typeof req.query.status === "string" ? req.query.status.trim() : "";
       const municipio = typeof req.query.municipio === "string" ? req.query.municipio.trim().slice(0, 120) : "";
       const categoria = typeof req.query.categoria === "string" ? req.query.categoria.trim().slice(0, 120) : "";
+      const tipoProblema = typeof req.query.tipo_problema === "string" ? req.query.tipo_problema.trim().slice(0, 120) : "";
       const requestedLimit = Number(req.query.limit || 100);
       const limit = Number.isFinite(requestedLimit) ? Math.min(200, Math.max(20, Math.trunc(requestedLimit))) : 100;
 
@@ -83,7 +84,7 @@ export function setupProductionFastAdminRoutes(app: Express) {
       const sql = await getHealthyPostgres();
       await ensureDemandEvidenceSchema();
       const rows = await sql`
-        select d.id, d.protocolo, d.nome_solicitante, d.contato, d.municipio, d.bairro, d.categoria, d.descricao,
+        select d.id, d.protocolo, d.nome_solicitante, d.contato, d.municipio, d.bairro, d.categoria, d.tipo_problema, d.descricao,
                d.prioridade, d.status, d.observacao_interna, d.usuario_id, d.evidencia_moderacao_status,
                ((select count(*) from public.demanda_evidencias e where e.demanda_id = d.id and e.storage_path is not null) > 0
                  or d.evidencia_foto_path is not null) as tem_evidencia_foto,
@@ -95,7 +96,8 @@ export function setupProductionFastAdminRoutes(app: Express) {
         from public.demandas d
         where (${status} = '' or d.status = ${status})
           and (${municipio} = '' or d.municipio ilike ${`%${municipio}%`})
-          and (${categoria} = '' or d.categoria ilike ${`%${categoria}%`})
+          and (${categoria} = '' or d.categoria = ${categoria})
+          and (${tipoProblema} = '' or d.tipo_problema = ${tipoProblema})
         order by d.created_at desc
         limit ${limit}
       `;

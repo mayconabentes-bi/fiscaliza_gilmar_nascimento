@@ -61,9 +61,9 @@ Regras:
 
 ## Estado interno implementado
 
-A migration `supabase/migrations/20260915160000_p0e_age_protection.sql` adiciona os campos mínimos de faixa etária e proteção reforçada. A migration `supabase/migrations/20260918143000_age_intelligence_bands.sql` amplia de forma backward-compatible as faixas aceitas, sem introduzir data de nascimento, idade exata, documento ou biometria.
+A migration `supabase/migrations/20260915160000_p0e_age_protection.sql` adiciona os campos mínimos de faixa etária e proteção reforçada. A migration `supabase/migrations/20260918145150_age_intelligence_bands_only.sql` define o estado efetivo atual somente com as faixas detalhadas, sem introduzir data de nascimento, idade exata, documento ou biometria.
 
-Registros legados podem permanecer sem faixa etária até nova declaração. Não inferir faixa etária por inteligência artificial, comportamento, redes sociais, nome, foto ou dados de terceiros.
+Não inferir faixa etária por inteligência artificial, comportamento, redes sociais, nome, foto ou dados de terceiros.
 
 ## Proteção reforçada para 16–17
 

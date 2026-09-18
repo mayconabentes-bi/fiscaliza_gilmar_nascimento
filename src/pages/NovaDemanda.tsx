@@ -4,8 +4,7 @@ import { ArrowRight, Bookmark, Camera, Check, CheckCircle2, Clock3, Copy, FileTe
 import { getPulsoAttribution, trackPulsoEvent } from "../lib/mobileAnalytics";
 import { prepareMobileEvidence } from "../lib/mobileImage";
 import { clearSafeDemandDraft, readSafeDemandDraft, saveSafeDemandDraft } from "../lib/safeDemandDraft";
-
-const categorias = ["Infraestrutura","Saúde","Educação","Mobilidade","Segurança Pública","Assistência Social","Meio Ambiente","Outro"];
+import { DEMAND_TAXONOMY, getDemandCategory } from "../shared/demandTaxonomy";
 const MAX_PHOTOS = 7;
 
 type PreparedPhoto = { id: string; dataUrl: string; bytes: number };
@@ -21,7 +20,7 @@ export default function NovaDemanda() {
   const [configError, setConfigError] = useState("");
   const [form, setForm] = useState({
     nome_solicitante: "", contato: "", municipio: "Manaus", bairro: "", cep: "", logradouro: "", numero: "", complemento: "", uf: "AM", codigo_ibge: "",
-    categoria: "Infraestrutura", prioridade: "MEDIA", descricao: "", faixa_etaria: "", aviso_privacidade_aceito: false
+    categoria: DEMAND_TAXONOMY[0].code, tipo_problema: DEMAND_TAXONOMY[0].problems[0].code, prioridade: "MEDIA", descricao: "", faixa_etaria: "", aviso_privacidade_aceito: false
   });
   const [photos, setPhotos] = useState<PreparedPhoto[]>([]);
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -38,10 +37,13 @@ export default function NovaDemanda() {
   const trackedSteps = useRef(new Set<string>());
 
   const locationComplete = Boolean(form.logradouro.trim() && form.bairro.trim());
+  const selectedCategory = getDemandCategory(form.categoria) || DEMAND_TAXONOMY[0];
   const detailsComplete = Boolean(
     form.faixa_etaria &&
     form.faixa_etaria !== "UNDER_16" &&
     form.nome_solicitante.trim() &&
+    form.categoria &&
+    form.tipo_problema &&
     form.descricao.trim()
   );
   const reviewComplete = Boolean(locationComplete && detailsComplete && form.aviso_privacidade_aceito);
@@ -100,6 +102,11 @@ export default function NovaDemanda() {
     markStarted();
     const { name, value } = event.target;
     const nextValue = event.target instanceof HTMLInputElement && event.target.type === "checkbox" ? event.target.checked : value;
+    if (name === "categoria" && typeof nextValue === "string") {
+      const category = getDemandCategory(nextValue);
+      setForm(prev => ({ ...prev, categoria: nextValue, tipo_problema: category?.problems[0]?.code || "" }));
+      return;
+    }
     setForm(prev => ({ ...prev, [name]: nextValue }));
   };
 
@@ -199,6 +206,7 @@ export default function NovaDemanda() {
     saveSafeDemandDraft({
       bairro: form.bairro,
       categoria: form.categoria,
+      tipo_problema: form.tipo_problema,
     });
     setDraftAvailable(true);
     setDraftMessage("Rascunho seguro salvo neste dispositivo por até 6 horas.");
@@ -305,7 +313,7 @@ export default function NovaDemanda() {
           <div className="min-w-0 flex-1">
             <h2 className="text-sm font-extrabold text-[#172033]">Rascunho seguro neste dispositivo</h2>
             <p className="mt-1 text-xs leading-relaxed text-[#657089]">
-              Se você quiser, salve somente bairro/localidade e categoria por até 6 horas. CEP, rua, número, complemento, nome, contato, descrição, foto, faixa etária e aceite de privacidade não são salvos.
+              Se você quiser, salve somente bairro/localidade, área e tipo de problema por até 6 horas. CEP, rua, número, complemento, nome, contato, descrição, foto, faixa etária e aceite de privacidade não são salvos.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {draftAvailable && <button type="button" onClick={restoreDraft} className="secondary-button min-h-11 px-4 text-sm">Restaurar rascunho</button>}
@@ -357,7 +365,20 @@ export default function NovaDemanda() {
         </section>
 
         <label className="block"><span className="text-sm font-bold text-[#172033]">Seu nome</span><input name="nome_solicitante" value={form.nome_solicitante} onChange={handleChange} autoComplete="name" required className="field text-base" placeholder="Digite seu nome" /></label>
-        <label className="block"><span className="text-sm font-bold text-[#172033]">Que tipo de problema é?</span><select name="categoria" value={form.categoria} onChange={handleChange} required className="field text-base">{categorias.map(c => <option key={c}>{c}</option>)}</select></label>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="block">
+            <span className="text-sm font-bold text-[#172033]">Área do problema</span>
+            <select name="categoria" value={form.categoria} onChange={handleChange} required className="field text-base">
+              {DEMAND_TAXONOMY.map((item) => <option key={item.code} value={item.code}>{item.label}</option>)}
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-sm font-bold text-[#172033]">Qual é o problema?</span>
+            <select name="tipo_problema" value={form.tipo_problema} onChange={handleChange} required className="field text-base">
+              {selectedCategory.problems.map((item) => <option key={item.code} value={item.code}>{item.label}</option>)}
+            </select>
+          </label>
+        </div>
         <label className="block"><span className="text-sm font-bold text-[#172033]">O que aconteceu?</span><textarea name="descricao" value={form.descricao} onChange={handleChange} required rows={5} className="field min-h-36 text-base leading-relaxed" placeholder="Explique o problema. Se puder, informe há quanto tempo acontece e algum detalhe que ajude a localizar o ponto." /></label>
         {detailsComplete && <p aria-live="polite" className="-mt-3 flex items-center gap-1.5 text-xs font-semibold text-[#1f2e6e]"><Check className="h-3.5 w-3.5" /> Informações principais do relato preenchidas.</p>}
         <div>

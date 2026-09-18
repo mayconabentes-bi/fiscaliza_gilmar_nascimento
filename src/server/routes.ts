@@ -5,6 +5,7 @@ import crypto from "node:crypto";
 import { v4 as uuidv4 } from "uuid";
 import { getDb } from "./db.js";
 import { cleanDate, cleanEmail, cleanEnum, cleanProtocol, cleanText } from "./requestValidation.js";
+import { isValidDemandClassification } from "../shared/demandTaxonomy.js";
 
 const PRIORITIES = ["BAIXA", "MEDIA", "ALTA", "CRITICA"] as const;
 
@@ -174,13 +175,15 @@ export function setupRoutes(app: Express) {
 
   app.post("/api/demandas", (req, res) => {
     if (!publicDemandIntakeEnabled()) return res.status(503).json({ error: "Recebimento público de demandas ainda não habilitado neste ambiente." });
-    let nome: string, contato: string, municipio: string, bairro: string, categoria: string, descricao: string, prioridade: string;
+    let nome: string, contato: string, municipio: string, bairro: string, categoria: string, tipoProblema: string, descricao: string, prioridade: string;
     try {
       nome = cleanText(req.body?.nome_solicitante, 160, true);
       contato = cleanText(req.body?.contato, 200);
       municipio = cleanText(req.body?.municipio, 120, true);
       bairro = cleanText(req.body?.bairro, 160);
-      categoria = cleanText(req.body?.categoria, 120, true);
+      categoria = cleanText(req.body?.categoria, 120, true).toUpperCase();
+      tipoProblema = cleanText(req.body?.tipo_problema, 120, true).toUpperCase();
+      if (!isValidDemandClassification(categoria, tipoProblema)) throw new Error("invalid_demand_classification");
       descricao = cleanText(req.body?.descricao, 5000, true);
       prioridade = cleanEnum(req.body?.prioridade, PRIORITIES, "MEDIA");
     } catch { return validationError(res); }
@@ -197,8 +200,8 @@ export function setupRoutes(app: Express) {
       const noticeVersion = consentVersion();
       const noticeAcceptedAt = new Date().toISOString();
       db.transaction(() => {
-        db.prepare(`INSERT INTO demandas (id, protocolo, nome_solicitante, contato, municipio, bairro, categoria, descricao, prioridade, status, usuario_id, aviso_privacidade_versao, aviso_privacidade_aceito_em) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'RECEBIDA', ?, ?, ?)`)
-          .run(id, protocolo, nome, contato || null, municipio, bairro || null, categoria, descricao, prioridade, claims?.id || null, noticeVersion, noticeAcceptedAt);
+        db.prepare(`INSERT INTO demandas (id, protocolo, nome_solicitante, contato, municipio, bairro, categoria, tipo_problema, descricao, prioridade, status, usuario_id, aviso_privacidade_versao, aviso_privacidade_aceito_em) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'RECEBIDA', ?, ?, ?)`)
+          .run(id, protocolo, nome, contato || null, municipio, bairro || null, categoria, tipoProblema, descricao, prioridade, claims?.id || null, noticeVersion, noticeAcceptedAt);
         db.prepare(`INSERT INTO historico_status_demandas (id, demanda_id, status_anterior, status_novo, usuario_responsavel_id, observacao) VALUES (?, ?, NULL, 'RECEBIDA', NULL, 'Registro recebido pelo canal público.')`).run(uuidv4(), id);
       })();
       res.status(201).json({ id, protocolo, status: "RECEBIDA" });
@@ -214,7 +217,7 @@ export function setupRoutes(app: Express) {
     catch { return res.status(404).json({ error: "Protocolo não encontrado." }); }
     const db = getDb();
     try {
-      const demanda = db.prepare(`SELECT protocolo, municipio, categoria, status, created_at, updated_at FROM demandas WHERE protocolo = ?`).get(protocolo) as any | undefined;
+      const demanda = db.prepare(`SELECT protocolo, municipio, categoria, tipo_problema, status, created_at, updated_at FROM demandas WHERE protocolo = ?`).get(protocolo) as any | undefined;
       if (!demanda) return res.status(404).json({ error: "Protocolo não encontrado." });
       const historico = db.prepare(`SELECT status_novo, created_at FROM historico_status_demandas WHERE demanda_id = (SELECT id FROM demandas WHERE protocolo = ?) ORDER BY created_at ASC`).all(protocolo);
       res.setHeader("Cache-Control", "no-store, private");
@@ -229,17 +232,18 @@ export function setupRoutes(app: Express) {
       const porStatus = db.prepare("SELECT status, COUNT(*) total FROM demandas GROUP BY status ORDER BY total DESC").all();
       const porMunicipio = db.prepare("SELECT municipio, COUNT(*) total FROM demandas GROUP BY municipio ORDER BY total DESC LIMIT 20").all();
       const porCategoria = db.prepare("SELECT categoria, COUNT(*) total FROM demandas GROUP BY categoria ORDER BY total DESC LIMIT 20").all();
-      const recentes = db.prepare(`SELECT id, protocolo, municipio, bairro, categoria, prioridade, status, created_at FROM demandas ORDER BY created_at DESC LIMIT 20`).all();
+      const porTipoProblema = db.prepare("SELECT categoria, tipo_problema, COUNT(*) total FROM demandas GROUP BY categoria, tipo_problema ORDER BY total DESC LIMIT 30").all();
+      const recentes = db.prepare(`SELECT id, protocolo, municipio, bairro, categoria, tipo_problema, prioridade, status, created_at FROM demandas ORDER BY created_at DESC LIMIT 20`).all();
       res.setHeader("Cache-Control", "no-store, private");
-      res.json({ resumo: { total: Number(resumo?.total || 0), concluidas: Number(resumo?.concluidas || 0), pendentes: Number(resumo?.pendentes || 0), criticas: Number(resumo?.criticas || 0) }, porStatus, porMunicipio, porCategoria, recentes });
+      res.json({ resumo: { total: Number(resumo?.total || 0), concluidas: Number(resumo?.concluidas || 0), pendentes: Number(resumo?.pendentes || 0), criticas: Number(resumo?.criticas || 0) }, porStatus, porMunicipio, porCategoria, porTipoProblema, recentes });
     } finally { db.close(); }
   });
 
   app.post("/api/relatorios/gerar", (req, res) => {
     const filtros = req.body?.filtros && typeof req.body.filtros === "object" ? req.body.filtros : {};
-    const allowedColumns = new Set(["protocolo", "municipio", "bairro", "categoria", "descricao", "prioridade", "status", "created_at", "updated_at"]);
+    const allowedColumns = new Set(["protocolo", "municipio", "bairro", "categoria", "tipo_problema", "descricao", "prioridade", "status", "created_at", "updated_at"]);
     const requested = Array.isArray(req.body?.colunas) ? req.body.colunas.filter((column: unknown) => allowedColumns.has(String(column))) : [];
-    const columns = requested.length ? requested : ["protocolo", "municipio", "bairro", "categoria", "prioridade", "status", "created_at"];
+    const columns = requested.length ? requested : ["protocolo", "municipio", "bairro", "categoria", "tipo_problema", "prioridade", "status", "created_at"];
     const conditions: string[] = [];
     const params: unknown[] = [];
     try {

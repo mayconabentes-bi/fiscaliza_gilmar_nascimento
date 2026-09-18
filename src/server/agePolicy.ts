@@ -6,8 +6,6 @@ export const AGE_BANDS = [
   "AGE_35_44",
   "AGE_45_59",
   "AGE_60_PLUS",
-  // Compatibilidade histórica: contas e demandas anteriores à classificação detalhada.
-  "AGE_18_PLUS",
 ] as const;
 
 export const DETAILED_PARTICIPATION_AGE_BANDS = [
@@ -77,5 +75,5 @@ export function publicAgeBandLabel(ageBand: AgeBand) {
   if (ageBand === "AGE_35_44") return "35 a 44 anos";
   if (ageBand === "AGE_45_59") return "45 a 59 anos";
   if (ageBand === "AGE_60_PLUS") return "60 anos ou mais";
-  return "18 anos ou mais (classificação anterior)";
+  throw new AgePolicyError("Faixa etária inválida.", 400, "AGE_BAND_INVALID");
 }

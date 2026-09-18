@@ -7,6 +7,7 @@ import { removeDemandEvidence, uploadDemandEvidence } from "./evidenceStorage.js
 import { ensureDemandEvidenceSchema } from "./demandEvidencePostgres.js";
 import { cleanEnum, cleanProtocol, cleanText } from "./requestValidation.js";
 import { AgePolicyError, ageBandForActiveParticipation, type AgeBand } from "./agePolicy.js";
+import { isValidDemandClassification } from "../shared/demandTaxonomy.js";
 
 const PRIORITIES = ["BAIXA", "MEDIA", "ALTA", "CRITICA"] as const;
 
@@ -71,7 +72,7 @@ export function setupCitizenDemandPostgres(app: Express) {
     if (req.body?.aviso_privacidade_aceito !== true) return res.status(400).json({ error: "Confirme o aviso de privacidade para registrar a demanda." });
 
     const claims = citizenClaims(req);
-    let nome: string, contato: string, municipio: string, bairro: string, categoria: string, descricao: string, prioridade: string;
+    let nome: string, contato: string, municipio: string, bairro: string, categoria: string, tipoProblema: string, descricao: string, prioridade: string;
     let cep: string, logradouro: string, numero: string, complemento: string, uf: string, codigoIbge: string;
     const legacyPhoto = typeof req.body?.foto_evidencia_base64 === "string" ? req.body.foto_evidencia_base64.trim() : "";
     const photoCandidates = Array.isArray(req.body?.foto_evidencias_base64)
@@ -95,7 +96,9 @@ export function setupCitizenDemandPostgres(app: Express) {
       complemento = cleanText(req.body?.complemento, 180);
       uf = cleanUf(req.body?.uf);
       codigoIbge = cleanIbge(req.body?.codigo_ibge);
-      categoria = cleanText(req.body?.categoria, 120, true);
+      categoria = cleanText(req.body?.categoria, 120, true).toUpperCase();
+      tipoProblema = cleanText(req.body?.tipo_problema, 120, true).toUpperCase();
+      if (!isValidDemandClassification(categoria, tipoProblema)) throw new Error("invalid_demand_classification");
       descricao = cleanText(req.body?.descricao, 5000, true);
       prioridade = cleanEnum(req.body?.prioridade, PRIORITIES, "MEDIA");
     } catch {
@@ -154,12 +157,12 @@ export function setupCitizenDemandPostgres(app: Express) {
             await transaction`
               insert into public.demandas (
                 id, protocolo, nome_solicitante, contato, municipio, bairro, cep, logradouro, numero, complemento, uf, codigo_ibge,
-                categoria, descricao, prioridade, status, usuario_id, evidencia_foto_path, evidencia_foto_mime,
+                categoria, tipo_problema, descricao, prioridade, status, usuario_id, evidencia_foto_path, evidencia_foto_mime,
                 evidencia_moderacao_status, aviso_privacidade_versao, aviso_privacidade_data,
                 faixa_etaria, revisao_reforcada, revisao_reforcada_motivo
               ) values (
                 ${id}, ${protocolo}, ${nome}, ${contato || null}, ${municipio}, ${bairro || null}, ${cep || null}, ${logradouro || null},
-                ${numero || null}, ${complemento || null}, ${uf || null}, ${codigoIbge || null}, ${categoria}, ${descricao},
+                ${numero || null}, ${complemento || null}, ${uf || null}, ${codigoIbge || null}, ${categoria}, ${tipoProblema}, ${descricao},
                 ${prioridade}, 'RECEBIDA', ${usuarioId}, ${firstEvidence?.path || null}, ${firstEvidence?.mime || null},
                 ${uploadedEvidences.length ? "PENDENTE" : "NAO_ENVIADA"}, ${privacyVersion()}, ${new Date().toISOString()},
                 ${faixaEtaria}, ${revisaoReforcada}, ${revisaoMotivo}
@@ -210,7 +213,7 @@ export function setupCitizenDemandPostgres(app: Express) {
     try {
       const sql = await getHealthyPostgres();
       const [demanda] = await sql`
-        select protocolo, municipio, categoria, status, created_at, updated_at
+        select protocolo, municipio, categoria, tipo_problema, status, created_at, updated_at
         from public.demandas where protocolo = ${protocolo} limit 1
       `;
       if (!demanda) return res.status(404).json({ error: "Protocolo não encontrado." });

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, Eye, Image as ImageIcon, RefreshCw, ShieldCheck, X } from "lucide-react";
 import { fetchWithTimeout } from "../lib/request";
+import { DEMAND_TAXONOMY, demandCategoryLabel, demandProblemLabel, getDemandCategory } from "../shared/demandTaxonomy";
 
 const statusOptions = [
   { value: "RECEBIDA", label: "Recebida", description: "Registro recebido e protocolado, aguardando triagem." },
@@ -52,6 +53,7 @@ export default function AdminDemandas() {
   const [status, setStatus] = useState("");
   const [municipio, setMunicipio] = useState("");
   const [categoria, setCategoria] = useState("");
+  const [tipoProblema, setTipoProblema] = useState("");
   const [error, setError] = useState("");
   const [demandaSelecionada, setDemandaSelecionada] = useState<any | null>(null);
   const [novoStatus, setNovoStatus] = useState<StatusValue>("RECEBIDA");
@@ -89,6 +91,7 @@ export default function AdminDemandas() {
     if (status) params.set("status", status);
     if (municipio) params.set("municipio", municipio);
     if (categoria) params.set("categoria", categoria);
+    if (tipoProblema) params.set("tipo_problema", tipoProblema);
 
     try {
       const response = await fetchWithTimeout(
@@ -239,13 +242,20 @@ export default function AdminDemandas() {
         </button>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-6 grid grid-cols-1 md:grid-cols-4 gap-3 shadow-sm">
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-6 grid grid-cols-1 md:grid-cols-5 gap-3 shadow-sm">
         <select value={status} onChange={e => setStatus(e.target.value)} className="rounded-xl border border-slate-300 px-3 py-2 text-sm">
           <option value="">Todos os status</option>
           {statusOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
         </select>
         <input value={municipio} onChange={e => setMunicipio(e.target.value)} placeholder="Filtrar município" className="rounded-xl border border-slate-300 px-3 py-2 text-sm" />
-        <input value={categoria} onChange={e => setCategoria(e.target.value)} placeholder="Filtrar categoria" className="rounded-xl border border-slate-300 px-3 py-2 text-sm" />
+        <select value={categoria} onChange={e => { setCategoria(e.target.value); setTipoProblema(""); }} className="rounded-xl border border-slate-300 px-3 py-2 text-sm">
+          <option value="">Todas as áreas</option>
+          {DEMAND_TAXONOMY.map(item => <option key={item.code} value={item.code}>{item.label}</option>)}
+        </select>
+        <select value={tipoProblema} onChange={e => setTipoProblema(e.target.value)} className="rounded-xl border border-slate-300 px-3 py-2 text-sm" disabled={!categoria}>
+          <option value="">Todos os problemas</option>
+          {(getDemandCategory(categoria)?.problems || []).map(item => <option key={item.code} value={item.code}>{item.label}</option>)}
+        </select>
         <button onClick={fetchDemandas} disabled={loading} className="rounded-xl bg-slate-900 px-4 py-2 text-white text-sm font-semibold hover:bg-slate-800 disabled:opacity-50">Aplicar filtros</button>
       </div>
 
@@ -258,7 +268,7 @@ export default function AdminDemandas() {
               <tr>
                 <th className="px-4 py-3 font-semibold">Protocolo</th>
                 <th className="px-4 py-3 font-semibold">Território</th>
-                <th className="px-4 py-3 font-semibold">Categoria</th>
+                <th className="px-4 py-3 font-semibold">Classificação</th>
                 <th className="px-4 py-3 font-semibold">Prioridade</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
                 <th className="px-4 py-3 font-semibold">Descrição</th>
@@ -275,7 +285,7 @@ export default function AdminDemandas() {
                 <tr key={demanda.id} className="hover:bg-slate-50 align-top">
                   <td className="px-4 py-4 font-mono font-semibold text-slate-900">{demanda.protocolo}</td>
                   <td className="px-4 py-4 text-slate-700">{demanda.municipio}<br /><span className="text-xs text-slate-400">{demanda.bairro || "Sem bairro"}</span></td>
-                  <td className="px-4 py-4 text-slate-700">{demanda.categoria}</td>
+                  <td className="px-4 py-4 text-slate-700"><span className="font-semibold">{demandProblemLabel(demanda.categoria, demanda.tipo_problema)}</span><br /><span className="text-xs text-slate-400">{demandCategoryLabel(demanda.categoria)}</span></td>
                   <td className="px-4 py-4"><span className={`rounded-full px-2 py-1 text-xs font-bold ${prioridadeClass[demanda.prioridade] || prioridadeClass.MEDIA}`}>{demanda.prioridade}</span></td>
                   <td className="px-4 py-4 text-slate-700 font-semibold">{statusLabel(demanda.status)}</td>
                   <td className="px-4 py-4 text-slate-600 max-w-md line-clamp-3">{demanda.descricao}</td>
