@@ -10,6 +10,8 @@ const BASE = `http://127.0.0.1:${PORT}`;
 const JWT_SECRET = "smoke-test-secret-only-for-ci-2028-with-32-chars";
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'amazonas-radar-'));
 const dbPath = path.join(root, 'civic_platform.db');
+const productionRadarSource = fs.readFileSync(new URL("../src/server/productionRadarRoutes.ts", import.meta.url), "utf8");
+const radarPageSource = fs.readFileSync(new URL("../src/pages/RadarTerritorial.tsx", import.meta.url), "utf8");
 const endpoints = [
   "/api/radar/manaus/fontes",
   "/api/radar/manaus/bairros",
@@ -89,6 +91,22 @@ function assertStatus(actual, expected, label) {
 }
 
 async function main() {
+  if (!productionRadarSource.includes('safeLoad(loadNeighborhoods, "bairros")')) {
+    throw new Error("Diagnóstico territorial de produção deve carregar a base oficial de bairros.");
+  }
+  if (!productionRadarSource.includes('baseTerritorial: bairrosOficiais.length ? "geomanaus" : "demandas_fallback"')) {
+    throw new Error("Diagnóstico territorial deve declarar GeoManaus como base e preservar fallback.");
+  }
+  if (!productionRadarSource.includes("const baseBairros = bairrosOficiais.length")) {
+    throw new Error("Diagnóstico territorial deve partir dos bairros oficiais, não apenas das demandas existentes.");
+  }
+  if (!radarPageSource.includes("Nenhuma demanda registrada neste bairro até o momento")) {
+    throw new Error("UI deve explicar explicitamente bairros sem demandas.");
+  }
+  if (!radarPageSource.includes("<title>{shape.bairro}</title>") || !radarPageSource.includes('aria-live="polite"')) {
+    throw new Error("Mapa deve identificar bairros e anunciar a seleção de forma acessível.");
+  }
+
   await waitForServer();
   seedAdminAndDemand();
   for (const endpoint of endpoints) {
