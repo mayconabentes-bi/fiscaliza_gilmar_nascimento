@@ -27,7 +27,7 @@ expect(!demandForm.includes('option value="AGE_18_PLUS"'), "Demanda nova não de
 expect(migration.includes("AGE_18_PLUS permanece válido"), "Migration deve preservar compatibilidade histórica.");
 expect(migration.includes("Não cria data de nascimento"), "Migration deve documentar minimização de dados.");
 
-expect(stats.includes("supressão complementar") || stats.includes("Supressão complementar"), "Estatística deve aplicar supressão complementar.");
+expect(stats.includes("segunda categoria é ocultada") && stats.includes("subtração dos totais"), "Estatística deve aplicar supressão complementar contra reconstrução por diferença.");
 expect(stats.includes("Math.log(6)"), "Diversidade deve usar normalização fixa das seis faixas detalhadas.");
 expect(stats.includes("CIVIC_AGGREGATE") === false, "Módulo estatístico puro não deve depender diretamente do ambiente.");
 
