@@ -94,14 +94,42 @@ test('aviso de privacidade respeita a navegação touch', async ({ page }, testI
   await capture(page, 'home-privacidade', testInfo.project.name);
 });
 
-test('registro mantém progresso, privacidade e toque confortável', async ({ page }, testInfo) => {
+test('registro mantém fluxo guiado, privacidade e revisão no mobile', async ({ page }, testInfo) => {
   await page.goto('/demandas/nova');
   await stabilize(page);
 
-  await expect(page.getByRole('progressbar', { name: /progresso do registro/i })).toBeVisible();
-  await expect(page.getByRole('button', { name: /enviar e gerar protocolo/i })).toBeVisible();
-  await expect(page.getByText(/não substitui canais oficiais/i)).toBeVisible();
-  await capture(page, 'registro-publico', testInfo.project.name);
+  const viewport = page.viewportSize();
+  const isPhone = (viewport?.width || 0) < 640;
+
+  if (isPhone) {
+    await expect(page.getByRole('progressbar', { name: /etapa do registro/i })).toBeVisible();
+    await expect(page.locator('[data-register-step="1"]')).toBeVisible();
+    await page.getByLabel('Faixa etária').selectOption('AGE_25_34');
+    await page.getByLabel('Logradouro ou via').fill('Av. Teste Visual');
+    await page.getByLabel('Bairro ou localidade').fill('Centro');
+    await capture(page, 'registro-etapa-1', testInfo.project.name);
+
+    await page.getByRole('button', { name: /^continuar$/i }).click();
+    await expect(page.locator('[data-register-step="2"]')).toBeVisible();
+    await page.getByLabel('Seu nome').fill('Pessoa QA Visual');
+    await page.getByLabel('O que aconteceu?').fill('Ocorrência de teste visual para validar o fluxo guiado no celular.');
+    await expect(page.getByText(/adicionar evidências/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /adicionar contato para retorno/i })).toBeVisible();
+    await capture(page, 'registro-etapa-2', testInfo.project.name);
+
+    await page.getByRole('button', { name: /^revisar/i }).click();
+    await expect(page.locator('[data-register-step="3"]')).toBeVisible();
+    await expect(page.locator('[data-register-review]')).toBeVisible();
+    await expect(page.getByText(/revise antes de enviar/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /enviar e gerar protocolo/i })).toBeVisible();
+    await expect(page.getByText(/não substitui canais oficiais/i)).toBeVisible();
+    await capture(page, 'registro-etapa-3', testInfo.project.name);
+  } else {
+    await expect(page.getByRole('progressbar', { name: /progresso do registro/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /enviar e gerar protocolo/i })).toBeVisible();
+    await expect(page.getByText(/não substitui canais oficiais/i)).toBeVisible();
+    await capture(page, 'registro-publico', testInfo.project.name);
+  }
 });
 
 test('acompanhamento usa somente status público determinístico', async ({ page }, testInfo) => {
