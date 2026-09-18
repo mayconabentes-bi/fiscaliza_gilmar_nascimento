@@ -49,6 +49,8 @@ jobs:
         run: npm ci
       - name: Apply migrations from zero and validate RLS
         run: npm run test:postgres-production-like
+      - name: Account recovery runtime on PostgreSQL
+        run: npm run test:account-recovery-runtime
 
   p0-validate:
     name: P0 jurídico — build, lint, legal, persistência, mobile, go-live e segurança
