@@ -28,6 +28,9 @@ expect(spec.includes("capture(page, 'registro-publico'"), 'Registro deve ter cap
 expect(spec.includes("capture(page, 'registro-etapa-1'") && spec.includes("capture(page, 'registro-etapa-2'") && spec.includes("capture(page, 'registro-etapa-3'"), 'Registrar mobile deve ter capturas dedicadas das três etapas em telefone.');
 expect(spec.includes("data-register-review") && spec.includes("getByRole('button', { name: /^continuar$/i })") && spec.includes("getByRole('button', { name: /^revisar/i })"), 'QA visual deve percorrer Localize, Descreva e Confirme no mobile.');
 expect(spec.includes("capture(page, 'acompanhamento-publico'"), 'Acompanhamento deve ter captura dedicada.');
+expect(spec.includes("capture(page, 'acompanhamento-busca'") && spec.includes("capture(page, 'acompanhamento-nao-encontrado'"), 'Acompanhar deve ter capturas específicas da busca e do estado não encontrado.');
+expect(spec.includes("input.boundingBox()") && spec.includes("submit.boundingBox()"), 'QA visual deve garantir campo e CTA do protocolo na primeira dobra mobile.');
+expect(spec.includes("data-followup-status") && spec.includes("data-followup-history") && spec.includes("data-followup-error"), 'QA visual deve validar status, histórico e erro orientativo do acompanhamento.');
 expect(spec.includes("test-results/visual"), 'Capturas devem ser gravadas em diretório de artefatos.');
 expect(!spec.includes('vercel.app'), 'O QA visual deve rodar localmente e não consumir deploy Vercel.');
 expect(workflow.includes('npx playwright install --with-deps chromium'), 'Workflow deve instalar somente Chromium para reduzir custo de CI.');
