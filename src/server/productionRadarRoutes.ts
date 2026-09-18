@@ -70,8 +70,13 @@ async function ageIntelligenceAggregate() {
     group by coalesce(faixa_etaria, 'NAO_INFORMADA')
   `;
 
+  const normalizedRows = Array.from(rows, (row: any) => ({
+    faixa_etaria: String(row.faixa_etaria),
+    total: Number(row.total || 0),
+  }));
+
   return buildAgeIntelligenceAggregate(
-    rows as Array<{ faixa_etaria: string; total: number | string }>,
+    normalizedRows,
     process.env.CIVIC_AGGREGATE_MIN_GROUP_SIZE,
   );
 }
