@@ -45,7 +45,8 @@
     "audit:high": "npm audit --audit-level=high",
     "test:age-intelligence": "node tests/age-intelligence-contract.mjs && tsx tests/age-intelligence-runtime.ts",
     "test:demand-taxonomy": "node tests/demand-taxonomy-contract.mjs && tsx tests/demand-taxonomy-runtime.ts",
-    "test:citizen-account": "node tests/citizen-account-structure-contract.mjs && tsx tests/citizen-account-age-runtime.ts"
+    "test:citizen-account": "node tests/citizen-account-structure-contract.mjs && tsx tests/citizen-account-age-runtime.ts",
+    "test:citizen-experience": "node tests/citizen-authenticated-experience-contract.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.52.0",
