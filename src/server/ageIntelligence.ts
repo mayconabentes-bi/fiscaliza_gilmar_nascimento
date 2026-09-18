@@ -5,7 +5,6 @@ export const AGE_INTELLIGENCE_BANDS = [
   { codigo: "AGE_35_44", label: "35 a 44 anos", detalhada: true },
   { codigo: "AGE_45_59", label: "45 a 59 anos", detalhada: true },
   { codigo: "AGE_60_PLUS", label: "60 anos ou mais", detalhada: true },
-  { codigo: "AGE_18_PLUS", label: "18+ · classificação anterior", detalhada: false, legado: true },
   { codigo: "NAO_INFORMADA", label: "Não informado", detalhada: false, naoInformada: true },
 ] as const;
 
@@ -41,7 +40,6 @@ export function buildAgeIntelligenceAggregate(rows: AgeCountRow[], minGroupInput
   );
   const total = [...counts.values()].reduce((sum, value) => sum + value, 0);
   const naoInformados = counts.get("NAO_INFORMADA") || 0;
-  const legado = counts.get("AGE_18_PLUS") || 0;
   const classificados = Math.max(0, total - naoInformados);
   const detalhados = AGE_INTELLIGENCE_BANDS
     .filter((band) => band.detalhada)
@@ -76,7 +74,6 @@ export function buildAgeIntelligenceAggregate(rows: AgeCountRow[], minGroupInput
       total: suprimido ? null : value,
       percentual: suprimido ? null : percentage(value, total),
       suprimido,
-      legado: "legado" in band ? Boolean(band.legado) : false,
     };
   });
 
@@ -88,7 +85,6 @@ export function buildAgeIntelligenceAggregate(rows: AgeCountRow[], minGroupInput
     total,
     classificados,
     naoInformados,
-    legado,
     detalhados,
     coberturaPercentual: percentage(classificados, total),
     coberturaDetalhadaPercentual: percentage(detalhados, total),
