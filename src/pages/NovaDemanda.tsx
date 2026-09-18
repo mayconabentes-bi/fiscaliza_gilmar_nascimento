@@ -107,15 +107,18 @@ export default function NovaDemanda({ user }: { user?: any }) {
     goToStep(3);
   };
 
-  const ageBandLabel = (value: string) => ({
-    UNDER_16: "Menos de 16 anos",
-    AGE_16_17: "16 a 17 anos",
-    AGE_18_24: "18 a 24 anos",
-    AGE_25_34: "25 a 34 anos",
-    AGE_35_44: "35 a 44 anos",
-    AGE_45_59: "45 a 59 anos",
-    AGE_60_PLUS: "60 anos ou mais",
-  }[value] || value);
+  const ageBandLabel = (value: string) => {
+    const labels: Record<string, string> = {
+      UNDER_16: "Menos de 16 anos",
+      AGE_16_17: "16 a 17 anos",
+      AGE_18_24: "18 a 24 anos",
+      AGE_25_34: "25 a 34 anos",
+      AGE_35_44: "35 a 44 anos",
+      AGE_45_59: "45 a 59 anos",
+      AGE_60_PLUS: "60 anos ou mais",
+    };
+    return labels[value] || value;
+  };
 
   const loadPublicConfig = async () => {
     setConfigError("");
@@ -569,4 +572,5 @@ export default function NovaDemanda({ user }: { user?: any }) {
         </section>
       </form>
     </div>
-  );}
+  );
+}
