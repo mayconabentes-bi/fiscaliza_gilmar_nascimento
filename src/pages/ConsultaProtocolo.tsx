@@ -33,7 +33,7 @@ export default function ConsultaProtocolo(){
     finally{ setLoading(false); }
   };
   const copyProtocol = async()=>{ const protocol=resultado?.demanda?.protocolo; if(!protocol)return; try{await navigator.clipboard.writeText(protocol);setActionFeedback("Protocolo copiado.");}catch{setActionFeedback("Não foi possível copiar automaticamente. Selecione o protocolo na tela.");} };
-  const shareProtocol = async()=>{ const protocol=resultado?.demanda?.protocolo; if(!protocol)return; const url=`${window.location.origin}/protocolo?codigo=${encodeURIComponent(protocol)}`; try{if(navigator.share){await navigator.share({title:"Acompanhar protocolo FISCALIZE",text:`Protocolo ${protocol}`,url});setActionFeedback("Acompanhamento compartilhado.");return;}await navigator.clipboard.writeText(url);setActionFeedback("Link de acompanhamento copiado.");}catch(e:any){if(e?.name!=="AbortError")setActionFeedback("Não foi possível compartilhar agora.");} };
+  const shareProtocol = async()=>{ const protocol=resultado?.demanda?.protocolo; if(!protocol)return; const url=`${window.location.origin}/protocolo?codigo=${encodeURIComponent(protocol)}&share=2`; try{if(navigator.share){await navigator.share({title:"Acompanhar protocolo FISCALIZE",text:`Protocolo ${protocol}`,url});setActionFeedback("Acompanhamento compartilhado.");return;}await navigator.clipboard.writeText(url);setActionFeedback("Link de acompanhamento copiado.");}catch(e:any){if(e?.name!=="AbortError")setActionFeedback("Não foi possível compartilhar agora.");} };
   useEffect(()=>{if(params.get("codigo")) void consultar();/* eslint-disable-next-line react-hooks/exhaustive-deps */},[]);
 
   return <div className="mx-auto max-w-5xl py-2 sm:py-8">
