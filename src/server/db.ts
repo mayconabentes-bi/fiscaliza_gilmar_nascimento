@@ -32,8 +32,6 @@ export function setupDatabase() {
       email TEXT UNIQUE NOT NULL,
       municipio TEXT NOT NULL,
       bairro TEXT NOT NULL,
-      indice_contribuicao_civica REAL DEFAULT 0.0,
-      nivel_verificacao INTEGER DEFAULT 0,
       status TEXT DEFAULT 'ativo',
       consentimento_lgpd INTEGER DEFAULT 0,
       data_consentimento DATETIME,
