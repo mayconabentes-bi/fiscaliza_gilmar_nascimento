@@ -324,11 +324,82 @@ export default function RadarTerritorial() {
       {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
 
       <section aria-label="Indicadores territoriais">
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-          {cards.slice(0, 4).map((card) => { const Icon = card.icon; return <div key={card.label} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"><Icon className="mb-3 h-5 w-5 text-indigo-600" /><p className="text-xs text-slate-500 sm:text-sm">{card.label}</p><p className="mt-1 text-xl font-bold text-slate-900 sm:text-2xl">{card.value == null ? "—" : Number(card.value).toLocaleString("pt-BR")}</p></div>; })}
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-5">
+          {cards.map((card, index) => {
+            const Icon = card.icon;
+            const wide = index === cards.length - 1;
+            return (
+              <div key={card.label} className={`rounded-xl border shadow-sm ${wide ? "col-span-2 flex min-h-20 items-center justify-between border-indigo-100 bg-indigo-50/40 px-4 py-3 xl:col-span-1 xl:block xl:border-slate-200 xl:bg-white xl:p-5" : "border-slate-200 bg-white p-4 sm:p-5"}`}>
+                <div className={wide ? "xl:hidden" : ""}>
+                  {!wide && <Icon className="mb-3 h-5 w-5 text-indigo-600" />}
+                  <p className={`${wide ? "font-semibold text-indigo-700" : "text-slate-500"} text-xs sm:text-sm`}>{card.label}</p>
+                  <p className={`mt-1 font-bold text-slate-900 ${wide ? "text-2xl" : "text-xl sm:text-2xl"}`}>{card.value == null ? "—" : Number(card.value).toLocaleString("pt-BR")}</p>
+                </div>
+                {wide && <Icon className="h-6 w-6 text-indigo-600 xl:hidden" />}
+                {wide && <div className="hidden xl:block"><Icon className="mb-3 h-5 w-5 text-indigo-600" /><p className="text-sm text-slate-500">{card.label}</p><p className="mt-1 text-2xl font-bold text-slate-900">{card.value == null ? "—" : Number(card.value).toLocaleString("pt-BR")}</p></div>}
+              </div>
+            );
+          })}
         </div>
-        {(() => { const card = cards[4]; const Icon = card.icon; return <div className="mt-3 flex min-h-20 items-center justify-between rounded-xl border border-indigo-100 bg-indigo-50/40 px-4 py-3 shadow-sm sm:hidden"><div><p className="text-xs font-semibold text-indigo-700">{card.label}</p><p className="mt-1 text-2xl font-extrabold text-slate-900">{Number(card.value || 0).toLocaleString("pt-BR")}</p></div><Icon className="h-6 w-6 text-indigo-600" /></div>; })()}
-        <div className="mt-4 hidden xl:block">{(() => { const card = cards[4]; const Icon = card.icon; return <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><Icon className="mb-3 h-5 w-5 text-indigo-600" /><p className="text-sm text-slate-500">{card.label}</p><p className="mt-1 text-2xl font-bold text-slate-900">{Number(card.value || 0).toLocaleString("pt-BR")}</p></div>; })()}</div>
+      </section>
+      <MapaBairros mapa={mapa} selecionado={bairroSelecionado} onSelect={selecionarBairro} />
+
+      {territorioSelecionado && (
+        <section ref={diagnosticoRef} className="scroll-mt-24 rounded-2xl border border-indigo-200 bg-indigo-50/40 p-4 shadow-sm sm:p-6">
+          <div className="flex flex-col gap-1">
+            <p className="text-xs font-bold uppercase tracking-wide text-indigo-700">Diagnóstico territorial</p>
+            <h2 className="text-xl font-bold text-slate-900">{territorioSelecionado.bairro}</h2>
+          </div>
+          {territorioSelecionado.demandas === 0 && (
+            <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+              Nenhuma demanda registrada neste bairro até o momento. Os indicadores de obras, saúde e escolas continuam disponíveis.
+            </div>
+          )}
+          <div className="mt-5">
+            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">Demandas</p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {[["Registradas", territorioSelecionado.demandas], ["Prioritárias", territorioSelecionado.prioritarias], ["Concluídas", territorioSelecionado.concluidas], ["Conclusão", `${territorioSelecionado.taxaConclusao}%`]].map(([label, value]) => (
+                <div key={String(label)} className="rounded-xl border border-indigo-100 bg-white p-3"><p className="text-[11px] text-slate-500">{label}</p><p className="mt-1 text-lg font-bold text-slate-900">{value}</p></div>
+              ))}
+            </div>
+          </div>
+          <div className="mt-4">
+            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">Território</p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {[["Temas", territorioSelecionado.temas], ["Obras", territorioSelecionado.obras], ["Saúde", territorioSelecionado.unidadesSaude], ["Escolas", territorioSelecionado.escolas]].map(([label, value]) => (
+                <div key={String(label)} className="rounded-xl border border-indigo-100 bg-white p-3"><p className="text-[11px] text-slate-500">{label}</p><p className="mt-1 text-lg font-bold text-slate-900">{value}</p></div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" aria-labelledby="radar-operational-title">
+        <div className="p-4 pb-3 sm:p-6 sm:pb-4">
+          <h2 id="radar-operational-title" className="text-lg font-bold text-slate-900">Leitura operacional</h2>
+          <p className="mt-1 text-sm text-slate-500">Alterne entre concentração territorial e problemas recorrentes.</p>
+        </div>
+        <div className="mx-4 flex gap-1 rounded-xl bg-slate-100 p-1 sm:mx-6" role="tablist" aria-label="Leitura operacional do Radar">
+          <button type="button" role="tab" aria-selected={operationalTab === "bairros"} onClick={() => setOperationalTab("bairros")} className={`min-h-11 flex-1 rounded-lg px-3 py-2 text-sm font-bold transition ${operationalTab === "bairros" ? "bg-white text-indigo-700 shadow-sm" : "text-slate-500"}`}>Bairros</button>
+          <button type="button" role="tab" aria-selected={operationalTab === "problemas"} onClick={() => setOperationalTab("problemas")} className={`min-h-11 flex-1 rounded-lg px-3 py-2 text-sm font-bold transition ${operationalTab === "problemas" ? "bg-white text-indigo-700 shadow-sm" : "text-slate-500"}`}>Problemas</button>
+        </div>
+        <div className="p-4 sm:p-6" role="tabpanel">
+          {operationalTab === "bairros" ? (
+            <div className="space-y-2">
+              {(resumo?.demandasPorBairro || []).length === 0 ? <p className="text-sm text-slate-500">Ainda não há dados suficientes para o ranking.</p> : resumo?.demandasPorBairro.slice(0, 8).map((item, index) => {
+                const active = normalize(item.bairro) === normalize(bairroSelecionado);
+                return <button type="button" onClick={() => selecionarBairro(item.bairro)} key={item.bairro} className={`block min-h-12 w-full rounded-xl border px-3 py-2 text-left transition focus:outline-none focus:ring-2 focus:ring-indigo-400 ${active ? "border-indigo-300 bg-indigo-50" : "border-transparent hover:bg-slate-50"}`}>
+                  <div className="flex items-center gap-3 text-sm"><span className="w-7 shrink-0 text-xs font-bold text-slate-400">{index + 1}º</span><span className="min-w-0 flex-1 truncate font-semibold text-slate-700">{item.bairro}</span><span className="shrink-0 font-bold text-slate-600">{item.total}</span></div>
+                  <div className="ml-10 mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-indigo-500" style={{ width: `${Math.max(3, (Number(item.total) / maxBairro) * 100)}%` }} /></div>
+                </button>;
+              })}
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {(resumo?.demandasPorTipo || []).length === 0 ? <p className="text-sm text-slate-500">Nenhum problema consolidado no momento.</p> : resumo?.demandasPorTipo.slice(0, 8).map((item) => <div key={`${item.categoria}-${item.tipo_problema}`} className="flex min-h-14 items-center justify-between gap-4 py-3"><span className="min-w-0"><span className="block text-sm font-semibold text-slate-700">{demandProblemLabel(item.categoria, item.tipo_problema)}</span><span className="block text-xs text-slate-400">{demandCategoryLabel(item.categoria)}</span></span><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{item.total}</span></div>)}
+            </div>
+          )}
+        </div>
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
@@ -401,71 +472,32 @@ export default function RadarTerritorial() {
         </> : <p className="mt-5 text-sm text-slate-500">A inteligência etária ainda não está disponível neste ambiente.</p>}
       </section>
 
-      {quality?.dimensions?.length ? <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm"><h2 className="text-lg font-bold text-slate-900">Qualidade da territorialização</h2><p className="mt-1 text-sm text-slate-500">Mostra quantos registros recebidos das fontes puderam ser associados a um território.</p><div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-3">{quality.dimensions.map((item) => <div key={item.key} className="rounded-xl border border-slate-200 p-4"><p className="font-semibold text-slate-900">{qualityLabel(item.key)}</p><p className="mt-2 text-sm text-slate-600">Recebidos: {item.received.toLocaleString("pt-BR")}</p><p className="text-sm text-slate-600">Territorializados: {item.classified.toLocaleString("pt-BR")}</p><p className="text-sm text-slate-600">Sem classificação: {item.unclassified.toLocaleString("pt-BR")}</p><p className="mt-2 text-lg font-bold text-indigo-700">{(item.coverage * 100).toFixed(1)}%</p></div>)}</div><p className="mt-3 text-xs text-slate-500">{quality.methodology}</p></section> : null}
-
-      <MapaBairros mapa={mapa} selecionado={bairroSelecionado} onSelect={selecionarBairro} />
-
-      {territorioSelecionado && (
-        <section ref={diagnosticoRef} className="scroll-mt-24 rounded-2xl border border-indigo-200 bg-indigo-50/40 p-4 shadow-sm sm:p-6">
-          <div className="flex flex-col gap-1">
-            <p className="text-xs font-bold uppercase tracking-wide text-indigo-700">Diagnóstico territorial</p>
-            <h2 className="text-xl font-bold text-slate-900">{territorioSelecionado.bairro}</h2>
-          </div>
-          {territorioSelecionado.demandas === 0 && (
-            <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
-              Nenhuma demanda registrada neste bairro até o momento. Os indicadores de obras, saúde e escolas continuam disponíveis.
-            </div>
-          )}
-          <div className="mt-5">
-            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">Demandas</p>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {[["Registradas", territorioSelecionado.demandas], ["Prioritárias", territorioSelecionado.prioritarias], ["Concluídas", territorioSelecionado.concluidas], ["Conclusão", `${territorioSelecionado.taxaConclusao}%`]].map(([label, value]) => (
-                <div key={String(label)} className="rounded-xl border border-indigo-100 bg-white p-3"><p className="text-[11px] text-slate-500">{label}</p><p className="mt-1 text-lg font-bold text-slate-900">{value}</p></div>
-              ))}
-            </div>
+      <details className="rounded-2xl border border-slate-200 bg-white shadow-sm sm:hidden">
+        <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 font-bold text-slate-900">
+          <span>Qualidade e fontes</span>
+          <span className="text-xs font-semibold text-slate-500">detalhes técnicos</span>
+        </summary>
+        <div className="border-t border-slate-100 px-4 py-4">
+          {quality?.dimensions?.length ? <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Territorialização</p>
+            <div className="mt-2 divide-y divide-slate-100">{quality.dimensions.map((item) => <div key={item.key} className="flex min-h-11 items-center justify-between gap-3 py-2 text-sm"><span className="font-semibold text-slate-700">{qualityLabel(item.key)}</span><span className="font-bold text-indigo-700">{(item.coverage * 100).toFixed(1)}%</span></div>)}</div>
+          </div> : null}
+          <div className="mt-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Indicadores externos</p>
+            <div className="mt-2 divide-y divide-slate-100">{indicadoresExternos.map((item) => <div key={item.key} className="flex min-h-11 items-center justify-between gap-3 py-2"><span className="min-w-0 truncate text-sm font-semibold text-slate-700">{item.nome}</span><span className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold ${statusClass(item.disponibilidade)}`}>{statusLabel(item.disponibilidade)}</span></div>)}</div>
           </div>
           <div className="mt-4">
-            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">Território</p>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {[["Temas", territorioSelecionado.temas], ["Obras", territorioSelecionado.obras], ["Saúde", territorioSelecionado.unidadesSaude], ["Escolas", territorioSelecionado.escolas]].map(([label, value]) => (
-                <div key={String(label)} className="rounded-xl border border-indigo-100 bg-white p-3"><p className="text-[11px] text-slate-500">{label}</p><p className="mt-1 text-lg font-bold text-slate-900">{value}</p></div>
-              ))}
-            </div>
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Fontes utilizadas</p>
+            <div className="mt-2 divide-y divide-slate-100">{fontes.map((fonte) => <div key={fonte.key} className="flex min-h-11 items-center justify-between gap-3 py-2"><span className="min-w-0 truncate text-sm font-semibold text-slate-700">{fonte.nome}</span><span className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold ${statusClass(fonte.status)}`}>{statusLabel(fonte.status)}</span></div>)}</div>
           </div>
-        </section>
-      )}
-
-      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" aria-labelledby="radar-operational-title">
-        <div className="p-4 pb-3 sm:p-6 sm:pb-4">
-          <h2 id="radar-operational-title" className="text-lg font-bold text-slate-900">Leitura operacional</h2>
-          <p className="mt-1 text-sm text-slate-500">Alterne entre concentração territorial e problemas recorrentes.</p>
         </div>
-        <div className="mx-4 flex gap-1 rounded-xl bg-slate-100 p-1 sm:mx-6" role="tablist" aria-label="Leitura operacional do Radar">
-          <button type="button" role="tab" aria-selected={operationalTab === "bairros"} onClick={() => setOperationalTab("bairros")} className={`min-h-11 flex-1 rounded-lg px-3 py-2 text-sm font-bold transition ${operationalTab === "bairros" ? "bg-white text-indigo-700 shadow-sm" : "text-slate-500"}`}>Bairros</button>
-          <button type="button" role="tab" aria-selected={operationalTab === "problemas"} onClick={() => setOperationalTab("problemas")} className={`min-h-11 flex-1 rounded-lg px-3 py-2 text-sm font-bold transition ${operationalTab === "problemas" ? "bg-white text-indigo-700 shadow-sm" : "text-slate-500"}`}>Problemas</button>
-        </div>
-        <div className="p-4 sm:p-6" role="tabpanel">
-          {operationalTab === "bairros" ? (
-            <div className="space-y-2">
-              {(resumo?.demandasPorBairro || []).length === 0 ? <p className="text-sm text-slate-500">Ainda não há dados suficientes para o ranking.</p> : resumo?.demandasPorBairro.slice(0, 8).map((item, index) => {
-                const active = normalize(item.bairro) === normalize(bairroSelecionado);
-                return <button type="button" onClick={() => selecionarBairro(item.bairro)} key={item.bairro} className={`block min-h-12 w-full rounded-xl border px-3 py-2 text-left transition focus:outline-none focus:ring-2 focus:ring-indigo-400 ${active ? "border-indigo-300 bg-indigo-50" : "border-transparent hover:bg-slate-50"}`}>
-                  <div className="flex items-center gap-3 text-sm"><span className="w-7 shrink-0 text-xs font-bold text-slate-400">{index + 1}º</span><span className="min-w-0 flex-1 truncate font-semibold text-slate-700">{item.bairro}</span><span className="shrink-0 font-bold text-slate-600">{item.total}</span></div>
-                  <div className="ml-10 mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-indigo-500" style={{ width: `${Math.max(3, (Number(item.total) / maxBairro) * 100)}%` }} /></div>
-                </button>;
-              })}
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-100">
-              {(resumo?.demandasPorTipo || []).length === 0 ? <p className="text-sm text-slate-500">Nenhum problema consolidado no momento.</p> : resumo?.demandasPorTipo.slice(0, 8).map((item) => <div key={`${item.categoria}-${item.tipo_problema}`} className="flex min-h-14 items-center justify-between gap-4 py-3"><span className="min-w-0"><span className="block text-sm font-semibold text-slate-700">{demandProblemLabel(item.categoria, item.tipo_problema)}</span><span className="block text-xs text-slate-400">{demandCategoryLabel(item.categoria)}</span></span><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{item.total}</span></div>)}
-            </div>
-          )}
-        </div>
-      </section>
+      </details>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm"><div className="flex items-center gap-2"><BarChart3 className="w-5 h-5 text-indigo-600" /><h2 className="text-lg font-bold text-slate-900">Indicadores externos comparáveis</h2></div><p className="mt-1 text-sm text-slate-500">Todas as fontes são exibidas com o mesmo contrato: configuração, disponibilidade e volume observado.</p><div className="mt-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">{indicadoresExternos.map((item) => <div key={item.key} className="rounded-xl border border-slate-200 p-4"><div className="flex items-start justify-between gap-3"><p className="text-sm font-semibold text-slate-900">{item.nome}</p><span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${statusClass(item.disponibilidade)}`}>{statusLabel(item.disponibilidade)}</span></div><dl className="mt-4 grid grid-cols-2 gap-3 text-xs"><div><dt className="text-slate-500">Configurado</dt><dd className="mt-1 font-semibold text-slate-800">{item.configurado ? "Sim" : "Não"}</dd></div><div><dt className="text-slate-500">Registros</dt><dd className="mt-1 font-semibold text-slate-800">{item.registrosObservados == null ? "—" : Number(item.registrosObservados).toLocaleString("pt-BR")}</dd></div></dl>{item.erro && <p className="mt-3 text-xs text-slate-600 line-clamp-3">{item.erro}</p>}</div>)}</div></section>
+      {quality?.dimensions?.length ? <section className="hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:block sm:p-6"><h2 className="text-lg font-bold text-slate-900">Qualidade da territorialização</h2><p className="mt-1 text-sm text-slate-500">Mostra quantos registros recebidos das fontes puderam ser associados a um território.</p><div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-3">{quality.dimensions.map((item) => <div key={item.key} className="rounded-xl border border-slate-200 p-4"><p className="font-semibold text-slate-900">{qualityLabel(item.key)}</p><p className="mt-2 text-sm text-slate-600">Recebidos: {item.received.toLocaleString("pt-BR")}</p><p className="text-sm text-slate-600">Territorializados: {item.classified.toLocaleString("pt-BR")}</p><p className="text-sm text-slate-600">Sem classificação: {item.unclassified.toLocaleString("pt-BR")}</p><p className="mt-2 text-lg font-bold text-indigo-700">{(item.coverage * 100).toFixed(1)}%</p></div>)}</div><p className="mt-3 text-xs text-slate-500">{quality.methodology}</p></section> : null}
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm"><div className="flex items-center gap-2"><Database className="w-5 h-5 text-indigo-600" /><h2 className="text-lg font-bold text-slate-900">Fontes de dados</h2></div><div className="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">{fontes.map((fonte) => <div key={fonte.key} className="rounded-xl border border-slate-200 p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wide text-indigo-600">{fonte.etapa}</p><p className="mt-1 text-sm font-semibold text-slate-900">{fonte.nome}</p></div><span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${statusClass(fonte.status)}`}>{statusLabel(fonte.status)}</span></div><p className="mt-3 text-xs text-slate-500 break-all">{fonte.endpoint || fonte.paginaOficial || "Endpoint não configurado"}</p></div>)}</div></section>
+      <section className="hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:block sm:p-6"><div className="flex items-center gap-2"><BarChart3 className="w-5 h-5 text-indigo-600" /><h2 className="text-lg font-bold text-slate-900">Indicadores externos comparáveis</h2></div><p className="mt-1 text-sm text-slate-500">Todas as fontes são exibidas com o mesmo contrato: configuração, disponibilidade e volume observado.</p><div className="mt-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">{indicadoresExternos.map((item) => <div key={item.key} className="rounded-xl border border-slate-200 p-4"><div className="flex items-start justify-between gap-3"><p className="text-sm font-semibold text-slate-900">{item.nome}</p><span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${statusClass(item.disponibilidade)}`}>{statusLabel(item.disponibilidade)}</span></div><dl className="mt-4 grid grid-cols-2 gap-3 text-xs"><div><dt className="text-slate-500">Configurado</dt><dd className="mt-1 font-semibold text-slate-800">{item.configurado ? "Sim" : "Não"}</dd></div><div><dt className="text-slate-500">Registros</dt><dd className="mt-1 font-semibold text-slate-800">{item.registrosObservados == null ? "—" : Number(item.registrosObservados).toLocaleString("pt-BR")}</dd></div></dl>{item.erro && <p className="mt-3 text-xs text-slate-600 line-clamp-3">{item.erro}</p>}</div>)}</div></section>
+
+      <section className="hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:block sm:p-6"><div className="flex items-center gap-2"><Database className="w-5 h-5 text-indigo-600" /><h2 className="text-lg font-bold text-slate-900">Fontes de dados</h2></div><div className="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">{fontes.map((fonte) => <div key={fonte.key} className="rounded-xl border border-slate-200 p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wide text-indigo-600">{fonte.etapa}</p><p className="mt-1 text-sm font-semibold text-slate-900">{fonte.nome}</p></div><span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${statusClass(fonte.status)}`}>{statusLabel(fonte.status)}</span></div><p className="mt-3 text-xs text-slate-500 break-all">{fonte.endpoint || fonte.paginaOficial || "Endpoint não configurado"}</p></div>)}</div></section>
 
       <section className="rounded-2xl bg-slate-900 p-5 sm:p-6 text-white shadow-sm"><h2 className="font-bold">Uso do radar</h2><p className="mt-2 text-sm text-slate-300">Os dados apoiam diagnóstico territorial, fiscalização e acompanhamento de políticas públicas. As análises permanecem agregadas e não usam atributos sensíveis ou preferência política individual.</p></section>
     </div>
