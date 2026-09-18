@@ -127,13 +127,32 @@ function MapaBairros({ mapa, selecionado, onSelect }: { mapa: MapaResponse | nul
             <g strokeWidth="0.8" vectorEffect="non-scaling-stroke">
               {shapes.map((shape) => {
                 const active = shape.bairro && normalize(shape.bairro) === normalize(selecionado);
-                return <path key={shape.key} d={shape.d} role={shape.bairro ? "button" : undefined} tabIndex={shape.bairro ? 0 : -1} aria-label={shape.bairro || undefined} onClick={() => shape.bairro && onSelect(shape.bairro)} onKeyDown={(event) => { if (shape.bairro && (event.key === "Enter" || event.key === " ")) onSelect(shape.bairro); }} className={`${shape.bairro ? "cursor-pointer" : ""} ${active ? "fill-indigo-500 stroke-indigo-800" : "fill-indigo-100 stroke-indigo-500 hover:fill-indigo-200"}`} />;
+                return (
+                  <path
+                    key={shape.key}
+                    d={shape.d}
+                    role={shape.bairro ? "button" : undefined}
+                    tabIndex={shape.bairro ? 0 : -1}
+                    aria-label={shape.bairro || undefined}
+                    aria-pressed={shape.bairro ? Boolean(active) : undefined}
+                    onClick={() => shape.bairro && onSelect(shape.bairro)}
+                    onKeyDown={(event) => {
+                      if (shape.bairro && (event.key === "Enter" || event.key === " ")) {
+                        event.preventDefault();
+                        onSelect(shape.bairro);
+                      }
+                    }}
+                    className={`${shape.bairro ? "cursor-pointer touch-manipulation focus:outline-none focus:stroke-indigo-950" : ""} ${active ? "fill-indigo-500 stroke-indigo-800" : "fill-indigo-100 stroke-indigo-500 hover:fill-indigo-200"}`}
+                  >
+                    {shape.bairro ? <title>{shape.bairro}</title> : null}
+                  </path>
+                );
               })}
             </g>
           </svg>
         ) : <div className="min-h-64 grid place-items-center px-6 text-center text-sm text-slate-500">A camada geográfica não pôde ser desenhada agora.</div>}
       </div>
-      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500"><span>{selecionado ? `Selecionado: ${selecionado}` : "Nenhum bairro selecionado"}</span>{selecionado && <button onClick={() => onSelect("")} className="rounded-md border border-slate-200 px-2 py-1 font-semibold text-slate-700">Limpar seleção</button>}</div>
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500" aria-live="polite"><span>{selecionado ? `Selecionado: ${selecionado}` : "Nenhum bairro selecionado"}</span>{selecionado && <button onClick={() => onSelect("")} className="rounded-md border border-slate-200 px-2 py-1 font-semibold text-slate-700">Limpar seleção</button>}</div>
       {mapa?.truncated && <p className="mt-3 text-xs text-amber-700">A fonte retornou mais registros do que o limite seguro de visualização.</p>}
     </div>
   );
@@ -319,7 +338,27 @@ export default function RadarTerritorial() {
 
       <MapaBairros mapa={mapa} selecionado={bairroSelecionado} onSelect={setBairroSelecionado} />
 
-      {territorioSelecionado && <section className="rounded-2xl border border-indigo-200 bg-indigo-50/40 p-5 sm:p-6 shadow-sm"><div className="flex flex-col gap-1"><p className="text-xs font-bold uppercase tracking-wide text-indigo-700">Diagnóstico territorial</p><h2 className="text-xl font-bold text-slate-900">{territorioSelecionado.bairro}</h2></div><div className="mt-5 grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">{[["Demandas", territorioSelecionado.demandas], ["Prioritárias", territorioSelecionado.prioritarias], ["Concluídas", territorioSelecionado.concluidas], ["Conclusão", `${territorioSelecionado.taxaConclusao}%`], ["Temas", territorioSelecionado.temas], ["Obras", territorioSelecionado.obras], ["Saúde", territorioSelecionado.unidadesSaude], ["Escolas", territorioSelecionado.escolas]].map(([label, value]) => <div key={String(label)} className="rounded-xl border border-indigo-100 bg-white p-3"><p className="text-[11px] text-slate-500">{label}</p><p className="mt-1 text-lg font-bold text-slate-900">{value}</p></div>)}</div></section>}
+      {territorioSelecionado && (
+        <section className="rounded-2xl border border-indigo-200 bg-indigo-50/40 p-5 sm:p-6 shadow-sm">
+          <div className="flex flex-col gap-1">
+            <p className="text-xs font-bold uppercase tracking-wide text-indigo-700">Diagnóstico territorial</p>
+            <h2 className="text-xl font-bold text-slate-900">{territorioSelecionado.bairro}</h2>
+          </div>
+          {territorioSelecionado.demandas === 0 && (
+            <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+              Nenhuma demanda registrada neste bairro até o momento. Os indicadores de obras, saúde e escolas continuam disponíveis.
+            </div>
+          )}
+          <div className="mt-5 grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
+            {[["Demandas", territorioSelecionado.demandas], ["Prioritárias", territorioSelecionado.prioritarias], ["Concluídas", territorioSelecionado.concluidas], ["Conclusão", `${territorioSelecionado.taxaConclusao}%`], ["Temas", territorioSelecionado.temas], ["Obras", territorioSelecionado.obras], ["Saúde", territorioSelecionado.unidadesSaude], ["Escolas", territorioSelecionado.escolas]].map(([label, value]) => (
+              <div key={String(label)} className="rounded-xl border border-indigo-100 bg-white p-3">
+                <p className="text-[11px] text-slate-500">{label}</p>
+                <p className="mt-1 text-lg font-bold text-slate-900">{value}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm"><h2 className="text-lg font-bold text-slate-900">Demandas por bairro</h2><p className="mt-1 text-sm text-slate-500">Selecione também pelo ranking para abrir o diagnóstico.</p><div className="mt-5 space-y-3">{(resumo?.demandasPorBairro || []).length === 0 ? <p className="text-sm text-slate-500">Ainda não há dados suficientes para o ranking.</p> : resumo?.demandasPorBairro.slice(0, 12).map((item) => <button type="button" onClick={() => setBairroSelecionado(item.bairro)} key={item.bairro} className="block w-full text-left rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"><div className="flex justify-between gap-3 text-sm"><span className="font-medium text-slate-700 truncate">{item.bairro}</span><span className="text-slate-500">{item.total}</span></div><div className="mt-1 h-2 rounded-full bg-slate-100 overflow-hidden"><div className="h-full rounded-full bg-indigo-500" style={{ width: `${Math.max(3, (Number(item.total) / maxBairro) * 100)}%` }} /></div></button>)}</div></div>
