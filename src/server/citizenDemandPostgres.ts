@@ -207,6 +207,41 @@ export function setupCitizenDemandPostgres(app: Express) {
     }
   });
 
+  app.get("/api/minha-conta/demandas", async (req, res) => {
+    const claims = citizenClaims(req);
+    if (!claims) return res.status(401).json({ error: "Entre na sua conta para ver seus registros." });
+
+    try {
+      const sql = await getHealthyPostgres();
+      const [user] = await sql`
+        select id, status
+        from public.usuarios
+        where id = ${claims.id}
+        limit 1
+      `;
+      if (!user || user.status === "excluido" || user.status === "suspenso") {
+        return res.status(401).json({ error: "Sessão inválida." });
+      }
+
+      const registros = await sql`
+        select protocolo, municipio, bairro, categoria, tipo_problema, prioridade, status, created_at, updated_at
+        from public.demandas
+        where usuario_id = ${claims.id}
+        order by created_at desc
+        limit 100
+      `;
+
+      res.setHeader("Cache-Control", "no-store, private");
+      return res.json({ total: registros.length, registros });
+    } catch (error: any) {
+      console.error("Falha ao carregar registros do cidadão:", error);
+      const configError = error?.message === "DATABASE_URL não configurada";
+      return res.status(configError ? 503 : 500).json({
+        error: configError ? "Banco de dados ainda não configurado." : "Não foi possível carregar seus registros.",
+      });
+    }
+  });
+
   app.get("/api/demandas/protocolo/:protocolo", async (req, res) => {
     let protocolo: string;
     try { protocolo = cleanProtocol(req.params.protocolo); } catch { return res.status(404).json({ error: "Protocolo não encontrado." }); }

@@ -1,0 +1,43 @@
+import fs from "node:fs";
+
+const read = (path) => fs.readFileSync(path, "utf8");
+const expect = (condition, message) => { if (!condition) throw new Error(message); };
+
+const app = read("src/App.tsx");
+const login = read("src/pages/Login.tsx");
+const records = read("src/pages/MeusRegistros.tsx");
+const profile = read("src/pages/PerfilCidadao.tsx");
+const postgres = read("src/server/citizenDemandPostgres.ts");
+const local = read("src/server/routes.ts");
+
+expect(login.includes('navigate(type === "admin" ? "/dashboard" : "/meus-registros")'), "Login cidadão deve abrir Meus registros.");
+expect(app.includes('path="/meus-registros"') && app.includes('citizenOnly(<MeusRegistros />)'), "Meus registros deve ser rota exclusiva do cidadão autenticado.");
+expect(app.includes('path="/perfil"') && app.includes('citizenOnly(<PerfilCidadao user={user} />)'), "Perfil deve ser rota exclusiva do cidadão autenticado.");
+expect(app.includes('isCitizen ? <Navigate to="/meus-registros" replace />'), "A raiz autenticada deve redirecionar cidadão para Meus registros.");
+
+const citizenMobileBlock = app.slice(app.indexOf('isCitizen ? <>'), app.indexOf('</> : <>', app.indexOf('isCitizen ? <>')));
+for (const label of ["Registrar", "Acompanhar", "Perfil", "Sair"]) {
+  expect(citizenMobileBlock.includes(`<span>${label}</span>`), `Menu mobile cidadão deve conter ${label}.`);
+}
+expect(!citizenMobileBlock.includes("<span>Início</span>"), "Menu mobile cidadão não deve exibir Início.");
+expect(!citizenMobileBlock.includes("<span>Entrar</span>"), "Menu mobile cidadão autenticado não deve exibir Entrar.");
+expect(app.includes('aria-label="Navegação da conta"'), "Desktop deve ter navegação específica da conta.");
+expect(app.includes('to="/perfil"') && app.includes(">Perfil</Link>"), "Desktop cidadão deve conter Perfil.");
+expect(app.includes('data-mobile-logout="user"') && app.includes('aria-label="Sair da conta"'), "Logout cidadão deve permanecer visível no mobile.");
+
+expect(records.includes("/api/minha-conta/demandas"), "Tela Meus registros deve carregar somente a API privada da conta.");
+expect(records.includes('to={`/protocolo?codigo='), "Cada registro deve abrir o acompanhamento pelo protocolo.");
+expect(records.includes("Você ainda não tem registros nesta conta."), "Tela deve ter estado vazio orientando novo registro.");
+expect(profile.includes("Perfil") && profile.includes("Faixa etária") && profile.includes("Localidade"), "Perfil deve exibir apenas dados básicos da conta.");
+
+for (const source of [postgres, local]) {
+  expect(source.includes('app.get("/api/minha-conta/demandas"'), "Backend deve oferecer endpoint privado de Meus registros.");
+  expect(source.includes("citizenClaims(req)"), "Endpoint de Meus registros deve exigir claims cidadãs.");
+  expect(source.includes("where usuario_id =") || source.includes("WHERE usuario_id = ?"), "Endpoint deve filtrar registros pelo usuário autenticado.");
+  expect(source.includes('Cache-Control", "no-store, private"'), "Resposta da conta deve impedir cache público.");
+}
+
+expect(app.includes('{!isAdmin && !isCitizen && <footer'), "Conta cidadã não deve exibir o rodapé/navegação pública.");
+expect(app.includes('!isAdmin && !isCitizen && !onDemandForm && <LGPDConsent />'), "Conta autenticada não deve repetir o aviso público de consentimento.");
+
+console.log("Citizen authenticated experience contract OK: Meus registros, Registrar, Acompanhar, Perfil e Sair.");

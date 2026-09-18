@@ -35,7 +35,7 @@ export default function Login({ setUser }: { setUser: (user: any) => void }) {
       const authenticatedUser = type === "admin" ? data.user : { ...data.user, type: "cidadao" };
       localStorage.setItem("user", JSON.stringify(authenticatedUser));
       setUser(authenticatedUser);
-      navigate(type === "admin" ? "/dashboard" : "/");
+      navigate(type === "admin" ? "/dashboard" : "/meus-registros");
     } catch (err: any) {
       setError(err?.message || "Não foi possível entrar.");
     } finally {
