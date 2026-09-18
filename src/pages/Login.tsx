@@ -53,11 +53,11 @@ export default function Login({ setUser }: { setUser: (user: any) => void }) {
   };
 
   return (
-    <div className="mx-auto max-w-md py-3 sm:py-14" data-login-mode={type}>
+    <div className="mx-auto max-w-md py-0 sm:py-14" data-login-mode={type}>
       <div className="text-center">
         <span className="brand-signature-mark brand-signature-mark--login hidden sm:inline-flex" aria-hidden="true"><img src="/brand/gilmar-nascimento-oficial.png" alt="" /></span>
-        <span className="mx-auto mt-1 flex h-10 w-10 items-center justify-center rounded-xl border border-[#d7e0f2] bg-white text-[#1f2e6e] shadow-sm sm:mt-2 sm:h-11 sm:w-11"><ShieldCheck className="h-5 w-5" /></span>
-        <h1 className="mt-4 text-3xl font-extrabold tracking-[-0.045em] text-[#172033] sm:mt-5">
+        <span className="mx-auto mt-2 hidden h-11 w-11 items-center justify-center rounded-xl border border-[#d7e0f2] bg-white text-[#1f2e6e] shadow-sm sm:flex"><ShieldCheck className="h-5 w-5" /></span>
+        <h1 className="mt-1 text-3xl font-extrabold tracking-[-0.045em] text-[#172033] sm:mt-5">
           <span className="sm:hidden">{type === "admin" ? "Acesso administrativo" : "Entrar"}</span>
           <span className="hidden sm:inline">Entrar no FISCALIZE</span>
         </h1>
@@ -67,7 +67,7 @@ export default function Login({ setUser }: { setUser: (user: any) => void }) {
         </p>
       </div>
 
-      <section className="surface-card mt-5 overflow-hidden p-4 sm:mt-8 sm:p-7">
+      <section className="surface-card mt-4 overflow-hidden p-4 sm:mt-8 sm:p-7">
         <div className="-mx-4 -mt-4 mb-4 h-1 bg-[#f36a10] sm:-mx-7 sm:-mt-7 sm:mb-5" aria-hidden="true" />
 
         <div className="hidden grid-cols-2 gap-1 rounded-xl bg-[#eef2fb] p-1 sm:grid" role="group" aria-label="Tipo de acesso">
