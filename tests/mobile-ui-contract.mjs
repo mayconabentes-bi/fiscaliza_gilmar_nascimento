@@ -29,7 +29,7 @@ expect(app.includes('to="/login"') && app.includes('<span>Entrar</span>'), 'Visi
 expect(home.includes('min-h-14') && form.includes('min-h-14') && protocol.includes('min-h-14'), 'CTAs críticos devem manter área de toque confortável.');
 expect(form.includes('text-base') && protocol.includes('text-base'), 'Campos críticos devem usar fonte de 16px para evitar zoom involuntário no iOS.');
 expect(form.includes('capture="environment"'), 'Captura de evidência deve favorecer a câmera traseira no celular.');
-const radar = read("src/pages/RadarTerritorial.tsx");
+const radar = fs.readFileSync("src/pages/RadarTerritorial.tsx", "utf8");
 expect(radar.includes('id="radar-bairro-mobile"') && radar.includes('Escolher bairro'), 'Radar deve oferecer seletor nativo de bairro no mobile.');
 expect(radar.includes('onTouchEnd={(event) => {'), 'Mapa do Radar deve possuir fallback touch explícito no mobile.');
 expect(form.includes('name="camera_photo"') && form.includes('name="gallery_photos"') && form.includes('opacity-0 disabled:cursor-not-allowed'), 'Câmera e galeria devem usar inputs file nativos diretamente tocáveis.');
