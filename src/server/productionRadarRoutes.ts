@@ -83,7 +83,7 @@ async function ageIntelligenceAggregate() {
 
 async function demandAggregates() {
   const sql = await getHealthyPostgres();
-  const [porBairro, porTema] = await Promise.all([
+  const [porBairro, porTema, porTipo] = await Promise.all([
     sql`
       select coalesce(nullif(trim(bairro), ''), 'Não informado') as bairro,
              count(*)::int as total,
@@ -102,8 +102,15 @@ async function demandAggregates() {
       group by categoria
       order by total desc
     `,
+    sql`
+      select categoria, tipo_problema, count(*)::int as total
+      from public.demandas
+      where lower(municipio) = 'manaus'
+      group by categoria, tipo_problema
+      order by total desc, categoria asc, tipo_problema asc
+    `,
   ]);
-  return { porBairro, porTema };
+  return { porBairro, porTema, porTipo };
 }
 
 export function setupProductionRadarRoutes(app: Express) {
@@ -237,6 +244,7 @@ export function setupProductionRadarRoutes(app: Express) {
         },
         demandasPorBairro: (demandas.porBairro as any[]).slice(0, 20),
         demandasPorTema: (demandas.porTema as any[]).slice(0, 20),
+        demandasPorTipo: (demandas.porTipo as any[]).slice(0, 30),
         demografiaEtaria,
         disponibilidade: [],
         fontesExternas: [],
