@@ -174,6 +174,7 @@ async function verifyGeoManaus() {
     retry(() => sources.loadHealthUnits()),
     retry(() => sources.loadSchools()),
   ]);
+  let neighborhoodsAvailable = false;
   for (const [name, source, min] of [
     ["GeoManaus bairros", neighborhoods, 40],
     ["SEMINF obras", works, 10],
@@ -181,10 +182,19 @@ async function verifyGeoManaus() {
     ["GeoManaus escolas", schools, 50],
   ]) {
     report(name, source);
+    if (isTransientExternalFailure(source)) {
+      const warning = `${name} temporariamente indisponível; QA de conteúdo real adiado: ${source.error || "sem detalhe"}`;
+      warnings.push(warning);
+      console.warn(`QA DEGRADED: ${name}: ${warning}`);
+      continue;
+    }
     ok(["available", "degraded"].includes(source.availability), `${name} indisponível: ${source.error || "sem detalhe"}`);
     ok(source.data.length >= min, `${name} abaixo do piso de sanidade: ${source.data.length} < ${min}`);
+    if (name === "GeoManaus bairros") neighborhoodsAvailable = true;
   }
-  ok(neighborhoods.data.length < 100, `GeoManaus bairros retornou quantidade anômala: ${neighborhoods.data.length}`);
+  if (neighborhoodsAvailable) {
+    ok(neighborhoods.data.length < 100, `GeoManaus bairros retornou quantidade anômala: ${neighborhoods.data.length}`);
+  }
 }
 
 async function verifyObrasGov() {

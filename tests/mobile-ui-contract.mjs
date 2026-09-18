@@ -17,9 +17,9 @@ expect(app.includes('pb-24') && app.includes('lg:pb-8'), 'O conteúdo deve reser
 expect(app.includes('lg:hidden') && app.includes('lg:flex'), 'Folds e tablets devem manter navegação touch até o breakpoint lg.');
 expect(app.includes('!isAdmin && !isCitizen && !onDemandForm && <LGPDConsent />'), 'O aviso público de privacidade deve ficar fora do núcleo privado, da conta autenticada e não competir com o formulário.');
 expect(!privacy.includes('motion/react'), 'O aviso de privacidade não deve carregar biblioteca de animação no caminho crítico.');
-expect(app.includes('isAdmin ? <>') && app.includes('<span>Painel</span>') && app.includes('<span>Triagem</span>') && app.includes('<span>Radar</span>') && app.includes('<span>Estratégia</span>'), 'A navegação touch do admin deve conter apenas ferramentas privadas.');
+expect(app.includes('isAdmin ? <>') && app.includes('<span>Painel</span>') && app.includes('<span>Triagem</span>') && app.includes('<span>Radar</span>') && app.includes('<span>Mais</span>') && app.includes('adminMoreItems'), 'A navegação touch do admin deve priorizar ferramentas privadas e concentrar módulos secundários em Mais.');
 expect(app.includes('function MobileNav({ user, onLogout }') && app.includes('<MobileNav user={user} onLogout={handleLogout} />'), 'A navegação touch deve reutilizar o logout autenticado do shell.');
-expect(app.includes('data-mobile-logout="admin"') && app.includes('aria-label="Sair da área administrativa"'), 'Administrador deve ter ação Sair visível no first-mobile.');
+expect(app.includes('data-mobile-logout="admin"') && app.includes('aria-label="Sair da área administrativa"') && app.includes('Mais ferramentas'), 'Administrador deve manter logout acessível no menu mobile de ferramentas privadas.');
 expect(app.includes('data-mobile-logout="user"') && app.includes('aria-label="Sair da conta"'), 'Usuário autenticado deve ter ação Sair visível no first-mobile.');
 expect((app.match(/aria-label="Sair"/g) || []).length >= 2, 'Administrador e usuário devem manter logout também no desktop.');
 expect(app.includes('aria-label="Navegação privada"') && app.includes('>Governança</span>') && app.includes('>Auditoria</span>') && app.includes('>Relatórios</span>'), 'O desktop do admin deve expor apenas módulos privados.');

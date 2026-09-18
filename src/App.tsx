@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from "react-router-dom";
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
-import { CirclePlus, FileBarChart, FileText, Flag, Home as HomeIcon, LayoutDashboard, Lock, LogIn, LogOut, MapPinned, Radar, Search, ShieldCheck, User } from "lucide-react";
+import { CirclePlus, FileBarChart, FileText, Flag, Home as HomeIcon, LayoutDashboard, Lock, LogIn, LogOut, MapPinned, MoreHorizontal, Radar, Search, ShieldCheck, User } from "lucide-react";
 
 import Home from "./pages/Home";
 import NovaDemanda from "./pages/NovaDemanda";
@@ -42,37 +42,94 @@ function Brand({ privateMode = false, citizenMode = false }: { privateMode?: boo
 
 function MobileNav({ user, onLogout }: { user: any; onLogout: () => void | Promise<void> }) {
   const location = useLocation();
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const isAdmin = user?.type === "admin" && ["ADMIN", "SUPER_ADMIN"].includes(user?.perfil_acesso);
   const isCitizen = user?.type === "cidadao";
+  const secondaryAdminPaths = ["/estrategia-2028", "/admin", "/admin/audit", "/relatorios"];
+  const moreActive = secondaryAdminPaths.includes(location.pathname);
   const itemClass = (path: string) => `relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1.5 py-2 text-[10px] font-bold transition ${location.pathname === path ? "text-[#1f2e6e]" : "text-[#727d94]"}`;
   const actionClass = "relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1.5 py-2 text-[10px] font-bold text-[#727d94] transition hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#c94d06]";
   const iconClass = (path: string) => location.pathname === path ? "h-5 w-5 stroke-[2.4]" : "h-5 w-5 stroke-[1.9]";
 
+  useEffect(() => {
+    setAdminMenuOpen(false);
+  }, [location.pathname]);
+
+  const adminMoreItems = [
+    { to: "/estrategia-2028", label: "Estratégia", description: "Leitura estratégica", icon: Flag },
+    { to: "/admin", label: "Governança", description: "Moderação e controles", icon: ShieldCheck },
+    { to: "/admin/audit", label: "Auditoria", description: "Integridade e segurança", icon: Lock },
+    { to: "/relatorios", label: "Relatórios", description: "Saídas analíticas", icon: FileBarChart },
+  ];
+
   return (
-    <nav aria-label={isAdmin ? "Navegação privada" : "Navegação principal"} className="fixed inset-x-0 bottom-0 z-40 border-t border-[#dde4ef] bg-white/96 px-2 pt-1.5 backdrop-blur-xl lg:hidden pb-[max(env(safe-area-inset-bottom),0.35rem)]">
-      <div className="mx-auto flex h-[62px] max-w-lg items-stretch gap-1">
-        {isAdmin ? <>
-          <Link to="/dashboard" className={itemClass("/dashboard")}><LayoutDashboard className={iconClass("/dashboard")} /><span>Painel</span></Link>
-          <Link to="/admin/demandas" className={itemClass("/admin/demandas")}><FileText className={iconClass("/admin/demandas")} /><span>Triagem</span></Link>
-          <Link to="/radar-manaus" className={itemClass("/radar-manaus")}><MapPinned className={iconClass("/radar-manaus")} /><span>Radar</span></Link>
-          <Link to="/estrategia-2028" className={itemClass("/estrategia-2028")}><Flag className={iconClass("/estrategia-2028")} /><span>Estratégia</span></Link>
-          <button type="button" onClick={onLogout} data-mobile-logout="admin" aria-label="Sair da área administrativa" className={actionClass}><LogOut className="h-5 w-5 stroke-[1.9]" /><span>Sair</span></button>
-        </> : isCitizen ? <>
-          <Link to="/demandas/nova" className={itemClass("/demandas/nova")}><CirclePlus className={iconClass("/demandas/nova")} /><span>Registrar</span></Link>
-          <Link to="/meus-registros" className={itemClass("/meus-registros")}><Search className={iconClass("/meus-registros")} /><span>Acompanhar</span></Link>
-          <Link to="/perfil" className={itemClass("/perfil")}><User className={iconClass("/perfil")} /><span>Perfil</span></Link>
-          <button type="button" onClick={onLogout} data-mobile-logout="user" aria-label="Sair da conta" className={actionClass}><LogOut className="h-5 w-5 stroke-[1.9]" /><span>Sair</span></button>
-        </> : <>
-          <Link to="/" className={itemClass("/")}><HomeIcon className={iconClass("/")} /><span>Início</span></Link>
-          <Link to="/demandas/nova" className={itemClass("/demandas/nova")}><CirclePlus className={iconClass("/demandas/nova")} /><span>Registrar</span></Link>
-          <Link to="/protocolo" className={itemClass("/protocolo")}><Search className={iconClass("/protocolo")} /><span>Acompanhar</span></Link>
-          <Link to="/login" className={itemClass("/login")}><LogIn className={iconClass("/login")} /><span>Entrar</span></Link>
-        </>}
-      </div>
-    </nav>
+    <>
+      {isAdmin && adminMenuOpen && (
+        <>
+          <button
+            type="button"
+            aria-label="Fechar menu administrativo"
+            onClick={() => setAdminMenuOpen(false)}
+            className="fixed inset-0 z-40 bg-slate-950/30 backdrop-blur-[1px] lg:hidden"
+          />
+          <div className="fixed inset-x-3 bottom-[calc(76px+env(safe-area-inset-bottom))] z-50 mx-auto max-w-lg overflow-hidden rounded-3xl border border-[#d7e0f2] bg-white shadow-[0_24px_60px_rgba(23,32,51,0.24)] lg:hidden">
+            <div className="flex items-center justify-between border-b border-[#eef2fb] px-4 py-3">
+              <div>
+                <p className="text-sm font-extrabold text-[#172033]">Mais ferramentas</p>
+                <p className="mt-0.5 text-xs text-[#7b8599]">Núcleo privado FISCALIZE</p>
+              </div>
+              <button type="button" onClick={() => setAdminMenuOpen(false)} className="rounded-xl px-3 py-2 text-xs font-bold text-[#657089] hover:bg-[#f5f7fb]">Fechar</button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 p-3">
+              {adminMoreItems.map(({ to, label, description, icon: Icon }) => (
+                <Link key={to} to={to} className={`rounded-2xl border p-3 transition ${location.pathname === to ? "border-[#b9c7e4] bg-[#eef2fb]" : "border-[#e4e9f2] bg-white hover:bg-[#fafbfe]"}`}>
+                  <Icon className="h-5 w-5 text-[#1f2e6e]" />
+                  <span className="mt-3 block text-sm font-extrabold text-[#172033]">{label}</span>
+                  <span className="mt-1 block text-[11px] leading-4 text-[#7b8599]">{description}</span>
+                </Link>
+              ))}
+            </div>
+            <div className="border-t border-[#eef2fb] p-3">
+              <button type="button" onClick={onLogout} data-mobile-logout="admin" aria-label="Sair da área administrativa" className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-extrabold text-red-700">
+                <LogOut className="h-4.5 w-4.5" /> Sair da área administrativa
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      <nav aria-label={isAdmin ? "Navegação privada" : "Navegação principal"} className="fixed inset-x-0 bottom-0 z-50 border-t border-[#dde4ef] bg-white/96 px-2 pt-1.5 backdrop-blur-xl lg:hidden pb-[max(env(safe-area-inset-bottom),0.35rem)]">
+        <div className="mx-auto flex h-[62px] max-w-lg items-stretch gap-1">
+          {isAdmin ? <>
+            <Link to="/dashboard" className={itemClass("/dashboard")}><LayoutDashboard className={iconClass("/dashboard")} /><span>Painel</span></Link>
+            <Link to="/admin/demandas" className={itemClass("/admin/demandas")}><FileText className={iconClass("/admin/demandas")} /><span>Triagem</span></Link>
+            <Link to="/radar-manaus" className={itemClass("/radar-manaus")}><MapPinned className={iconClass("/radar-manaus")} /><span>Radar</span></Link>
+            <button
+              type="button"
+              onClick={() => setAdminMenuOpen((open) => !open)}
+              aria-expanded={adminMenuOpen}
+              aria-label="Abrir mais ferramentas administrativas"
+              className={`relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1.5 py-2 text-[10px] font-bold transition ${adminMenuOpen || moreActive ? "text-[#1f2e6e]" : "text-[#727d94]"}`}
+            >
+              <MoreHorizontal className={adminMenuOpen || moreActive ? "h-5 w-5 stroke-[2.4]" : "h-5 w-5 stroke-[1.9]"} />
+              <span>Mais</span>
+            </button>
+          </> : isCitizen ? <>
+            <Link to="/demandas/nova" className={itemClass("/demandas/nova")}><CirclePlus className={iconClass("/demandas/nova")} /><span>Registrar</span></Link>
+            <Link to="/meus-registros" className={itemClass("/meus-registros")}><Search className={iconClass("/meus-registros")} /><span>Acompanhar</span></Link>
+            <Link to="/perfil" className={itemClass("/perfil")}><User className={iconClass("/perfil")} /><span>Perfil</span></Link>
+            <button type="button" onClick={onLogout} data-mobile-logout="user" aria-label="Sair da conta" className={actionClass}><LogOut className="h-5 w-5 stroke-[1.9]" /><span>Sair</span></button>
+          </> : <>
+            <Link to="/" className={itemClass("/")}><HomeIcon className={iconClass("/")} /><span>Início</span></Link>
+            <Link to="/demandas/nova" className={itemClass("/demandas/nova")}><CirclePlus className={iconClass("/demandas/nova")} /><span>Registrar</span></Link>
+            <Link to="/protocolo" className={itemClass("/protocolo")}><Search className={iconClass("/protocolo")} /><span>Acompanhar</span></Link>
+            <Link to="/login" className={itemClass("/login")}><LogIn className={iconClass("/login")} /><span>Entrar</span></Link>
+          </>}
+        </div>
+      </nav>
+    </>
   );
 }
-
 function AppShell() {
   const [user, setUser] = useState<any>(null);
   const [authReady, setAuthReady] = useState(false);
