@@ -39,11 +39,11 @@ try {
     expect((await fetch(`${BASE}/api/mobile-events`, { method: 'POST', headers: { 'content-type': 'application/json', origin: BASE }, body: JSON.stringify({ event, src: 'flyer', acao: 'centro-01' }) })).status, 204, `evento agregado ${event}`);
   }
 
-  const noPrivacy = await fetch(`${BASE}/api/demandas`, { method: 'POST', headers: { 'content-type': 'application/json', origin: BASE }, body: JSON.stringify({ nome_solicitante: 'QA', municipio: 'Manaus', categoria: 'Infraestrutura', descricao: 'Teste' }) });
+  const noPrivacy = await fetch(`${BASE}/api/demandas`, { method: 'POST', headers: { 'content-type': 'application/json', origin: BASE }, body: JSON.stringify({ nome_solicitante: 'QA', municipio: 'Manaus', categoria: 'INFRAESTRUTURA_URBANA', tipo_problema: 'BURACO_PAVIMENTACAO', descricao: 'Teste', faixa_etaria: 'AGE_25_34' }) });
   expect(noPrivacy.status, 400, 'privacidade pública obrigatória');
 
   const photo = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2Q==';
-  const demand = await fetch(`${BASE}/api/demandas`, { method: 'POST', headers: { 'content-type': 'application/json', origin: BASE }, body: JSON.stringify({ nome_solicitante: 'QA Mobile', contato: '', municipio: 'Manaus', bairro: 'Centro', categoria: 'Infraestrutura', descricao: 'Demanda QA mobile', prioridade: 'MEDIA', aviso_privacidade_aceito: true, src: 'flyer', acao: 'centro-01', foto_evidencia_base64: photo }) });
+  const demand = await fetch(`${BASE}/api/demandas`, { method: 'POST', headers: { 'content-type': 'application/json', origin: BASE }, body: JSON.stringify({ nome_solicitante: 'QA Mobile', contato: '', municipio: 'Manaus', bairro: 'Centro', categoria: 'INFRAESTRUTURA_URBANA', tipo_problema: 'BURACO_PAVIMENTACAO', descricao: 'Demanda QA mobile', faixa_etaria: 'AGE_25_34', prioridade: 'MEDIA', aviso_privacidade_aceito: true, src: 'flyer', acao: 'centro-01', foto_evidencia_base64: photo }) });
   expect(demand.status, 201, 'demanda pública local');
   const body = await demand.json();
 
