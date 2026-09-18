@@ -26,7 +26,7 @@ expect(!register.includes('option value="AGE_18_PLUS"'), "Cadastro novo não dev
 expect(!demandForm.includes('option value="AGE_18_PLUS"'), "Demanda nova não deve oferecer a faixa legada AGE_18_PLUS.");
 expect(!migration.includes("AGE_18_PLUS"), "Migration efetiva não deve aceitar AGE_18_PLUS.");
 
-expect(stats.includes("segunda categoria é ocultada") && stats.includes("subtração dos totais"), "Estatística deve aplicar supressão complementar contra reconstrução por diferença.");
+expect(stats.includes("exatamente um grupo") && stats.includes("subtração do total"), "Estatística deve aplicar supressão complementar somente quando houver um único grupo pequeno.");
 expect(stats.includes("Math.log(6)"), "Diversidade deve usar normalização fixa das seis faixas detalhadas.");
 expect(stats.includes("CIVIC_AGGREGATE") === false, "Módulo estatístico puro não deve depender diretamente do ambiente.");
 
@@ -36,7 +36,9 @@ expect(!radarRoutes.includes("faixa_etaria, bairro"), "Radar não deve cruzar fa
 expect(app.includes('app.use("/api/radar/manaus", requireAdmin)'), "Radar etário deve permanecer no perímetro ADMIN.");
 
 expect(radarPage.includes("Perfil etário dos registros"), "Radar deve exibir o card etário.");
-expect(radarPage.includes("Amostra protegida"), "UI deve comunicar supressão de grupos pequenos.");
+expect(radarPage.includes("Outras faixas protegidas"), "UI deve consolidar grupos pequenos sem expor faixas individuais.");
+expect(radarPage.includes("Faixas com leitura segura"), "UI deve indicar quantas faixas podem ser exibidas com segurança.");
+expect(radarPage.includes("Faltam"), "UI deve mostrar progresso objetivo para liberar o índice de diversidade.");
 expect(radarPage.includes("Cobertura etária"), "UI deve mostrar cobertura estatística.");
 expect(radarPage.includes("Classificação detalhada"), "UI deve separar cobertura detalhada de legado.");
 expect(radarPage.includes("Diversidade geracional"), "UI deve preparar índice de diversidade.");
