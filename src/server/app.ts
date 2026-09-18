@@ -27,6 +27,7 @@ import { setupIntelligenceRefreshRoutes } from "../intelligence/refreshRoutes.js
 import { setupIntelligenceInsightRoutes } from "../intelligence/insightRoutes.js";
 import { setupIntelligenceExpansionRoutes } from "../intelligence/expansionRoutes.js";
 import { setupAdvancedIntelligenceRoutes } from "../intelligence/advancedRoutes.js";
+import { sharePreviewJpeg } from "./sharePreview.js";
 
 const limiter = (windowMs: number, max: number) => rateLimit({ windowMs, max, standardHeaders: "draft-8", legacyHeaders: false, message: { error: "Muitas solicitações. Tente novamente mais tarde." } });
 
@@ -38,6 +39,11 @@ export function createApp() {
 
   app.use(helmet({ contentSecurityPolicy: production ? undefined : false, crossOriginEmbedderPolicy: false }));
   app.set("trust proxy", 1);
+  app.get("/api/share-preview.jpg", (_req, res) => {
+    res.setHeader("Content-Type", "image/jpeg");
+    res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=604800, immutable");
+    res.status(200).send(sharePreviewJpeg);
+  });
   app.use(cors({ origin(origin, callback) { if (!origin || origins.includes(origin)) return callback(null, true); callback(new Error("Origem não permitida por CORS")); }, credentials: true }));
   app.use(express.json({ limit: "4mb" }));
   app.use(cookieParser());
