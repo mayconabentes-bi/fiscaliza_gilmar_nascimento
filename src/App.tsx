@@ -59,7 +59,7 @@ function MobileNav({ user, onLogout }: { user: any; onLogout: () => void | Promi
           <button type="button" onClick={onLogout} data-mobile-logout="admin" aria-label="Sair da área administrativa" className={actionClass}><LogOut className="h-5 w-5 stroke-[1.9]" /><span>Sair</span></button>
         </> : isCitizen ? <>
           <Link to="/demandas/nova" className={itemClass("/demandas/nova")}><CirclePlus className={iconClass("/demandas/nova")} /><span>Registrar</span></Link>
-          <Link to="/protocolo" className={itemClass("/protocolo")}><Search className={iconClass("/protocolo")} /><span>Acompanhar</span></Link>
+          <Link to="/meus-registros" className={itemClass("/meus-registros")}><Search className={iconClass("/meus-registros")} /><span>Acompanhar</span></Link>
           <Link to="/perfil" className={itemClass("/perfil")}><User className={iconClass("/perfil")} /><span>Perfil</span></Link>
           <button type="button" onClick={onLogout} data-mobile-logout="user" aria-label="Sair da conta" className={actionClass}><LogOut className="h-5 w-5 stroke-[1.9]" /><span>Sair</span></button>
         </> : <>
@@ -182,7 +182,7 @@ function AppShell() {
           ) : isCitizen ? (
             <nav className="hidden items-center gap-1 lg:flex" aria-label="Navegação da conta">
               <Link to="/demandas/nova" className={publicNavClass("/demandas/nova")}>Registrar</Link>
-              <Link to="/protocolo" className={publicNavClass("/protocolo")}>Acompanhar</Link>
+              <Link to="/meus-registros" className={publicNavClass("/meus-registros")}>Acompanhar</Link>
               <Link to="/perfil" className={publicNavClass("/perfil")}>Perfil</Link>
               <div className="ml-3 flex items-center gap-2 border-l border-[#d7e0f2] pl-4"><div className="flex max-w-40 items-center gap-2 rounded-lg border border-[#dde4ef] bg-white px-3 py-2 text-sm font-semibold text-[#526078]"><User className="h-4 w-4" /><span className="truncate">{user.nome_completo}</span></div><button onClick={handleLogout} aria-label="Sair" className="rounded-lg p-2 text-[#7b8599] transition hover:bg-red-50 hover:text-red-600"><LogOut className="h-4.5 w-4.5" /></button></div>
             </nav>
@@ -202,7 +202,7 @@ function AppShell() {
           <Route path="/login" element={authReady && isCitizen ? <Navigate to="/meus-registros" replace /> : authReady && isAdmin ? <Navigate to="/dashboard" replace /> : <Login setUser={setUser} />} />
           <Route path="/register-cidadao" element={publicOnly(<RegisterCidadao />)} />
           <Route path="/recuperar-acesso" element={<RecoverAccess />} />
-          <Route path="/demandas/nova" element={publicOnly(<NovaDemanda />)} />
+          <Route path="/demandas/nova" element={publicOnly(<NovaDemanda user={user} />)} />
           <Route path="/protocolo" element={<ConsultaProtocolo />} />
           <Route path="/meus-registros" element={citizenOnly(<MeusRegistros />)} />
           <Route path="/perfil" element={citizenOnly(<PerfilCidadao user={user} />)} />
