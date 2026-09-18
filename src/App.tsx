@@ -9,6 +9,7 @@ import LGPDConsent from "./components/LGPDConsent";
 
 const Login = lazy(() => import("./pages/Login"));
 const RegisterCidadao = lazy(() => import("./pages/RegisterCidadao"));
+const RecoverAccess = lazy(() => import("./pages/RecoverAccess"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const DashboardPrivado = lazy(() => import("./pages/DashboardPrivado"));
 const Metodologia = lazy(() => import("./pages/Metodologia"));
@@ -175,6 +176,7 @@ function AppShell() {
           <Route path="/" element={publicOnly(<Home />)} />
           <Route path="/login" element={<Login setUser={setUser} />} />
           <Route path="/register-cidadao" element={publicOnly(<RegisterCidadao />)} />
+          <Route path="/recuperar-acesso" element={<RecoverAccess />} />
           <Route path="/demandas/nova" element={publicOnly(<NovaDemanda />)} />
           <Route path="/protocolo" element={<ConsultaProtocolo />} />
           <Route path="/metodologia" element={publicOnly(<Metodologia />)} />

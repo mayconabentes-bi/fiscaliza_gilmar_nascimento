@@ -58,6 +58,8 @@ jobs:
         run: npm run test:mobile-ui
       - name: Brand UI contract
         run: npm run test:brand-ui
+      - name: Account recovery security contract
+        run: npm run test:account-recovery
       - name: Public journey refinement contracts
         run: |
           node tests/home-refinement-contract.mjs
@@ -114,6 +116,8 @@ jobs:
         run: npm run test:mobile-ui
       - name: Brand UI contract
         run: npm run test:brand-ui
+      - name: Account recovery security contract
+        run: npm run test:account-recovery
       - name: Responsive device matrix
         run: npm run test:devices
       - name: Mobile performance budget
