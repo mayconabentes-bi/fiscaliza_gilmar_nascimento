@@ -314,6 +314,11 @@ export default function AdminDemandas() {
               <p><strong className="text-slate-800">Território:</strong> {demanda.bairro || "Sem bairro"} · {demanda.municipio}</p>
               <p className="mt-2 line-clamp-3 leading-5">{demanda.descricao}</p>
             </div>
+            {Number(demanda.evidencia_upload_falhas || 0) > 0 && (
+              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-800">
+                Falha técnica no envio de evidências: {Number(demanda.evidencia_upload_anexadas || 0)} de {Number(demanda.evidencia_upload_solicitadas || 0)} foto(s) anexada(s). O protocolo foi preservado.
+              </div>
+            )}
             <div className="mt-3 flex flex-col gap-2 sm:flex-row">
               <button type="button" onClick={() => abrirAlteracaoStatus(demanda)} className="min-h-12 flex-1 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-700">Abrir triagem</button>
               {demanda.tem_evidencia_foto ? (
@@ -357,6 +362,11 @@ export default function AdminDemandas() {
                   <td className="px-4 py-4 text-slate-700 font-semibold">{statusLabel(demanda.status)}</td>
                   <td className="px-4 py-4 text-slate-600 max-w-md line-clamp-3">{demanda.descricao}</td>
                   <td className="px-4 py-4">
+                    {Number(demanda.evidencia_upload_falhas || 0) > 0 && (
+                      <div className="mb-2 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5 text-[10px] font-bold leading-4 text-amber-800">
+                        Upload incompleto: {Number(demanda.evidencia_upload_anexadas || 0)}/{Number(demanda.evidencia_upload_solicitadas || 0)}
+                      </div>
+                    )}
                     {demanda.tem_evidencia_foto ? (
                       <div className="flex min-w-36 flex-col items-start gap-2">
                         <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${evidenciaStatusClass[demanda.evidencia_moderacao_status] || evidenciaStatusClass.PENDENTE}`}>
