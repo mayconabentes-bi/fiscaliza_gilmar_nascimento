@@ -82,7 +82,10 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
       const rows = await sql`
         select id, protocolo, nome_solicitante, contato, municipio, bairro, categoria, tipo_problema, descricao,
                prioridade, status, observacao_interna, usuario_id, evidencia_moderacao_status,
-               (evidencia_foto_path is not null) as tem_evidencia_foto, created_at, updated_at
+               evidencia_upload_status, evidencia_upload_solicitadas, evidencia_upload_anexadas, evidencia_upload_falhas,
+               (evidencia_foto_path is not null) as tem_evidencia_foto,
+               (select count(*)::int from public.demanda_evidencias de where de.demanda_id = public.demandas.id and de.storage_path is not null) as evidencia_total,
+               created_at, updated_at
         from public.demandas
         where (${status} = '' or status = ${status})
           and (${prioridade} = '' or prioridade = ${prioridade})
