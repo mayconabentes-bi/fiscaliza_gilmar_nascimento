@@ -44,6 +44,7 @@ export default function NovaDemanda({ user }: { user?: any }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [protocolo, setProtocolo] = useState<string | null>(null);
+  const [evidenceWarning, setEvidenceWarning] = useState("");
   const [copied, setCopied] = useState(false);
   const [draftAvailable, setDraftAvailable] = useState(false);
   const [draftMessage, setDraftMessage] = useState("");
@@ -319,7 +320,7 @@ export default function NovaDemanda({ user }: { user?: any }) {
   };
 
   const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault(); setError(""); setProtocolo(null);
+    event.preventDefault(); setError(""); setProtocolo(null); setEvidenceWarning("");
     const mobileFlow = typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches;
     if (mobileFlow && mobileStep === 1) { continueFromLocation(); return; }
     if (mobileFlow && mobileStep === 2) { continueToReview(); return; }
@@ -347,7 +348,7 @@ export default function NovaDemanda({ user }: { user?: any }) {
         throw new Error(data.error || "Não foi possível enviar seu registro.");
       }
       clearDemandIdempotencyKey();
-      setProtocolo(data.protocolo); trackPulsoEvent("protocolo_view", attribution);
+      setProtocolo(data.protocolo); setEvidenceWarning(String(data.warning || "")); trackPulsoEvent("protocolo_view", attribution);
       clearSafeDemandDraft(); setDraftAvailable(false);
       setForm(prev => ({ ...prev, descricao: "", aviso_privacidade_aceito: false })); setPhotos([]);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -383,7 +384,7 @@ export default function NovaDemanda({ user }: { user?: any }) {
   }
 
   if (protocolo) {
-    return <div className="mx-auto max-w-2xl py-5 sm:py-10"><div className="surface-card overflow-hidden"><div className="h-1.5 bg-[#f36a10]" aria-hidden="true" /><div className="p-6 text-center sm:p-9"><span className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-[#eef2fb] text-[#1f2e6e]"><CheckCircle2 className="h-8 w-8" /></span><p className="mt-5 text-xs font-extrabold uppercase tracking-[0.16em] text-[#f36a10]">Você cuidando da cidade</p><h1 className="mt-2 text-3xl font-extrabold tracking-[-0.04em] text-[#172033]">Pronto. Seu registro foi enviado.</h1><p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-[#657089] sm:text-base">Guarde este protocolo. Você vai usar esse código para acompanhar as atualizações.</p><div className="mt-6 rounded-2xl bg-[#1f2e6e] px-4 py-5 font-mono text-xl font-bold tracking-wide text-white break-all sm:text-2xl">{protocolo}</div><div className="mt-3 grid grid-cols-2 gap-2"><button onClick={copyProtocol} className="secondary-button px-3">{copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}{copied ? "Copiado" : "Copiar código"}</button><button onClick={shareProtocol} className="secondary-button px-3"><Share2 className="h-4 w-4" />Compartilhar</button></div><div className="mt-5 grid gap-3 sm:flex sm:flex-wrap sm:justify-center"><Link to={`/protocolo?codigo=${encodeURIComponent(protocolo)}`} className="primary-button min-h-14 px-6 text-base">Ver andamento <ArrowRight className="h-4 w-4" /></Link>{user?.type === "cidadao" && <Link to="/meus-registros" className="secondary-button min-h-14 px-6 text-base">Ver meus registros</Link>}<button onClick={() => setProtocolo(null)} className="secondary-button min-h-14 px-6 text-base">Registrar outro</button></div></div></div></div>;
+    return <div className="mx-auto max-w-2xl py-5 sm:py-10"><div className="surface-card overflow-hidden"><div className="h-1.5 bg-[#f36a10]" aria-hidden="true" /><div className="p-6 text-center sm:p-9"><span className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-[#eef2fb] text-[#1f2e6e]"><CheckCircle2 className="h-8 w-8" /></span><p className="mt-5 text-xs font-extrabold uppercase tracking-[0.16em] text-[#f36a10]">Você cuidando da cidade</p><h1 className="mt-2 text-3xl font-extrabold tracking-[-0.04em] text-[#172033]">Pronto. Seu registro foi enviado.</h1><p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-[#657089] sm:text-base">Guarde este protocolo. Você vai usar esse código para acompanhar as atualizações.</p>{evidenceWarning && <div role="status" className="mx-auto mt-4 max-w-lg rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm font-semibold leading-6 text-amber-900">{evidenceWarning}</div>}<div className="mt-6 rounded-2xl bg-[#1f2e6e] px-4 py-5 font-mono text-xl font-bold tracking-wide text-white break-all sm:text-2xl">{protocolo}</div><div className="mt-3 grid grid-cols-2 gap-2"><button onClick={copyProtocol} className="secondary-button px-3">{copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}{copied ? "Copiado" : "Copiar código"}</button><button onClick={shareProtocol} className="secondary-button px-3"><Share2 className="h-4 w-4" />Compartilhar</button></div><div className="mt-5 grid gap-3 sm:flex sm:flex-wrap sm:justify-center"><Link to={`/protocolo?codigo=${encodeURIComponent(protocolo)}`} className="primary-button min-h-14 px-6 text-base">Ver andamento <ArrowRight className="h-4 w-4" /></Link>{user?.type === "cidadao" && <Link to="/meus-registros" className="secondary-button min-h-14 px-6 text-base">Ver meus registros</Link>}<button onClick={() => { setProtocolo(null); setEvidenceWarning(""); }} className="secondary-button min-h-14 px-6 text-base">Registrar outro</button></div></div></div></div>;
   }
 
   return (
