@@ -34,7 +34,7 @@ export async function previewEvidenceOrphansPostgres() {
     graceHours: EVIDENCE_ORPHAN_GRACE_HOURS,
     batchLimit: MAX_RECONCILIATION_BATCH,
     oldestCreatedAt: rows[0]?.created_at || null,
-    newestCreatedAt: rows.at(-1)?.created_at || null,
+    newestCreatedAt: rows.length ? rows[rows.length - 1]?.created_at || null : null,
   };
 }
 
