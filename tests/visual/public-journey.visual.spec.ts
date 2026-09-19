@@ -115,6 +115,13 @@ test('registro mantém fluxo guiado, privacidade e revisão no mobile', async ({
     await page.getByLabel('O que aconteceu?').fill('Ocorrência de teste visual para validar o fluxo guiado no celular.');
     await expect(page.getByText(/adicionar evidências/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /adicionar contato para retorno/i })).toBeVisible();
+    await page.locator('input[name="gallery_photos"]').setInputFiles({
+      name: 'evidencia-visual.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl2nA0AAAAASUVORK5CYII=', 'base64'),
+    });
+    await expect(page.getByText('1 de 7')).toBeVisible();
+    await expect(page.getByAltText('Prévia da foto 1')).toBeVisible();
     await capture(page, 'registro-etapa-2', testInfo.project.name);
 
     await page.getByRole('button', { name: /^revisar/i }).click();
