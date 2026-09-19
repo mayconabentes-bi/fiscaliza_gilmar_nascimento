@@ -9,6 +9,7 @@ import { ADMIN_DEMAND_LIST_LIMIT, normalizeAdminDemandListFilters } from "./admi
 const STATUS_VALIDOS = ["RECEBIDA","EM_TRIAGEM","ENCAMINHADA","EM_ANALISE","EM_EXECUCAO","CONCLUIDA","INDEFERIDA"];
 const PRIORIDADES_VALIDAS = ["BAIXA","MEDIA","ALTA","CRITICA"];
 const EVIDENCIA_DECISOES = ["APROVAR_PRIVADA","REJEITAR","REQUER_ANONIMIZACAO"];
+const EVIDENCIA_ACESSIVEIS = ["PENDENTE","REQUER_ANONIMIZACAO","APROVADA_PRIVADA"];
 
 export function setupPrivateAdminPostgresRoutes(app: Express) {
   app.get("/api/demandas/metricas", async (_req, res) => {
@@ -129,8 +130,7 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
   app.get("/api/admin/demandas/:id/evidencia", async (req, res) => {
     try {
       const sql = getPostgres();
-      const [row] = await sql`select evidencia_foto_path, evidencia_foto_mime from public.demandas where id = ${req.params.id} limit 1`;
-      if (!row?.evidencia_foto_path) return res.status(404).json({ error: "Evidência não encontrada." });
+      const [row] = await sql`\n        select evidencia_foto_path, evidencia_foto_mime, evidencia_moderacao_status\n        from public.demandas\n        where id = ${req.params.id}\n        limit 1\n      `;\n      if (!row?.evidencia_foto_path || !EVIDENCIA_ACESSIVEIS.includes(String(row.evidencia_moderacao_status))) {\n        return res.status(404).json({ error: "Evidência não encontrada." });\n      }
       const url = await createDemandEvidenceSignedUrl(String(row.evidencia_foto_path), 300);
       res.setHeader("Cache-Control", "no-store, private");
       return res.json({ url, mime: row.evidencia_foto_mime || "application/octet-stream", expiresIn: 300 });
@@ -169,7 +169,7 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
         select evidencia_foto_path, evidencia_foto_mime, evidencia_moderacao_status
         from public.demandas where id = ${req.params.id} limit 1
       `;
-      if (!legacy?.evidencia_foto_path) return res.status(404).json({ error: "Evidência não encontrada." });
+      if (!legacy?.evidencia_foto_path || !EVIDENCIA_ACESSIVEIS.includes(String(legacy.evidencia_moderacao_status))) {\n        return res.status(404).json({ error: "Evidência não encontrada." });\n      }
       const url = await createDemandEvidenceSignedUrl(String(legacy.evidencia_foto_path), 300);
       res.setHeader("Cache-Control", "no-store, private");
       return res.json({
