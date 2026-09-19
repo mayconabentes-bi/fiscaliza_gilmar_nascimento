@@ -230,24 +230,33 @@ export default function NovaDemanda({ user }: { user?: any }) {
     }
 
     const selected = files.slice(0, remaining);
+    const warnings: string[] = [];
     if (files.length > remaining) {
-      setError(`Você pode adicionar no máximo 7 fotos. Foram consideradas apenas as primeiras ${remaining}.`);
+      warnings.push(`Você pode adicionar no máximo 7 fotos. Foram consideradas apenas as primeiras ${remaining}.`);
     }
 
     setPhotoBusy(true);
     try {
       const preparedPhotos: PreparedPhoto[] = [];
+      const failedMessages: string[] = [];
       for (const file of selected) {
-        const prepared = await prepareMobileEvidence(file);
-        preparedPhotos.push({
-          id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-          dataUrl: prepared.dataUrl,
-          bytes: prepared.bytes,
-        });
+        try {
+          const prepared = await prepareMobileEvidence(file);
+          preparedPhotos.push({
+            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            dataUrl: prepared.dataUrl,
+            bytes: prepared.bytes,
+          });
+        } catch (err: any) {
+          failedMessages.push(err?.message || "Não foi possível preparar esta foto.");
+        }
       }
-      setPhotos((current) => [...current, ...preparedPhotos].slice(0, MAX_PHOTOS));
-    } catch (err: any) {
-      setError(err.message || "Não foi possível preparar uma das fotos.");
+      if (preparedPhotos.length) setPhotos((current) => [...current, ...preparedPhotos].slice(0, MAX_PHOTOS));
+      if (failedMessages.length) {
+        const uniqueMessages = [...new Set(failedMessages)];
+        warnings.push(`${failedMessages.length} foto${failedMessages.length === 1 ? " não pôde" : "s não puderam"} ser adicionada${failedMessages.length === 1 ? "" : "s"}. ${uniqueMessages.slice(0, 2).join(" ")}`);
+      }
+      if (warnings.length) setError(warnings.join(" "));
     } finally {
       setPhotoBusy(false);
     }
