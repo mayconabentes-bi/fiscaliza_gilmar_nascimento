@@ -5,6 +5,7 @@ import { createDemandEvidenceSignedUrl, EvidenceStorageUnavailableError, removeD
 import { applyRetentionPostgres, retentionPreviewPostgres } from "./retentionPostgres.js";
 import { ensureDemandEvidenceSchema } from "./demandEvidencePostgres.js";
 import { ADMIN_DEMAND_LIST_LIMIT, normalizeAdminDemandListFilters } from "./adminDemandListIntegrity.js";
+import { previewEvidenceOrphansPostgres, reconcileEvidenceOrphansPostgres } from "./evidenceReconciliationPostgres.js";
 
 const STATUS_VALIDOS = ["RECEBIDA","EM_TRIAGEM","ENCAMINHADA","EM_ANALISE","EM_EXECUCAO","CONCLUIDA","INDEFERIDA"];
 const PRIORIDADES_VALIDAS = ["BAIXA","MEDIA","ALTA","CRITICA"];
@@ -579,6 +580,37 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
     } catch (error) {
       console.error("Falha ao resolver denúncia:", error);
       return res.status(500).json({ error: "Erro ao resolver denúncia." });
+    }
+  });
+
+  app.get("/api/admin/evidencias/orfaos-preview", async (_req, res) => {
+    try {
+      res.setHeader("Cache-Control", "no-store, private");
+      return res.json(await previewEvidenceOrphansPostgres());
+    } catch (error) {
+      console.error("Falha ao simular reconciliação de evidências órfãs:", error);
+      return res.status(500).json({ error: "Erro ao verificar evidências órfãs." });
+    }
+  });
+
+  app.post("/api/admin/evidencias/orfaos-run", async (req: any, res) => {
+    if (req.body?.confirm !== true) {
+      return res.status(400).json({ error: "Confirmação explícita é obrigatória para remover evidências órfãs." });
+    }
+    try {
+      const result = await reconcileEvidenceOrphansPostgres();
+      const sql = getPostgres();
+      await sql`
+        insert into public.logs_auditoria (id, entidade, entidade_id, acao, usuario_responsavel_id, metadata)
+        values (
+          ${uuidv4()}, 'compliance', 'evidence-orphans', 'EVIDENCIAS_ORFAS_RECONCILIADAS',
+          ${req.user?.id || null}, ${sql.json(result)}
+        )
+      `;
+      return res.json(result);
+    } catch (error) {
+      console.error("Falha ao reconciliar evidências órfãs:", error);
+      return res.status(500).json({ error: "Erro ao reconciliar evidências órfãs." });
     }
   });
 
