@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, Eye, Image as ImageIcon, RefreshCw, ShieldCheck, X } from "lucide-react";
 import { fetchWithTimeout } from "../lib/request";
 import { DEMAND_TAXONOMY, demandCategoryLabel, demandProblemLabel, getDemandCategory } from "../shared/demandTaxonomy";
+import { canTransitionDemandStatus, isDemandStatus } from "../shared/demandStatusWorkflow";
 
 const statusOptions = [
   { value: "RECEBIDA", label: "Recebida", description: "Registro recebido e protocolado, aguardando triagem." },
@@ -186,10 +187,18 @@ export default function AdminDemandas() {
         method: "PATCH",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: novoStatus, prioridade: novaPrioridade, observacao_interna: observacao.trim() })
+        body: JSON.stringify({ status: novoStatus, prioridade: novaPrioridade, observacao_interna: observacao.trim(), expected_updated_at: demandaSelecionada.updated_at })
       }, 12000);
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Erro ao atualizar demanda.");
+      if (!response.ok) {
+        if (response.status === 409 && data?.code === "STALE_DEMAND_VERSION") {
+          await fetchDemandas();
+          setDemandaSelecionada(null);
+          setError("Esta demanda foi alterada por outro operador. A lista foi atualizada; abra novamente a triagem antes de salvar.");
+          return;
+        }
+        throw new Error(data.error || "Erro ao atualizar demanda.");
+      }
       setDemandaSelecionada(null);
       setObservacao("");
       await fetchDemandas();
@@ -447,7 +456,12 @@ export default function AdminDemandas() {
 
               <p className="mb-2 text-sm font-bold text-slate-800">Status de andamento</p>
               <div className="space-y-2">
-                {statusOptions.map(option => {
+                {statusOptions
+                  .filter(option => {
+                    if (!isDemandStatus(demandaSelecionada.status) || !isDemandStatus(option.value)) return false;
+                    return canTransitionDemandStatus(demandaSelecionada.status, option.value);
+                  })
+                  .map(option => {
                   const selected = novoStatus === option.value;
                   const current = demandaSelecionada.status === option.value;
                   return (

@@ -98,7 +98,7 @@ export function setupProductionFastAdminRoutes(app: Express) {
                      then 1 else 0
                    end
                  ) as evidencia_total,
-                 d.created_at, d.updated_at
+                 d.created_at, d.updated_at::text as updated_at
           from public.demandas d
           where (${filters.status} = '' or d.status = ${filters.status})
             and (${filters.prioridade} = '' or d.prioridade = ${filters.prioridade})
