@@ -281,12 +281,12 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
       const sql = getPostgres();
 
       const transition = await sql.begin(async (tx) => {
-        const [evidence] = await tx\`
+        const [evidence] = await tx`
           select id, demanda_id, storage_path, ordem, moderacao_status
           from public.demanda_evidencias
-          where id = \${req.params.id}
+          where id = ${req.params.id}
           for update
-        \`;
+        `;
         if (!evidence) return null;
 
         const previousStatus = String(evidence.moderacao_status || "PENDENTE");
@@ -297,23 +297,23 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
           throw new Error("ANONYMIZATION_REQUIRED_BEFORE_APPROVAL");
         }
 
-        await tx\`
+        await tx`
           update public.demanda_evidencias
-          set moderacao_status = \${status},
+          set moderacao_status = ${status},
               revisada_em = now(),
-              revisada_por = \${req.user?.id || "admin"},
-              moderacao_observacao = \${observacao || null}
-          where id = \${req.params.id}
-        \`;
+              revisada_por = ${req.user?.id || "admin"},
+              moderacao_observacao = ${observacao || null}
+          where id = ${req.params.id}
+        `;
 
-        const [aggregate] = await tx\`
+        const [aggregate] = await tx`
           select
             count(*) filter (where moderacao_status = 'PENDENTE')::int as pendentes,
             count(*) filter (where moderacao_status = 'REQUER_ANONIMIZACAO')::int as anonimizar,
             count(*) filter (where moderacao_status = 'APROVADA_PRIVADA')::int as aprovadas
           from public.demanda_evidencias
-          where demanda_id = \${evidence.demanda_id}
-        \`;
+          where demanda_id = ${evidence.demanda_id}
+        `;
 
         const aggregateStatus = Number(aggregate?.pendentes) > 0
           ? "PENDENTE"
@@ -323,21 +323,21 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
               ? "APROVADA_PRIVADA"
               : "REJEITADA";
 
-        await tx\`
+        await tx`
           update public.demandas
-          set evidencia_moderacao_status = \${aggregateStatus}
-          where id = \${evidence.demanda_id}
-        \`;
+          set evidencia_moderacao_status = ${aggregateStatus}
+          where id = ${evidence.demanda_id}
+        `;
 
         if (previousStatus !== status) {
-          await tx\`
+          await tx`
             insert into public.logs_auditoria (id, entidade, entidade_id, acao, usuario_responsavel_id, metadata)
             values (
-              \${uuidv4()}, 'demanda_evidencia', \${req.params.id}, 'EVIDENCIA_MODERADA',
-              \${req.user?.id || null},
-              \${sql.json({ decisao, status, status_anterior: previousStatus, demanda_id: evidence.demanda_id })}
+              ${uuidv4()}, 'demanda_evidencia', ${req.params.id}, 'EVIDENCIA_MODERADA',
+              ${req.user?.id || null},
+              ${sql.json({ decisao, status, status_anterior: previousStatus, demanda_id: evidence.demanda_id })}
             )
-          \`;
+          `;
         }
 
         return {
@@ -353,33 +353,33 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
       if (status === "REJEITADA" && transition.storagePath) {
         await removeDemandEvidence(transition.storagePath);
         await sql.begin(async (tx) => {
-          await tx\`
+          await tx`
             update public.demanda_evidencias
             set storage_path = null
-            where id = \${req.params.id}
+            where id = ${req.params.id}
               and moderacao_status = 'REJEITADA'
-              and storage_path = \${transition.storagePath}
-          \`;
+              and storage_path = ${transition.storagePath}
+          `;
 
           if (transition.ordem === 1) {
-            await tx\`
+            await tx`
               update public.demandas
               set evidencia_foto_path = null,
                   evidencia_foto_mime = null
-              where id = \${transition.demandaId}
+              where id = ${transition.demandaId}
                 and evidencia_moderacao_status = 'REJEITADA'
-                and evidencia_foto_path = \${transition.storagePath}
-            \`;
+                and evidencia_foto_path = ${transition.storagePath}
+            `;
           }
 
-          await tx\`
+          await tx`
             insert into public.logs_auditoria (id, entidade, entidade_id, acao, usuario_responsavel_id, metadata)
             values (
-              \${uuidv4()}, 'demanda_evidencia', \${req.params.id}, 'EVIDENCIA_STORAGE_REMOVIDA',
-              \${req.user?.id || null},
-              \${sql.json({ demanda_id: transition.demandaId })}
+              ${uuidv4()}, 'demanda_evidencia', ${req.params.id}, 'EVIDENCIA_STORAGE_REMOVIDA',
+              ${req.user?.id || null},
+              ${sql.json({ demanda_id: transition.demandaId })}
             )
-          \`;
+          `;
         });
       }
 
@@ -417,12 +417,12 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
     try {
       const sql = getPostgres();
       const transition = await sql.begin(async (tx) => {
-        const [row] = await tx\`
+        const [row] = await tx`
           select evidencia_foto_path, evidencia_moderacao_status
           from public.demandas
-          where id = \${req.params.id}
+          where id = ${req.params.id}
           for update
-        \`;
+        `;
         if (!row?.evidencia_foto_path) return null;
 
         const previousStatus = String(row.evidencia_moderacao_status || "PENDENTE");
@@ -433,24 +433,24 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
           throw new Error("ANONYMIZATION_REQUIRED_BEFORE_APPROVAL");
         }
 
-        await tx\`
+        await tx`
           update public.demandas
-          set evidencia_moderacao_status = \${status},
+          set evidencia_moderacao_status = ${status},
               evidencia_revisada_em = now(),
-              evidencia_revisada_por = \${req.user?.id || 'admin'},
-              evidencia_moderacao_observacao = \${observacao || null}
-          where id = \${req.params.id}
-        \`;
+              evidencia_revisada_por = ${req.user?.id || 'admin'},
+              evidencia_moderacao_observacao = ${observacao || null}
+          where id = ${req.params.id}
+        `;
 
         if (previousStatus !== status) {
-          await tx\`
+          await tx`
             insert into public.logs_auditoria (id, entidade, entidade_id, acao, usuario_responsavel_id, metadata)
             values (
-              \${uuidv4()}, 'demanda', \${req.params.id}, 'EVIDENCIA_MODERADA',
-              \${req.user?.id || null},
-              \${sql.json({ decisao, status, status_anterior: previousStatus })}
+              ${uuidv4()}, 'demanda', ${req.params.id}, 'EVIDENCIA_MODERADA',
+              ${req.user?.id || null},
+              ${sql.json({ decisao, status, status_anterior: previousStatus })}
             )
-          \`;
+          `;
         }
 
         return { storagePath: String(row.evidencia_foto_path), previousStatus };
@@ -461,22 +461,22 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
       if (status === "REJEITADA") {
         await removeDemandEvidence(transition.storagePath);
         await sql.begin(async (tx) => {
-          await tx\`
+          await tx`
             update public.demandas
             set evidencia_foto_path = null,
                 evidencia_foto_mime = null
-            where id = \${req.params.id}
+            where id = ${req.params.id}
               and evidencia_moderacao_status = 'REJEITADA'
-              and evidencia_foto_path = \${transition.storagePath}
-          \`;
-          await tx\`
+              and evidencia_foto_path = ${transition.storagePath}
+          `;
+          await tx`
             insert into public.logs_auditoria (id, entidade, entidade_id, acao, usuario_responsavel_id, metadata)
             values (
-              \${uuidv4()}, 'demanda', \${req.params.id}, 'EVIDENCIA_STORAGE_REMOVIDA',
-              \${req.user?.id || null},
-              \${sql.json({ legado: true })}
+              ${uuidv4()}, 'demanda', ${req.params.id}, 'EVIDENCIA_STORAGE_REMOVIDA',
+              ${req.user?.id || null},
+              ${sql.json({ legado: true })}
             )
-          \`;
+          `;
         });
       }
 
