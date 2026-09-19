@@ -6,6 +6,20 @@ import { prepareMobileEvidence } from "../lib/mobileImage";
 import { clearSafeDemandDraft, readSafeDemandDraft, saveSafeDemandDraft } from "../lib/safeDemandDraft";
 import { DEMAND_TAXONOMY, getDemandCategory } from "../shared/demandTaxonomy";
 const MAX_PHOTOS = 7;
+const DEMAND_IDEMPOTENCY_STORAGE_KEY = "fiscalize:demand-idempotency-key";
+
+function getOrCreateDemandIdempotencyKey() {
+  if (typeof window === "undefined") return "";
+  const current = window.sessionStorage.getItem(DEMAND_IDEMPOTENCY_STORAGE_KEY);
+  if (current && /^[0-9a-f-]{36}$/i.test(current)) return current;
+  const key = window.crypto.randomUUID();
+  window.sessionStorage.setItem(DEMAND_IDEMPOTENCY_STORAGE_KEY, key);
+  return key;
+}
+
+function clearDemandIdempotencyKey() {
+  if (typeof window !== "undefined") window.sessionStorage.removeItem(DEMAND_IDEMPOTENCY_STORAGE_KEY);
+}
 
 type PreparedPhoto = { id: string; dataUrl: string; bytes: number };
 
@@ -321,9 +335,18 @@ export default function NovaDemanda({ user }: { user?: any }) {
     if (!form.descricao.trim()) { setMobileStep(2); setError("Descreva o que aconteceu."); focusField("descricao"); setLoading(false); return; }
     if (!form.aviso_privacidade_aceito) { setMobileStep(3); setError("Marque a opção de privacidade para continuar."); focusField("aviso_privacidade_aceito"); setLoading(false); return; }
     try {
-      const response = await fetch("/api/demandas", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, cep: form.cep.replace(/\D/g, ""), ...attribution, foto_evidencias_base64: photos.map((photo) => photo.dataUrl) }) });
+      const idempotencyKey = getOrCreateDemandIdempotencyKey();
+      const response = await fetch("/api/demandas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Idempotency-Key": idempotencyKey },
+        body: JSON.stringify({ ...form, cep: form.cep.replace(/\D/g, ""), ...attribution, foto_evidencias_base64: photos.map((photo) => photo.dataUrl) }),
+      });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Não foi possível enviar seu registro.");
+      if (!response.ok) {
+        if (data?.code === "IDEMPOTENCY_KEY_REUSED" || data?.code === "INVALID_IDEMPOTENCY_KEY") clearDemandIdempotencyKey();
+        throw new Error(data.error || "Não foi possível enviar seu registro.");
+      }
+      clearDemandIdempotencyKey();
       setProtocolo(data.protocolo); trackPulsoEvent("protocolo_view", attribution);
       clearSafeDemandDraft(); setDraftAvailable(false);
       setForm(prev => ({ ...prev, descricao: "", aviso_privacidade_aceito: false })); setPhotos([]);

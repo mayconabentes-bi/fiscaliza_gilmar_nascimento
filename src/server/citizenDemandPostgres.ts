@@ -8,6 +8,7 @@ import { ensureDemandEvidenceSchema } from "./demandEvidencePostgres.js";
 import { cleanProtocol, cleanText } from "./requestValidation.js";
 import { AgePolicyError, ageBandForActiveParticipation, type AgeBand } from "./agePolicy.js";
 import { isValidDemandClassification } from "../shared/demandTaxonomy.js";
+import { demandRequestFingerprint, hashDemandEvidence, isIdempotentReplay, normalizeIdempotencyKey } from "./demandIdempotency.js";
 
 function jwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -70,6 +71,12 @@ export function setupCitizenDemandPostgres(app: Express) {
     if (req.body?.aviso_privacidade_aceito !== true) return res.status(400).json({ error: "Confirme o aviso de privacidade para registrar a demanda." });
 
     const claims = citizenClaims(req);
+    let idempotencyKey: string;
+    try {
+      idempotencyKey = normalizeIdempotencyKey(req.get("Idempotency-Key")) || uuidv4();
+    } catch {
+      return res.status(400).json({ error: "Chave de idempotência inválida.", code: "INVALID_IDEMPOTENCY_KEY" });
+    }
     let nome: string, contato: string, municipio: string, bairro: string, categoria: string, tipoProblema: string, descricao: string, prioridade: string;
     let cep: string, logradouro: string, numero: string, complemento: string, uf: string, codigoIbge: string;
     const legacyPhoto = typeof req.body?.foto_evidencia_base64 === "string" ? req.body.foto_evidencia_base64.trim() : "";
@@ -111,6 +118,48 @@ export function setupCitizenDemandPostgres(app: Express) {
 
     try {
       const sql = await getHealthyPostgres();
+      const requestFingerprint = demandRequestFingerprint({
+        actor: claims?.id || null,
+        nome,
+        contato: contato || null,
+        municipio,
+        bairro: bairro || null,
+        cep: cep || null,
+        logradouro: logradouro || null,
+        numero: numero || null,
+        complemento: complemento || null,
+        uf,
+        codigo_ibge: codigoIbge || null,
+        categoria,
+        tipo_problema: tipoProblema,
+        descricao,
+        faixa_etaria: String(req.body?.faixa_etaria || ""),
+        aviso_privacidade_aceito: true,
+        evidencias: fotoEvidenciasBase64.map(hashDemandEvidence),
+      });
+
+      const [existingDemand] = await sql`
+        select id, protocolo, status, request_fingerprint
+        from public.demandas
+        where idempotency_key = ${idempotencyKey}
+        limit 1
+      `;
+      if (existingDemand) {
+        if (!isIdempotentReplay(existingDemand.request_fingerprint, requestFingerprint)) {
+          return res.status(409).json({
+            error: "Esta tentativa de envio já foi usada com dados diferentes. Revise o formulário e envie novamente.",
+            code: "IDEMPOTENCY_KEY_REUSED",
+          });
+        }
+        res.setHeader("Idempotent-Replay", "true");
+        return res.status(200).json({
+          id: existingDemand.id,
+          protocolo: existingDemand.protocolo,
+          status: existingDemand.status,
+          idempotent_replay: true,
+        });
+      }
+
       let usuarioId: string | null = null;
       let faixaEtaria: AgeBand | null = null;
       let revisaoReforcada = false;
@@ -163,13 +212,15 @@ export function setupCitizenDemandPostgres(app: Express) {
                 id, protocolo, nome_solicitante, contato, municipio, bairro, cep, logradouro, numero, complemento, uf, codigo_ibge,
                 categoria, tipo_problema, descricao, prioridade, status, usuario_id, evidencia_foto_path, evidencia_foto_mime,
                 evidencia_moderacao_status, aviso_privacidade_versao, aviso_privacidade_data,
-                faixa_etaria, revisao_reforcada, revisao_reforcada_motivo
+                faixa_etaria, revisao_reforcada, revisao_reforcada_motivo,
+                idempotency_key, request_fingerprint
               ) values (
                 ${id}, ${protocolo}, ${nome}, ${contato || null}, ${municipio}, ${bairro || null}, ${cep || null}, ${logradouro || null},
                 ${numero || null}, ${complemento || null}, ${uf || null}, ${codigoIbge || null}, ${categoria}, ${tipoProblema}, ${descricao},
                 ${prioridade}, 'RECEBIDA', ${usuarioId}, ${firstEvidence?.path || null}, ${firstEvidence?.mime || null},
                 ${uploadedEvidences.length ? "PENDENTE" : "NAO_ENVIADA"}, ${privacyVersion()}, ${new Date().toISOString()},
-                ${faixaEtaria}, ${revisaoReforcada}, ${revisaoMotivo}
+                ${faixaEtaria}, ${revisaoReforcada}, ${revisaoMotivo},
+                ${idempotencyKey}, ${requestFingerprint}
               )
             `;
             await transaction`
@@ -187,7 +238,33 @@ export function setupCitizenDemandPostgres(app: Express) {
           inserted = true;
           break;
         } catch (error: any) {
-          if (error?.code === "23505") continue;
+          if (error?.code === "23505") {
+            const [existingDemand] = await sql`
+              select id, protocolo, status, request_fingerprint
+              from public.demandas
+              where idempotency_key = ${idempotencyKey}
+              limit 1
+            `;
+            if (existingDemand) {
+              if (uploadedEvidences.length) {
+                await Promise.all(uploadedEvidences.map((item) => removeDemandEvidence(item.path).catch(() => undefined)));
+              }
+              if (!isIdempotentReplay(existingDemand.request_fingerprint, requestFingerprint)) {
+                return res.status(409).json({
+                  error: "Esta tentativa de envio já foi usada com dados diferentes. Revise o formulário e envie novamente.",
+                  code: "IDEMPOTENCY_KEY_REUSED",
+                });
+              }
+              res.setHeader("Idempotent-Replay", "true");
+              return res.status(200).json({
+                id: existingDemand.id,
+                protocolo: existingDemand.protocolo,
+                status: existingDemand.status,
+                idempotent_replay: true,
+              });
+            }
+            continue;
+          }
           if (uploadedEvidences.length) await Promise.all(uploadedEvidences.map((item) => removeDemandEvidence(item.path).catch(() => undefined)));
           throw error;
         }
