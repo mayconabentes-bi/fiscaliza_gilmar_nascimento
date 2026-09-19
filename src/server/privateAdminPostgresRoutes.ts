@@ -394,28 +394,87 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
     const observacao = String(req.body?.observacao || "").trim().slice(0, 1000);
     if (!EVIDENCIA_DECISOES.includes(decisao)) return res.status(400).json({ error: "Decisão de evidência inválida." });
 
+    const status = decisao === "REJEITAR"
+      ? "REJEITADA"
+      : decisao === "REQUER_ANONIMIZACAO"
+        ? "REQUER_ANONIMIZACAO"
+        : "APROVADA_PRIVADA";
+
     try {
       const sql = getPostgres();
-      const [row] = await sql`select evidencia_foto_path from public.demandas where id = ${req.params.id} limit 1`;
-      if (!row?.evidencia_foto_path) return res.status(404).json({ error: "Evidência não encontrada." });
-      const status = decisao === "REJEITAR" ? "REJEITADA" : decisao === "REQUER_ANONIMIZACAO" ? "REQUER_ANONIMIZACAO" : "APROVADA_PRIVADA";
-      if (status === "REJEITADA") await removeDemandEvidence(String(row.evidencia_foto_path));
-      await sql.begin(async (tx) => {
-        await tx`
+      const transition = await sql.begin(async (tx) => {
+        const [row] = await tx\`
+          select evidencia_foto_path, evidencia_moderacao_status
+          from public.demandas
+          where id = \${req.params.id}
+          for update
+        \`;
+        if (!row?.evidencia_foto_path) return null;
+
+        const previousStatus = String(row.evidencia_moderacao_status || "PENDENTE");
+        if (previousStatus === "REJEITADA" && status !== "REJEITADA") {
+          throw new Error("REJECTED_EVIDENCE_IS_TERMINAL");
+        }
+
+        await tx\`
           update public.demandas
-          set evidencia_moderacao_status = ${status}, evidencia_revisada_em = now(),
-              evidencia_revisada_por = ${req.user?.id || 'admin'}, evidencia_moderacao_observacao = ${observacao || null},
-              evidencia_foto_path = case when ${status} = 'REJEITADA' then null else evidencia_foto_path end,
-              evidencia_foto_mime = case when ${status} = 'REJEITADA' then null else evidencia_foto_mime end
-          where id = ${req.params.id}
-        `;
-        await tx`
-          insert into public.logs_auditoria (id, entidade, entidade_id, acao, usuario_responsavel_id, metadata)
-          values (${uuidv4()}, 'demanda', ${req.params.id}, 'EVIDENCIA_MODERADA', ${req.user?.id || null}, ${sql.json({ decisao, status })})
-        `;
+          set evidencia_moderacao_status = \${status},
+              evidencia_revisada_em = now(),
+              evidencia_revisada_por = \${req.user?.id || 'admin'},
+              evidencia_moderacao_observacao = \${observacao || null}
+          where id = \${req.params.id}
+        \`;
+
+        if (previousStatus !== status) {
+          await tx\`
+            insert into public.logs_auditoria (id, entidade, entidade_id, acao, usuario_responsavel_id, metadata)
+            values (
+              \${uuidv4()}, 'demanda', \${req.params.id}, 'EVIDENCIA_MODERADA',
+              \${req.user?.id || null},
+              \${sql.json({ decisao, status, status_anterior: previousStatus })}
+            )
+          \`;
+        }
+
+        return { storagePath: String(row.evidencia_foto_path), previousStatus };
       });
+
+      if (!transition) return res.status(404).json({ error: "Evidência não encontrada." });
+
+      if (status === "REJEITADA") {
+        await removeDemandEvidence(transition.storagePath);
+        await sql.begin(async (tx) => {
+          await tx\`
+            update public.demandas
+            set evidencia_foto_path = null,
+                evidencia_foto_mime = null
+            where id = \${req.params.id}
+              and evidencia_moderacao_status = 'REJEITADA'
+              and evidencia_foto_path = \${transition.storagePath}
+          \`;
+          await tx\`
+            insert into public.logs_auditoria (id, entidade, entidade_id, acao, usuario_responsavel_id, metadata)
+            values (
+              \${uuidv4()}, 'demanda', \${req.params.id}, 'EVIDENCIA_STORAGE_REMOVIDA',
+              \${req.user?.id || null},
+              \${sql.json({ legado: true })}
+            )
+          \`;
+        });
+      }
+
       return res.json({ success: true, status });
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.message === "REJECTED_EVIDENCE_IS_TERMINAL") {
+        return res.status(409).json({ error: "Evidência rejeitada não pode voltar a um estado ativo." });
+      }
+      if (error instanceof EvidenceStorageUnavailableError) {
+        console.error("Storage indisponível durante rejeição de evidência legada:", error);
+        return res.status(503).json({
+          error: "Evidência bloqueada para acesso, mas a remoção física ainda precisa ser repetida.",
+          code: "EVIDENCE_DELETE_PENDING",
+        });
+      }
       console.error("Falha ao moderar evidência:", error);
       return res.status(500).json({ error: "Erro ao moderar evidência." });
     }
