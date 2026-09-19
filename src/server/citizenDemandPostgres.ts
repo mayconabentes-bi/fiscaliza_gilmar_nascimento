@@ -317,7 +317,7 @@ export function setupCitizenDemandPostgres(app: Express) {
         return res.status(error.statusCode).json({ error: error.message, code: error.code });
       }
       console.error("Falha ao registrar demanda:", error);
-      if (["Formato de evidência inválido", "Tipo de evidência não permitido", "Tamanho de evidência inválido"].includes(error?.message)) {
+      if (isEvidenceValidationFailure(error)) {
         return res.status(400).json({ error: "A foto enviada não pôde ser validada." });
       }
       const configError = ["DATABASE_URL não configurada", "JWT_SECRET não configurado", "Supabase Storage não configurado"].includes(error?.message);
