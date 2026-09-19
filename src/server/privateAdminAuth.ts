@@ -5,6 +5,10 @@ import { getDb } from "./db.js";
 import { getHealthyPostgres } from "./postgres.js";
 import { isAllowedAdminProfile, normalizeAdminProfile } from "./adminAccessPolicy.js";
 
+const ADMIN_EMAIL_MAX_LENGTH = 254;
+const ADMIN_PASSWORD_MAX_LENGTH = 256;
+const DUMMY_ADMIN_PASSWORD_HASH = "$2b$10$7EqJtq98hPqEX7fNZaFWoO5uBP6fQqjT7M3QhR0MZ8GgR2Q/C7KXy";
+
 function jwtSecret() {
   const secret = process.env.JWT_SECRET;
   if (secret) return secret;
@@ -36,6 +40,9 @@ export function setupPrivateAdminAuth(app: Express) {
     const email = String(req.body?.email || "").trim().toLowerCase();
     const password = String(req.body?.password || "");
     if (!email || !password) return res.status(400).json({ error: "E-mail e senha são obrigatórios." });
+    if (email.length > ADMIN_EMAIL_MAX_LENGTH || password.length > ADMIN_PASSWORD_MAX_LENGTH) {
+      return res.status(401).json({ error: "Credenciais inválidas." });
+    }
 
     try {
       let admin: any;
@@ -45,16 +52,16 @@ export function setupPrivateAdminAuth(app: Express) {
           select id, nome, email, password_hash, ativo, perfil_acesso
           from private.admins where lower(email) = lower(${email}) limit 1
         `;
-        if (!admin || admin.ativo !== true) return res.status(401).json({ error: "Credenciais inválidas." });
       } else {
         const db = getDb();
         try { admin = db.prepare(`SELECT id, nome, email, password_hash, ativo FROM admins WHERE email = ?`).get(email); }
         finally { db.close(); }
-        if (!admin || admin.ativo !== 1) return res.status(401).json({ error: "Credenciais inválidas." });
       }
 
-      const valid = await bcrypt.compare(password, String(admin.password_hash));
-      if (!valid) return res.status(401).json({ error: "Credenciais inválidas." });
+      const active = process.env.NODE_ENV === "production" ? admin?.ativo === true : admin?.ativo === 1;
+      const passwordHash = admin?.password_hash ? String(admin.password_hash) : DUMMY_ADMIN_PASSWORD_HASH;
+      const valid = await bcrypt.compare(password, passwordHash);
+      if (!admin || !active || !valid) return res.status(401).json({ error: "Credenciais inválidas." });
       const perfil = normalizeAdminProfile(admin.perfil_acesso || (process.env.NODE_ENV === "production" ? "" : "ADMIN"));
       if (!perfil) return res.status(401).json({ error: "Credenciais inválidas." });
       const token = jwt.sign({ id: admin.id, type: "admin", status: "ativo", perfil_acesso: perfil }, jwtSecret(), { expiresIn: "12h" });
