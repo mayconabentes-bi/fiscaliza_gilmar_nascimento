@@ -1,3 +1,5 @@
+import { EVIDENCE_VALIDATION_ERRORS } from "./evidenceStorage.js";
+
 export type EvidenceUploadStatus = "NAO_SOLICITADO" | "COMPLETO" | "PARCIAL" | "FALHA";
 
 export type EvidenceUploadSummary = {
@@ -7,11 +9,7 @@ export type EvidenceUploadSummary = {
   falhas: number;
 };
 
-const VALIDATION_MESSAGES = new Set([
-  "Formato de evidência inválido",
-  "Tipo de evidência não permitido",
-  "Tamanho de evidência inválido",
-]);
+const VALIDATION_MESSAGES = new Set<string>(Object.values(EVIDENCE_VALIDATION_ERRORS));
 
 function safeCount(value: unknown) {
   const parsed = Number(value);

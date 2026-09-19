@@ -56,6 +56,8 @@ jobs:
         run: npm run test:registration-idempotency
       - name: Registration P1.2 evidence resilience
         run: npm run test:registration-evidence-resilience
+      - name: Registration P1.3 evidence magic bytes
+        run: npm run test:registration-evidence-magic-bytes
       - name: Citizen account structure, age bands and CEP
         run: npm run test:citizen-account
       - name: Authenticated citizen experience
@@ -128,6 +130,8 @@ jobs:
         run: npm run test:registration-idempotency
       - name: Registration P1.2 evidence resilience
         run: npm run test:registration-evidence-resilience
+      - name: Registration P1.3 evidence magic bytes
+        run: npm run test:registration-evidence-magic-bytes
       - name: Citizen account structure, age bands and CEP
         run: npm run test:citizen-account
       - name: Authenticated citizen experience
