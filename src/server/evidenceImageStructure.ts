@@ -7,6 +7,15 @@ export type EvidenceDimensions = {
 
 const MAX_EVIDENCE_SIDE_PX = 8_000;
 const MAX_EVIDENCE_PIXELS = 40_000_000;
+const MAX_JPEG_MARKERS_BEFORE_SOF = 512;
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+const VALID_PNG_BIT_DEPTHS: Record<number, Set<number>> = {
+  0: new Set([1, 2, 4, 8, 16]),
+  2: new Set([8, 16]),
+  3: new Set([1, 2, 4, 8]),
+  4: new Set([8, 16]),
+  6: new Set([8, 16]),
+};
 
 function readUInt24LE(buffer: Buffer, offset: number) {
   return buffer[offset] | (buffer[offset + 1] << 8) | (buffer[offset + 2] << 16);
@@ -26,7 +35,9 @@ function validateDimensions(width: number, height: number): EvidenceDimensions {
 }
 
 function parsePngDimensions(buffer: Buffer): EvidenceDimensions {
-  if (buffer.length < 33) throw new Error(EVIDENCE_VALIDATION_ERRORS.STRUCTURE);
+  if (buffer.length < 33 || !buffer.subarray(0, 8).equals(PNG_SIGNATURE)) {
+    throw new Error(EVIDENCE_VALIDATION_ERRORS.STRUCTURE);
+  }
   const ihdrLength = buffer.readUInt32BE(8);
   const ihdrType = buffer.subarray(12, 16).toString("ascii");
   if (ihdrLength !== 13 || ihdrType !== "IHDR") {
@@ -41,15 +52,7 @@ function parsePngDimensions(buffer: Buffer): EvidenceDimensions {
   const filter = buffer[27];
   const interlace = buffer[28];
 
-  const validBitDepths: Record<number, Set<number>> = {
-    0: new Set([1, 2, 4, 8, 16]),
-    2: new Set([8, 16]),
-    3: new Set([1, 2, 4, 8]),
-    4: new Set([8, 16]),
-    6: new Set([8, 16]),
-  };
-
-  if (!validBitDepths[colorType]?.has(bitDepth) || compression !== 0 || filter !== 0 || (interlace !== 0 && interlace !== 1)) {
+  if (!VALID_PNG_BIT_DEPTHS[colorType]?.has(bitDepth) || compression !== 0 || filter !== 0 || (interlace !== 0 && interlace !== 1)) {
     throw new Error(EVIDENCE_VALIDATION_ERRORS.STRUCTURE);
   }
 
@@ -69,7 +72,12 @@ function parseJpegDimensions(buffer: Buffer): EvidenceDimensions {
   }
 
   let offset = 2;
+  let markerCount = 0;
   while (offset < buffer.length) {
+    markerCount += 1;
+    if (markerCount > MAX_JPEG_MARKERS_BEFORE_SOF) {
+      throw new Error(EVIDENCE_VALIDATION_ERRORS.STRUCTURE);
+    }
     if (buffer[offset] !== 0xff) throw new Error(EVIDENCE_VALIDATION_ERRORS.STRUCTURE);
     while (offset < buffer.length && buffer[offset] === 0xff) offset += 1;
     if (offset >= buffer.length) throw new Error(EVIDENCE_VALIDATION_ERRORS.STRUCTURE);
@@ -109,7 +117,13 @@ function parseJpegDimensions(buffer: Buffer): EvidenceDimensions {
 }
 
 function validateRiffEnvelope(buffer: Buffer) {
-  if (buffer.length < 20) throw new Error(EVIDENCE_VALIDATION_ERRORS.STRUCTURE);
+  if (
+    buffer.length < 20 ||
+    buffer.subarray(0, 4).toString("ascii") !== "RIFF" ||
+    buffer.subarray(8, 12).toString("ascii") !== "WEBP"
+  ) {
+    throw new Error(EVIDENCE_VALIDATION_ERRORS.STRUCTURE);
+  }
   const riffSize = buffer.readUInt32LE(4);
   const declaredTotal = riffSize + 8;
   if (declaredTotal > buffer.length || declaredTotal < 20) {
@@ -131,6 +145,7 @@ function parseWebpDimensions(buffer: Buffer): EvidenceDimensions {
     if (chunkSize < 10 || buffer.length < 30) throw new Error(EVIDENCE_VALIDATION_ERRORS.STRUCTURE);
     const frameStart = 20;
     if (
+      (buffer[frameStart] & 0x01) !== 0 ||
       buffer[frameStart + 3] !== 0x9d ||
       buffer[frameStart + 4] !== 0x01 ||
       buffer[frameStart + 5] !== 0x2a
@@ -180,4 +195,5 @@ export function validateEvidenceImageStructure(buffer: Buffer, mime: string): Ev
 export const EVIDENCE_IMAGE_LIMITS = {
   maxSidePx: MAX_EVIDENCE_SIDE_PX,
   maxPixels: MAX_EVIDENCE_PIXELS,
+  maxJpegMarkersBeforeSof: MAX_JPEG_MARKERS_BEFORE_SOF,
 } as const;
