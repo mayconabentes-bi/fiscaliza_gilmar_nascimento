@@ -212,13 +212,15 @@ export function setupCitizenDemandPostgres(app: Express) {
                 id, protocolo, nome_solicitante, contato, municipio, bairro, cep, logradouro, numero, complemento, uf, codigo_ibge,
                 categoria, tipo_problema, descricao, prioridade, status, usuario_id, evidencia_foto_path, evidencia_foto_mime,
                 evidencia_moderacao_status, aviso_privacidade_versao, aviso_privacidade_data,
-                faixa_etaria, revisao_reforcada, revisao_reforcada_motivo
+                faixa_etaria, revisao_reforcada, revisao_reforcada_motivo,
+                idempotency_key, request_fingerprint
               ) values (
                 ${id}, ${protocolo}, ${nome}, ${contato || null}, ${municipio}, ${bairro || null}, ${cep || null}, ${logradouro || null},
                 ${numero || null}, ${complemento || null}, ${uf || null}, ${codigoIbge || null}, ${categoria}, ${tipoProblema}, ${descricao},
                 ${prioridade}, 'RECEBIDA', ${usuarioId}, ${firstEvidence?.path || null}, ${firstEvidence?.mime || null},
                 ${uploadedEvidences.length ? "PENDENTE" : "NAO_ENVIADA"}, ${privacyVersion()}, ${new Date().toISOString()},
-                ${faixaEtaria}, ${revisaoReforcada}, ${revisaoMotivo}
+                ${faixaEtaria}, ${revisaoReforcada}, ${revisaoMotivo},
+                ${idempotencyKey}, ${requestFingerprint}
               )
             `;
             await transaction`
@@ -236,7 +238,33 @@ export function setupCitizenDemandPostgres(app: Express) {
           inserted = true;
           break;
         } catch (error: any) {
-          if (error?.code === "23505") continue;
+          if (error?.code === "23505") {
+            const [existingDemand] = await sql`
+              select id, protocolo, status, request_fingerprint
+              from public.demandas
+              where idempotency_key = ${idempotencyKey}
+              limit 1
+            `;
+            if (existingDemand) {
+              if (uploadedEvidences.length) {
+                await Promise.all(uploadedEvidences.map((item) => removeDemandEvidence(item.path).catch(() => undefined)));
+              }
+              if (!isIdempotentReplay(existingDemand.request_fingerprint, requestFingerprint)) {
+                return res.status(409).json({
+                  error: "Esta tentativa de envio já foi usada com dados diferentes. Revise o formulário e envie novamente.",
+                  code: "IDEMPOTENCY_KEY_REUSED",
+                });
+              }
+              res.setHeader("Idempotent-Replay", "true");
+              return res.status(200).json({
+                id: existingDemand.id,
+                protocolo: existingDemand.protocolo,
+                status: existingDemand.status,
+                idempotent_replay: true,
+              });
+            }
+            continue;
+          }
           if (uploadedEvidences.length) await Promise.all(uploadedEvidences.map((item) => removeDemandEvidence(item.path).catch(() => undefined)));
           throw error;
         }
