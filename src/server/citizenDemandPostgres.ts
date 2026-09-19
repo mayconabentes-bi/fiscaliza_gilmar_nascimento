@@ -118,6 +118,48 @@ export function setupCitizenDemandPostgres(app: Express) {
 
     try {
       const sql = await getHealthyPostgres();
+      const requestFingerprint = demandRequestFingerprint({
+        actor: claims?.id || null,
+        nome,
+        contato: contato || null,
+        municipio,
+        bairro: bairro || null,
+        cep: cep || null,
+        logradouro: logradouro || null,
+        numero: numero || null,
+        complemento: complemento || null,
+        uf,
+        codigo_ibge: codigoIbge || null,
+        categoria,
+        tipo_problema: tipoProblema,
+        descricao,
+        faixa_etaria: String(req.body?.faixa_etaria || ""),
+        aviso_privacidade_aceito: true,
+        evidencias: fotoEvidenciasBase64.map(hashDemandEvidence),
+      });
+
+      const [existingDemand] = await sql`
+        select id, protocolo, status, request_fingerprint
+        from public.demandas
+        where idempotency_key = ${idempotencyKey}
+        limit 1
+      `;
+      if (existingDemand) {
+        if (!isIdempotentReplay(existingDemand.request_fingerprint, requestFingerprint)) {
+          return res.status(409).json({
+            error: "Esta tentativa de envio já foi usada com dados diferentes. Revise o formulário e envie novamente.",
+            code: "IDEMPOTENCY_KEY_REUSED",
+          });
+        }
+        res.setHeader("Idempotent-Replay", "true");
+        return res.status(200).json({
+          id: existingDemand.id,
+          protocolo: existingDemand.protocolo,
+          status: existingDemand.status,
+          idempotent_replay: true,
+        });
+      }
+
       let usuarioId: string | null = null;
       let faixaEtaria: AgeBand | null = null;
       let revisaoReforcada = false;
