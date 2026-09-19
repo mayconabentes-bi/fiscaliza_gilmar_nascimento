@@ -3,11 +3,32 @@ import crypto from "node:crypto";
 const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_EVIDENCE_BYTES = 2 * 1024 * 1024;
 
+export function validateStorageServiceKey(serviceRoleKey: string) {
+  if (serviceRoleKey.startsWith("sb_secret_")) return;
+
+  if (serviceRoleKey.startsWith("sb_publishable_")) {
+    throw new Error("Supabase Storage não configurado");
+  }
+
+  const parts = serviceRoleKey.split(".");
+  if (parts.length !== 3) {
+    throw new Error("Supabase Storage não configurado");
+  }
+
+  try {
+    const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8")) as { role?: string };
+    if (payload.role !== "service_role") throw new Error("invalid_role");
+  } catch {
+    throw new Error("Supabase Storage não configurado");
+  }
+}
+
 function storageConfig() {
   const url = process.env.SUPABASE_URL?.trim();
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   const bucket = process.env.SUPABASE_EVIDENCE_BUCKET?.trim() || "evidencias-demandas";
   if (!url || !serviceRoleKey || !bucket) throw new Error("Supabase Storage não configurado");
+  validateStorageServiceKey(serviceRoleKey);
   return { url: url.replace(/\/+$/, ""), serviceRoleKey, bucket };
 }
 
