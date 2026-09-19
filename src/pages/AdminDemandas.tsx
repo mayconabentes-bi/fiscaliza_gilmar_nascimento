@@ -573,6 +573,11 @@ export default function AdminDemandas() {
               )}
 
               <p className="mt-4 text-xs leading-relaxed text-slate-500">A foto permanece em armazenamento privado. O acesso exibido nesta tela usa uma URL temporária e não torna a evidência pública.</p>
+              {evidenciaStatusAtual === "REQUER_ANONIMIZACAO" && (
+                <div className="mt-3 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-semibold leading-5 text-violet-800">
+                  Esta evidência está bloqueada para aprovação até existir uma versão realmente anonimizada. O status não substitui a transformação da imagem.
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col gap-2 border-t border-slate-200 px-5 py-4 sm:flex-row sm:flex-wrap sm:justify-end sm:px-6">
@@ -580,7 +585,7 @@ export default function AdminDemandas() {
               {evidenciaUrl && <>
                 <button type="button" onClick={() => moderarEvidencia("REQUER_ANONIMIZACAO")} disabled={moderandoEvidencia || evidenciaStatusAtual === "REQUER_ANONIMIZACAO"} className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-bold text-violet-700 hover:bg-violet-100 disabled:opacity-50">Requer anonimização</button>
                 <button type="button" onClick={() => moderarEvidencia("REJEITAR")} disabled={moderandoEvidencia} className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 hover:bg-red-100 disabled:opacity-50">Rejeitar e remover</button>
-                <button type="button" onClick={() => moderarEvidencia("APROVAR_PRIVADA")} disabled={moderandoEvidencia || evidenciaStatusAtual === "APROVADA_PRIVADA"} className="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50">{moderandoEvidencia ? "Salvando..." : "Aprovar privada"}</button>
+                <button type="button" onClick={() => moderarEvidencia("APROVAR_PRIVADA")} disabled={moderandoEvidencia || evidenciaStatusAtual === "APROVADA_PRIVADA" || evidenciaStatusAtual === "REQUER_ANONIMIZACAO"} className="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50">{moderandoEvidencia ? "Salvando..." : "Aprovar privada"}</button>
               </>}
             </div>
           </div>
