@@ -22,19 +22,24 @@ export type CepLookupPayload = {
 };
 
 export class CepLookupError extends Error {
-  constructor(public readonly code: "invalid_request" | "not_found" | "unavailable") {
+  readonly code: "invalid_request" | "not_found" | "unavailable";
+
+  constructor(code: "invalid_request" | "not_found" | "unavailable") {
     super(code);
     this.name = "CepLookupError";
+    this.code = code;
   }
 }
 
 class ProviderFailure extends Error {
-  constructor(
-    public readonly code: ProviderFailureCode,
-    public readonly provider: CepProvider,
-  ) {
+  readonly code: ProviderFailureCode;
+  readonly provider: CepProvider;
+
+  constructor(code: ProviderFailureCode, provider: CepProvider) {
     super(`${provider}:${code}`);
     this.name = "ProviderFailure";
+    this.code = code;
+    this.provider = provider;
   }
 }
 
