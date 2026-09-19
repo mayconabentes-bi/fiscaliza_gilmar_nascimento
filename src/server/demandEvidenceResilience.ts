@@ -1,4 +1,4 @@
-import { EVIDENCE_VALIDATION_ERRORS } from "./evidenceStorage.js";
+import { EVIDENCE_VALIDATION_ERRORS } from "./evidenceValidation.js";
 
 export type EvidenceUploadStatus = "NAO_SOLICITADO" | "COMPLETO" | "PARCIAL" | "FALHA";
 
