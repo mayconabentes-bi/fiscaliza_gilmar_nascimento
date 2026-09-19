@@ -118,15 +118,23 @@ export default function AdminDemandas() {
       );
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Erro ao carregar demandas.");
-      const items = Array.isArray(data?.items) ? data.items : [];
+      if (!Array.isArray(data?.items) || !Number.isFinite(Number(data?.total))) {
+        throw new Error("Resposta inválida ao carregar demandas.");
+      }
+      const items = data.items;
       if (mountedRef.current && !controller.signal.aborted) {
         setDemandas(items);
-        setTotalDemandas(Number.isFinite(Number(data?.total)) ? Number(data.total) : items.length);
+        setTotalDemandas(Number(data.total));
         setListaTruncada(data?.truncated === true);
       }
     } catch (err: any) {
       if (controller.signal.aborted || err?.name === "AbortError") return;
-      if (mountedRef.current) setError(err.message || "Erro ao carregar demandas.");
+      if (mountedRef.current) {
+        setDemandas([]);
+        setTotalDemandas(0);
+        setListaTruncada(false);
+        setError(err.message || "Erro ao carregar demandas.");
+      }
     } finally {
       if (mountedRef.current && listControllerRef.current === controller) setLoading(false);
     }
