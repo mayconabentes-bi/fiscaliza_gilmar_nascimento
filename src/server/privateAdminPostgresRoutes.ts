@@ -142,7 +142,26 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
   app.get("/api/admin/demandas/:id/evidencia", async (req, res) => {
     try {
       const sql = getPostgres();
-      const [row] = await sql`\n        select evidencia_foto_path, evidencia_foto_mime, evidencia_moderacao_status\n        from public.demandas\n        where id = ${req.params.id}\n        limit 1\n      `;\n      if (!row?.evidencia_foto_path || !EVIDENCIA_ACESSIVEIS.includes(String(row.evidencia_moderacao_status))) {\n        return res.status(404).json({ error: "Evidência não encontrada." });\n      }
+      const [row] = await sql`
+        select d.evidencia_foto_path, d.evidencia_foto_mime,
+               coalesce(
+                 (
+                   select de.moderacao_status
+                   from public.demanda_evidencias de
+                   where de.demanda_id = d.id
+                     and de.storage_path = d.evidencia_foto_path
+                   order by de.ordem asc
+                   limit 1
+                 ),
+                 d.evidencia_moderacao_status
+               ) as evidencia_status_efetivo
+        from public.demandas d
+        where d.id = ${req.params.id}
+        limit 1
+      `;
+      if (!row?.evidencia_foto_path || !EVIDENCIA_ACESSIVEIS.includes(String(row.evidencia_status_efetivo))) {
+        return res.status(404).json({ error: "Evidência não encontrada." });
+      }
       const url = await createDemandEvidenceSignedUrl(String(row.evidencia_foto_path), 300);
       res.setHeader("Cache-Control", "no-store, private");
       return res.json({ url, mime: row.evidencia_foto_mime || "application/octet-stream", expiresIn: 300 });
@@ -152,7 +171,6 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
     }
   });
 
-
   app.get("/api/admin/demandas/:id/evidencias", async (req, res) => {
     try {
       await ensureDemandEvidenceSchema();
@@ -160,7 +178,9 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
       const rows = await sql`
         select id, storage_path, mime, ordem, moderacao_status
         from public.demanda_evidencias
-        where demanda_id = ${req.params.id} and storage_path is not null
+        where demanda_id = ${req.params.id}
+          and storage_path is not null
+          and moderacao_status in ('PENDENTE','REQUER_ANONIMIZACAO','APROVADA_PRIVADA')
         order by ordem asc
       `;
 
@@ -181,7 +201,9 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
         select evidencia_foto_path, evidencia_foto_mime, evidencia_moderacao_status
         from public.demandas where id = ${req.params.id} limit 1
       `;
-      if (!legacy?.evidencia_foto_path || !EVIDENCIA_ACESSIVEIS.includes(String(legacy.evidencia_moderacao_status))) {\n        return res.status(404).json({ error: "Evidência não encontrada." });\n      }
+      if (!legacy?.evidencia_foto_path || !EVIDENCIA_ACESSIVEIS.includes(String(legacy.evidencia_moderacao_status))) {
+        return res.status(404).json({ error: "Evidência não encontrada." });
+      }
       const url = await createDemandEvidenceSignedUrl(String(legacy.evidencia_foto_path), 300);
       res.setHeader("Cache-Control", "no-store, private");
       return res.json({
@@ -200,52 +222,6 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
       return res.status(500).json({ error: "Não foi possível acessar as evidências." });
     }
   });
-
-  app.patch("/api/admin/demandas/:id/status", async (req: any, res) => {
-    const status = String(req.body?.status || "").trim();
-    const prioridade = req.body?.prioridade ? String(req.body.prioridade).trim() : "";
-    const observacao = String(req.body?.observacao_interna || "").trim().slice(0, 2000);
-    if (!STATUS_VALIDOS.includes(status)) return res.status(400).json({ error: "Status inválido." });
-    if (prioridade && !PRIORIDADES_VALIDAS.includes(prioridade)) return res.status(400).json({ error: "Prioridade inválida." });
-
-    try {
-      const sql = getPostgres();
-      const result = await sql.begin(async (tx) => {
-        const [atual] = await tx`select id, protocolo, status, prioridade from public.demandas where id = ${req.params.id} for update`;
-        if (!atual) return null;
-        const encerrandoAgora = ["CONCLUIDA", "INDEFERIDA"].includes(status) && String(atual.status) !== status;
-        if (encerrandoAgora && !observacao) throw new Error("FINAL_JUSTIFICATION_REQUIRED");
-        const prioridadeFinal = prioridade || String(atual.prioridade);
-        await tx`
-          update public.demandas set status = ${status}, prioridade = ${prioridadeFinal},
-            observacao_interna = ${observacao || null}, updated_at = now()
-          where id = ${req.params.id}
-        `;
-        if (String(atual.status) !== status) {
-          await tx`
-            insert into public.historico_status_demandas
-              (id, demanda_id, status_anterior, status_novo, usuario_responsavel_id, observacao)
-            values (${uuidv4()}, ${req.params.id}, ${String(atual.status)}, ${status}, ${req.user?.id || null}, ${observacao || null})
-          `;
-        }
-        await tx`
-          insert into public.logs_auditoria (id, entidade, entidade_id, acao, usuario_responsavel_id, metadata)
-          values (${uuidv4()}, 'demanda', ${req.params.id}, 'STATUS_ATUALIZADO', ${req.user?.id || null},
-                  ${sql.json({ status_anterior: atual.status, status_novo: status, prioridade: prioridadeFinal })})
-        `;
-        return { protocolo: atual.protocolo, status, prioridade: prioridadeFinal };
-      });
-      if (!result) return res.status(404).json({ error: "Demanda não encontrada." });
-      return res.json({ success: true, ...result });
-    } catch (error: any) {
-      if (error?.message === "FINAL_JUSTIFICATION_REQUIRED") {
-        return res.status(400).json({ error: "Informe uma justificativa para concluir ou indeferir a demanda." });
-      }
-      console.error("Falha ao atualizar demanda:", error);
-      return res.status(500).json({ error: "Erro ao atualizar demanda." });
-    }
-  });
-
   app.get("/api/admin/evidencias/pendentes", async (_req, res) => {
     try {
       const sql = getPostgres();
