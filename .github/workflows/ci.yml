@@ -96,6 +96,8 @@ jobs:
         run: npm run test:mobile
       - name: Private intelligence access attack contract
         run: npm run test:internal-access
+      - name: T1 admin security attack suite
+        run: npm run test:triage-admin-security
       - name: Audit high and critical vulnerabilities
         run: npm run audit:high
 
@@ -182,6 +184,8 @@ jobs:
         run: npm run test:mobile
       - name: Private intelligence access attack contract
         run: npm run test:internal-access
+      - name: T1 admin security attack suite
+        run: npm run test:triage-admin-security
       - name: Audit high and critical vulnerabilities
         run: npm run audit:high
       - name: Deep QA with real public data

@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { getDb } from "./db.js";
 import { getHealthyPostgres } from "./postgres.js";
+import { isAllowedAdminProfile } from "./adminAccessPolicy.js";
 
 type PrivateAdmin = {
   id?: string;
@@ -15,12 +16,6 @@ type PersistedAdminValidation = {
   perfil_acesso?: string;
 };
 
-type CachedAdminValidation = PersistedAdminValidation & { expiresAt: number };
-
-const ADMIN_REVALIDATION_TTL_MS = 10_000;
-const adminValidationCache = new Map<string, CachedAdminValidation>();
-const adminValidationInFlight = new Map<string, Promise<PersistedAdminValidation>>();
-
 function jwtSecret() {
   const secret = process.env.JWT_SECRET;
   if (secret) return secret;
@@ -28,46 +23,21 @@ function jwtSecret() {
   return "super-secret-key-for-dev";
 }
 
-function isAllowedAdminProfile(value?: string) {
-  return value === "ADMIN" || value === "SUPER_ADMIN";
-}
-
 async function revalidateProductionAdmin(id: string): Promise<PersistedAdminValidation> {
-  const cached = adminValidationCache.get(id);
-  if (cached && cached.expiresAt > Date.now()) {
-    return { state: cached.state, perfil_acesso: cached.perfil_acesso };
-  }
+  const sql = await getHealthyPostgres();
+  const [admin] = await sql`
+    select id, ativo, perfil_acesso
+    from private.admins
+    where id = ${id}
+    limit 1
+  `;
 
-  const existing = adminValidationInFlight.get(id);
-  if (existing) return existing;
+  if (!admin || admin.ativo !== true) return { state: "inactive" };
 
-  const validation = (async () => {
-    const sql = await getHealthyPostgres();
-    const [admin] = await sql`
-      select id, ativo, perfil_acesso
-      from private.admins
-      where id = ${id}
-      limit 1
-    `;
-
-    let result: PersistedAdminValidation;
-    if (!admin || admin.ativo !== true) {
-      result = { state: "inactive" };
-    } else {
-      const persistedProfile = String(admin.perfil_acesso || "ADMIN");
-      result = isAllowedAdminProfile(persistedProfile)
-        ? { state: "allowed", perfil_acesso: persistedProfile }
-        : { state: "forbidden_profile", perfil_acesso: persistedProfile };
-    }
-
-    adminValidationCache.set(id, { ...result, expiresAt: Date.now() + ADMIN_REVALIDATION_TTL_MS });
-    return result;
-  })().finally(() => {
-    adminValidationInFlight.delete(id);
-  });
-
-  adminValidationInFlight.set(id, validation);
-  return validation;
+  const persistedProfile = String(admin.perfil_acesso || "");
+  return isAllowedAdminProfile(persistedProfile)
+    ? { state: "allowed", perfil_acesso: persistedProfile }
+    : { state: "forbidden_profile", perfil_acesso: persistedProfile };
 }
 
 export function requireInternalAccess() {
