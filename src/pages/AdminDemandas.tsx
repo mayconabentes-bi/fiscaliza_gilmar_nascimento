@@ -57,6 +57,8 @@ function evidenciaLabel(value: string) {
 
 export default function AdminDemandas() {
   const [demandas, setDemandas] = useState<any[]>([]);
+  const [totalDemandas, setTotalDemandas] = useState(0);
+  const [listaTruncada, setListaTruncada] = useState(false);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState(() => new URLSearchParams(window.location.search).get("status") || "");
   const [prioridade, setPrioridade] = useState(() => new URLSearchParams(window.location.search).get("prioridade") || "");
@@ -117,7 +119,11 @@ export default function AdminDemandas() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Erro ao carregar demandas.");
       const items = Array.isArray(data?.items) ? data.items : [];
-      if (mountedRef.current && !controller.signal.aborted) setDemandas(items);
+      if (mountedRef.current && !controller.signal.aborted) {
+        setDemandas(items);
+        setTotalDemandas(Number.isFinite(Number(data?.total)) ? Number(data.total) : items.length);
+        setListaTruncada(data?.truncated === true);
+      }
     } catch (err: any) {
       if (controller.signal.aborted || err?.name === "AbortError") return;
       if (mountedRef.current) setError(err.message || "Erro ao carregar demandas.");
@@ -292,6 +298,13 @@ export default function AdminDemandas() {
       </div>
 
       {error && <div className="mb-6 rounded-xl bg-red-50 border border-red-100 text-red-700 px-4 py-3 text-sm">{error}</div>}
+
+      {!loading && !error && (
+        <div className="mb-4 flex flex-col gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+          <span><strong className="text-slate-900">{demandas.length}</strong> de <strong className="text-slate-900">{totalDemandas}</strong> registro(s) exibido(s).</span>
+          {listaTruncada && <span className="font-semibold text-amber-700">Há mais registros do que o limite atual de 500. Refine os filtros para uma triagem completa.</span>}
+        </div>
+      )}
 
       <div className="space-y-3 lg:hidden" data-mobile-triage-cards>
         {loading ? (
