@@ -2,8 +2,10 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import { createApp } from "./src/server/app.js";
 import { startIntelligenceRefreshScheduler } from "./src/intelligence/refresh.js";
+import { assertProductionReadiness } from "./src/server/goLiveSecurity.js";
 
 async function startServer() {
+  await assertProductionReadiness();
   const app = createApp();
   const port = Number(process.env.PORT || 3000);
 
