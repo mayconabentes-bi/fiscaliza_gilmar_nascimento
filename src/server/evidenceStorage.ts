@@ -1,13 +1,10 @@
 import crypto from "node:crypto";
+import { validateEvidenceImageStructure } from "./evidenceImageStructure.js";
+import { EVIDENCE_VALIDATION_ERRORS } from "./evidenceValidation.js";
+
+export { EVIDENCE_VALIDATION_ERRORS } from "./evidenceValidation.js";
 
 const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-
-export const EVIDENCE_VALIDATION_ERRORS = {
-  FORMAT: "Formato de evidência inválido",
-  TYPE: "Tipo de evidência não permitido",
-  SIZE: "Tamanho de evidência inválido",
-  SIGNATURE: "Conteúdo de evidência incompatível com o tipo informado",
-} as const;
 const MAX_EVIDENCE_BYTES = 2 * 1024 * 1024;
 const STORAGE_REQUEST_TIMEOUT_MS = 4000;
 const STORAGE_UPLOAD_ATTEMPTS = 2;
@@ -143,7 +140,8 @@ function parseEvidenceDataUrl(dataUrl: string) {
   if (buffer.length > MAX_EVIDENCE_BYTES) throw new Error(EVIDENCE_VALIDATION_ERRORS.SIZE);
 
   validateEvidenceBinarySignature(buffer, mime);
-  return { buffer, mime };
+  const dimensions = validateEvidenceImageStructure(buffer, mime);
+  return { buffer, mime, dimensions };
 }
 
 function extensionForMime(mime: string) {
