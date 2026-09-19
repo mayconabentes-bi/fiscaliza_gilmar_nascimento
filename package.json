@@ -47,6 +47,7 @@
     "test:age-intelligence": "node tests/age-intelligence-contract.mjs && tsx tests/age-intelligence-runtime.ts",
     "test:demand-taxonomy": "node tests/demand-taxonomy-contract.mjs && tsx tests/demand-taxonomy-runtime.ts",
     "test:registration-p0": "node tests/registration-p0-hardening-contract.mjs && tsx tests/registration-p0-hardening-runtime.ts",
+    "test:registration-idempotency": "node tests/registration-idempotency-contract.mjs && tsx tests/registration-idempotency-runtime.ts",
     "test:citizen-account": "node tests/citizen-account-structure-contract.mjs && tsx tests/citizen-account-age-runtime.ts",
     "test:citizen-experience": "node tests/citizen-authenticated-experience-contract.mjs"
   },
