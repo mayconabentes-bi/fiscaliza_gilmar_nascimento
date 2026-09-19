@@ -193,7 +193,9 @@ export default function AdminDemandas() {
       if (!response.ok) {
         if (response.status === 409 && data?.code === "STALE_DEMAND_VERSION") {
           await fetchDemandas();
-          throw new Error("Esta demanda foi alterada por outro operador. A lista foi atualizada; reabra a demanda antes de salvar.");
+          setDemandaSelecionada(null);
+          setError("Esta demanda foi alterada por outro operador. A lista foi atualizada; abra novamente a triagem antes de salvar.");
+          return;
         }
         throw new Error(data.error || "Erro ao atualizar demanda.");
       }
