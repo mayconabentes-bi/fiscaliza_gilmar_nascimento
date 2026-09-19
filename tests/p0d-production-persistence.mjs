@@ -10,6 +10,7 @@ const demand = read('src/server/citizenDemandPostgres.ts');
 const compliance = read('src/server/citizenCompliancePostgres.ts');
 const admin = read('src/server/privateAdminPostgresRoutes.ts');
 const fastAdmin = read('src/server/productionFastAdminRoutes.ts');
+const adminDemandIntegrity = read('src/server/adminDemandListIntegrity.ts');
 const evidence = read('src/server/evidenceStorage.ts');
 const mobile = read('src/server/mobileConversion.ts');
 const backup = read('src/modules/infraestrutura-operacional/infrastructure/backup/BackupService.ts');
@@ -29,8 +30,12 @@ assert(compliance.includes('/api/compliance/exportar') && compliance.includes('/
 assert(admin.includes('/api/admin/evidencias/pendentes') && admin.includes('/api/admin/compliance/retention-run'), 'Moderação e retenção admin devem possuir implementação Postgres.');
 assert(admin.includes('FINAL_JUSTIFICATION_REQUIRED') && admin.includes('Informe uma justificativa para concluir ou indeferir'), 'Encerramento de demanda deve exigir justificativa no backend.');
 for (const filter of ['prioridade', 'protocolo', 'bairro']) {
-  assert(fastAdmin.includes(`req.query.${filter}`) && admin.includes(`req.query.${filter}`), `Triagem de produção deve suportar filtro por ${filter} no fast path e fallback.`);
+  assert(adminDemandIntegrity.includes(filter), `Normalizador T2 deve suportar filtro por ${filter}.`);
 }
+assert(
+  fastAdmin.includes('normalizeAdminDemandListFilters') && admin.includes('normalizeAdminDemandListFilters'),
+  'Triagem de produção deve aplicar o mesmo normalizador no fast path e fallback.'
+);
 assert(evidence.includes('/storage/v1/object/') && evidence.includes('SUPABASE_SERVICE_ROLE_KEY'), 'Evidência deve usar Supabase Storage pelo backend.');
 assert(evidence.includes('/storage/v1/bucket/') && evidence.includes('data.public !== false'), 'Bucket configurado deve ser verificado como privado.');
 assert(mobile.includes('process.env.NODE_ENV !== "production"') && mobile.includes('persistEvidenceLocal'), 'Filesystem de evidência deve estar explicitamente restrito ao modo local.');
