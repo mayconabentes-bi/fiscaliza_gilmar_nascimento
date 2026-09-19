@@ -37,7 +37,10 @@ export function createApp() {
   const origins = allowedOrigins();
   const demandIntakeLimiter = limiter(60 * 60 * 1000, 20);
 
-  app.use(helmet({ contentSecurityPolicy: production ? undefined : false, crossOriginEmbedderPolicy: false }));
+  app.use(helmet({
+    contentSecurityPolicy: production ? { directives: { "script-src": ["'self'", "'wasm-unsafe-eval'"] } } : false,
+    crossOriginEmbedderPolicy: false,
+  }));
   app.set("trust proxy", 1);
   app.get("/api/share-preview.jpg", (_req, res) => {
     res.setHeader("Content-Type", "image/jpeg");
