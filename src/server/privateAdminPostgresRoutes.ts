@@ -6,6 +6,7 @@ import { applyRetentionPostgres, retentionPreviewPostgres } from "./retentionPos
 import { ensureDemandEvidenceSchema } from "./demandEvidencePostgres.js";
 import { ADMIN_DEMAND_LIST_LIMIT, normalizeAdminDemandListFilters } from "./adminDemandListIntegrity.js";
 import { previewEvidenceOrphansPostgres, reconcileEvidenceOrphansPostgres } from "./evidenceReconciliationPostgres.js";
+import { canTransitionDemandStatus, isDemandStatus } from "../shared/demandStatusWorkflow.js";
 
 const STATUS_VALIDOS = ["RECEBIDA","EM_TRIAGEM","ENCAMINHADA","EM_ANALISE","EM_EXECUCAO","CONCLUIDA","INDEFERIDA"];
 const PRIORIDADES_VALIDAS = ["BAIXA","MEDIA","ALTA","CRITICA"];
@@ -100,7 +101,7 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
                      then 1 else 0
                    end
                  ) as evidencia_total,
-                 created_at, updated_at
+                 created_at, updated_at::text as updated_at
           from public.demandas
           where (${filters.status} = '' or status = ${filters.status})
             and (${filters.prioridade} = '' or prioridade = ${filters.prioridade})
@@ -226,41 +227,109 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
     const status = String(req.body?.status || "").trim();
     const prioridade = req.body?.prioridade ? String(req.body.prioridade).trim() : "";
     const observacao = String(req.body?.observacao_interna || "").trim().slice(0, 2000);
-    if (!STATUS_VALIDOS.includes(status)) return res.status(400).json({ error: "Status inválido." });
+    const expectedUpdatedAt = String(req.body?.expected_updated_at || "").trim().slice(0, 80);
+
+    if (!isDemandStatus(status)) return res.status(400).json({ error: "Status inválido." });
     if (prioridade && !PRIORIDADES_VALIDAS.includes(prioridade)) return res.status(400).json({ error: "Prioridade inválida." });
+    if (!expectedUpdatedAt) return res.status(400).json({ error: "Versão da demanda é obrigatória para atualização segura." });
 
     try {
       const sql = getPostgres();
       const result = await sql.begin(async (tx) => {
-        const [atual] = await tx`select id, protocolo, status, prioridade from public.demandas where id = ${req.params.id} for update`;
+        const [atual] = await tx`
+          select id, protocolo, status, prioridade, updated_at::text as updated_at
+          from public.demandas
+          where id = ${req.params.id}
+          for update
+        `;
         if (!atual) return null;
-        const encerrandoAgora = ["CONCLUIDA", "INDEFERIDA"].includes(status) && String(atual.status) !== status;
+
+        if (String(atual.updated_at) !== expectedUpdatedAt) {
+          throw Object.assign(new Error("STALE_DEMAND_VERSION"), {
+            current: {
+              status: String(atual.status),
+              prioridade: String(atual.prioridade),
+              updated_at: String(atual.updated_at),
+            },
+          });
+        }
+
+        const statusAtual = String(atual.status);
+        if (!isDemandStatus(statusAtual) || !canTransitionDemandStatus(statusAtual, status)) {
+          throw Object.assign(new Error("INVALID_STATUS_TRANSITION"), {
+            currentStatus: statusAtual,
+            requestedStatus: status,
+          });
+        }
+
+        const encerrandoAgora = ["CONCLUIDA", "INDEFERIDA"].includes(status) && statusAtual !== status;
         if (encerrandoAgora && !observacao) throw new Error("FINAL_JUSTIFICATION_REQUIRED");
+
         const prioridadeFinal = prioridade || String(atual.prioridade);
         await tx`
-          update public.demandas set status = ${status}, prioridade = ${prioridadeFinal},
-            observacao_interna = ${observacao || null}, updated_at = now()
+          update public.demandas
+          set status = ${status},
+              prioridade = ${prioridadeFinal},
+              observacao_interna = ${observacao || null},
+              updated_at = now()
           where id = ${req.params.id}
         `;
-        if (String(atual.status) !== status) {
+
+        if (statusAtual !== status) {
           await tx`
             insert into public.historico_status_demandas
               (id, demanda_id, status_anterior, status_novo, usuario_responsavel_id, observacao)
-            values (${uuidv4()}, ${req.params.id}, ${String(atual.status)}, ${status}, ${req.user?.id || null}, ${observacao || null})
+            values (${uuidv4()}, ${req.params.id}, ${statusAtual}, ${status}, ${req.user?.id || null}, ${observacao || null})
           `;
         }
+
         await tx`
           insert into public.logs_auditoria (id, entidade, entidade_id, acao, usuario_responsavel_id, metadata)
-          values (${uuidv4()}, 'demanda', ${req.params.id}, 'STATUS_ATUALIZADO', ${req.user?.id || null},
-                  ${sql.json({ status_anterior: atual.status, status_novo: status, prioridade: prioridadeFinal })})
+          values (
+            ${uuidv4()}, 'demanda', ${req.params.id}, 'STATUS_ATUALIZADO', ${req.user?.id || null},
+            ${sql.json({
+              status_anterior: statusAtual,
+              status_novo: status,
+              prioridade: prioridadeFinal,
+              expected_updated_at: expectedUpdatedAt,
+            })}
+          )
         `;
-        return { protocolo: atual.protocolo, status, prioridade: prioridadeFinal };
+
+        const [updated] = await tx`
+          select updated_at::text as updated_at
+          from public.demandas
+          where id = ${req.params.id}
+        `;
+
+        return {
+          protocolo: atual.protocolo,
+          status,
+          prioridade: prioridadeFinal,
+          updated_at: String(updated?.updated_at || ""),
+        };
       });
+
       if (!result) return res.status(404).json({ error: "Demanda não encontrada." });
       return res.json({ success: true, ...result });
     } catch (error: any) {
       if (error?.message === "FINAL_JUSTIFICATION_REQUIRED") {
         return res.status(400).json({ error: "Informe uma justificativa para concluir ou indeferir a demanda." });
+      }
+      if (error?.message === "STALE_DEMAND_VERSION") {
+        return res.status(409).json({
+          error: "Esta demanda foi atualizada por outro operador. Recarregue a triagem antes de salvar.",
+          code: "STALE_DEMAND_VERSION",
+          current: error.current || null,
+        });
+      }
+      if (error?.message === "INVALID_STATUS_TRANSITION") {
+        return res.status(409).json({
+          error: "Transição de status não permitida para o estado atual da demanda.",
+          code: "INVALID_STATUS_TRANSITION",
+          current_status: error.currentStatus || null,
+          requested_status: error.requestedStatus || null,
+        });
       }
       console.error("Falha ao atualizar demanda:", error);
       return res.status(500).json({ error: "Erro ao atualizar demanda." });
