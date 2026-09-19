@@ -11,7 +11,11 @@ const demand = read('src/server/citizenDemandPostgres.ts');
 const migration = read('supabase/migrations/20260917123000_demand_location_cep.sql');
 
 expect(app.includes('setupCepLookup(app)') && app.includes('/api/localizacao/cep'), 'Rota de CEP deve estar registrada e possuir rate limit dedicado.');
-expect(lookup.includes('https://viacep.com.br/ws') && lookup.includes('AbortController'), 'Consulta CEP deve usar ViaCEP pelo backend com timeout.');
+expect(lookup.includes('https://viacep.com.br/ws') && lookup.includes('https://brasilapi.com.br/api/cep/v1'), 'Consulta CEP deve usar ViaCEP com fallback BrasilAPI.');
+expect(lookup.includes('AbortController') && lookup.includes('redirect: "error"'), 'Provedores de CEP devem possuir timeout e bloquear redirecionamentos.');
+expect(lookup.includes('MAX_PROVIDER_RESPONSE_BYTES') && lookup.includes('expectedHost'), 'Consulta CEP deve limitar respostas e controlar hosts contra SSRF.');
+expect(lookup.includes('response.status === 429') && lookup.includes('response.status >= 500'), 'Fallback deve ser restrito a falhas transitórias ou respostas inválidas.');
+expect(!lookup.match(/console\.warn\([^\n]*(cep|req\.params)/), 'Logs de falha não devem incluir CEP ou parâmetros da requisição.');
 expect(lookup.includes('CEP não encontrado') && lookup.includes('temporariamente indisponível'), 'Consulta CEP deve distinguir inexistência de indisponibilidade externa.');
 expect(intake.includes('CEP do local do problema') && intake.includes('não seu endereço residencial'), 'Formulário deve explicar que o CEP pertence ao local da ocorrência.');
 expect(intake.includes('logradouro') && intake.includes('numero') && intake.includes('complemento') && intake.includes('codigo_ibge'), 'Formulário deve enviar localização estruturada.');
