@@ -54,6 +54,8 @@ jobs:
         run: npm run test:registration-p0
       - name: Registration P1.1 idempotency
         run: npm run test:registration-idempotency
+      - name: Registration P1.2 evidence resilience
+        run: npm run test:registration-evidence-resilience
       - name: Citizen account structure, age bands and CEP
         run: npm run test:citizen-account
       - name: Authenticated citizen experience
@@ -124,6 +126,8 @@ jobs:
         run: npm run test:demand-taxonomy
       - name: Registration P1.1 idempotency
         run: npm run test:registration-idempotency
+      - name: Registration P1.2 evidence resilience
+        run: npm run test:registration-evidence-resilience
       - name: Citizen account structure, age bands and CEP
         run: npm run test:citizen-account
       - name: Authenticated citizen experience
