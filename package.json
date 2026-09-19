@@ -50,6 +50,7 @@
     "test:registration-idempotency": "node tests/registration-idempotency-contract.mjs && tsx tests/registration-idempotency-runtime.ts",
     "test:registration-evidence-resilience": "node tests/registration-evidence-resilience-contract.mjs && tsx tests/registration-evidence-resilience-runtime.ts",
     "test:registration-evidence-magic-bytes": "node tests/registration-evidence-magic-bytes-contract.mjs && tsx tests/registration-evidence-magic-bytes-runtime.ts",
+    "test:registration-evidence-structure": "node tests/registration-evidence-structure-contract.mjs && tsx tests/registration-evidence-structure-runtime.ts",
     "test:citizen-account": "node tests/citizen-account-structure-contract.mjs && tsx tests/citizen-account-age-runtime.ts",
     "test:citizen-experience": "node tests/citizen-authenticated-experience-contract.mjs"
   },
