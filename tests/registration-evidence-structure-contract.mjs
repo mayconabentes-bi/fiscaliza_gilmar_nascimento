@@ -9,12 +9,14 @@ const packageJson = fs.readFileSync("package.json", "utf8");
 
 expect(structure.includes("MAX_EVIDENCE_SIDE_PX = 8_000"), "P1.4A deve limitar cada lado a 8000 px.");
 expect(structure.includes("MAX_EVIDENCE_PIXELS = 40_000_000"), "P1.4A deve limitar a 40 MP.");
+expect(structure.includes("MAX_JPEG_MARKERS_BEFORE_SOF = 512"), "JPEG deve ter teto explícito de trabalho antes do SOF.");
 expect(structure.includes("parseJpegDimensions"), "JPEG deve ter parser estrutural leve.");
 expect(structure.includes("parsePngDimensions"), "PNG deve ter parser estrutural leve.");
 expect(structure.includes("parseWebpDimensions"), "WebP deve ter parser estrutural leve.");
 expect(structure.includes('ihdrLength !== 13 || ihdrType !== "IHDR"'), "PNG deve exigir IHDR válido como primeiro chunk.");
 expect(structure.includes("JPEG_SOF_MARKERS"), "JPEG deve extrair dimensões de marcador SOF.");
 expect(structure.includes('chunk === "VP8 "') && structure.includes('chunk === "VP8L"') && structure.includes('chunk === "VP8X"'), "WebP deve cobrir os três cabeçalhos suportados.");
+expect(structure.includes('(buffer[frameStart] & 0x01) !== 0'), "VP8 básico deve exigir keyframe.");
 expect(structure.includes("width > MAX_EVIDENCE_SIDE_PX || height > MAX_EVIDENCE_SIDE_PX"), "Limite por lado deve ocorrer antes do produto de pixels.");
 expect(structure.includes("width * height > MAX_EVIDENCE_PIXELS"), "Área total deve ser limitada.");
 expect(!packageJson.includes('"sharp"') && !packageJson.includes('"canvas"') && !packageJson.includes('"jimp"'), "P1.4A não deve adicionar decoder pesado.");
