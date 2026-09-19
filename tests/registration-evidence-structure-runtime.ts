@@ -111,6 +111,7 @@ function webpVp8x(width: number, height: number) {
 
 expect(EVIDENCE_IMAGE_LIMITS.maxSidePx === 8000, "Limite por lado deve ser 8000 px.");
 expect(EVIDENCE_IMAGE_LIMITS.maxPixels === 40_000_000, "Limite total deve ser 40 MP.");
+expect(EVIDENCE_IMAGE_LIMITS.maxJpegMarkersBeforeSof === 512, "Teto de marcadores JPEG deve ser 512.");
 
 expect(validateEvidenceImageStructure(jpeg(1400, 900), "image/jpeg").width === 1400, "JPEG comum deve ser aceito.");
 expect(validateEvidenceImageStructure(jpeg(1400, 900, 0xc2), "image/jpeg").height === 900, "JPEG progressivo deve ser aceito.");
@@ -131,9 +132,20 @@ expectThrows(() => validateEvidenceImageStructure(badPng, "image/png"), EVIDENCE
 const badJpeg = Buffer.from([0xff, 0xd8, 0xff, 0xda, 0x00, 0x08]);
 expectThrows(() => validateEvidenceImageStructure(badJpeg, "image/jpeg"), EVIDENCE_VALIDATION_ERRORS.STRUCTURE, "JPEG sem SOF");
 
+const excessiveMarkers = Buffer.concat([
+  Buffer.from([0xff, 0xd8]),
+  ...Array.from({ length: 513 }, () => Buffer.from([0xff, 0xd0])),
+  jpeg(100, 100).subarray(2),
+]);
+expectThrows(() => validateEvidenceImageStructure(excessiveMarkers, "image/jpeg"), EVIDENCE_VALIDATION_ERRORS.STRUCTURE, "JPEG com custo abusivo");
+
 const badWebp = webpVp8x(100, 100);
 badWebp[21] = 1;
 expectThrows(() => validateEvidenceImageStructure(badWebp, "image/webp"), EVIDENCE_VALIDATION_ERRORS.STRUCTURE, "WebP reservado inválido");
+
+const interFrameVp8 = webpVp8(100, 100);
+interFrameVp8[20] = 1;
+expectThrows(() => validateEvidenceImageStructure(interFrameVp8, "image/webp"), EVIDENCE_VALIDATION_ERRORS.STRUCTURE, "WebP VP8 sem keyframe");
 
 expect(isEvidenceValidationFailure(new Error(EVIDENCE_VALIDATION_ERRORS.STRUCTURE)), "Estrutura inválida deve ser erro do cliente.");
 expect(isEvidenceValidationFailure(new Error(EVIDENCE_VALIDATION_ERRORS.DIMENSIONS)), "Dimensões inválidas devem ser erro do cliente.");
