@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { getDb } from "./db.js";
 import { getHealthyPostgres } from "./postgres.js";
+import { isAllowedAdminProfile, normalizeAdminProfile } from "./adminAccessPolicy.js";
 
 function jwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -54,7 +55,8 @@ export function setupPrivateAdminAuth(app: Express) {
 
       const valid = await bcrypt.compare(password, String(admin.password_hash));
       if (!valid) return res.status(401).json({ error: "Credenciais inválidas." });
-      const perfil = String(admin.perfil_acesso || "ADMIN");
+      const perfil = normalizeAdminProfile(admin.perfil_acesso || (process.env.NODE_ENV === "production" ? "" : "ADMIN"));
+      if (!perfil) return res.status(401).json({ error: "Credenciais inválidas." });
       const token = jwt.sign({ id: admin.id, type: "admin", status: "ativo", perfil_acesso: perfil }, jwtSecret(), { expiresIn: "12h" });
       res.cookie("token", token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict", path: "/", maxAge: 12 * 60 * 60 * 1000 });
       res.setHeader("Cache-Control", "no-store, private");
@@ -79,22 +81,40 @@ export function setupPrivateAdminAuth(app: Express) {
     }
 
     if (claims.type !== "admin") return next();
-    if (!claims.id || claims.status !== "ativo" || !["ADMIN", "SUPER_ADMIN"].includes(String(claims.perfil_acesso || ""))) {
+    if (!claims.id || claims.status !== "ativo" || !isAllowedAdminProfile(claims.perfil_acesso)) {
       return res.status(401).json({ authenticated: false });
     }
 
-    // Esta rota hidrata apenas a interface. A autorização real das APIs privadas
-    // continua sendo revalidada pelo middleware administrativo.
-    res.setHeader("Cache-Control", "no-store, private");
-    return res.json({
-      authenticated: true,
-      user: {
-        id: claims.id,
-        nome: "Administrador FISCALIZE",
-        email: null,
-        type: "admin",
-        perfil_acesso: String(claims.perfil_acesso),
-      },
-    });
+    try {
+      const sql = await getHealthyPostgres();
+      const [admin] = await sql`
+        select id, nome, ativo, perfil_acesso
+        from private.admins
+        where id = ${claims.id}
+        limit 1
+      `;
+      const persistedProfile = normalizeAdminProfile(admin?.perfil_acesso);
+      if (!admin || admin.ativo !== true || !persistedProfile) {
+        return res.status(401).json({ authenticated: false });
+      }
+
+      res.setHeader("Cache-Control", "no-store, private");
+      return res.json({
+        authenticated: true,
+        user: {
+          id: admin.id,
+          nome: admin.nome || "Administrador FISCALIZE",
+          email: null,
+          type: "admin",
+          perfil_acesso: persistedProfile,
+        },
+      });
+    } catch (error: any) {
+      console.error("Falha ao revalidar sessão administrativa:", error);
+      const configError = error?.message === "DATABASE_URL não configurada" || error?.message === "JWT_SECRET não configurado";
+      return res.status(configError ? 503 : 500).json({
+        error: configError ? "Servidor sem configuração de autenticação administrativa." : "Não foi possível validar a sessão administrativa.",
+      });
+    }
   });
 }
