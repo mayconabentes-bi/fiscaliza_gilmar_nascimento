@@ -1,6 +1,13 @@
 import crypto from "node:crypto";
 
 const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+
+export const EVIDENCE_VALIDATION_ERRORS = {
+  FORMAT: "Formato de evidência inválido",
+  TYPE: "Tipo de evidência não permitido",
+  SIZE: "Tamanho de evidência inválido",
+  SIGNATURE: "Conteúdo de evidência incompatível com o tipo informado",
+} as const;
 const MAX_EVIDENCE_BYTES = 2 * 1024 * 1024;
 const STORAGE_REQUEST_TIMEOUT_MS = 4000;
 const STORAGE_UPLOAD_ATTEMPTS = 2;
@@ -92,13 +99,50 @@ export async function checkEvidenceBucketPrivate() {
   return true;
 }
 
+function ascii(buffer: Buffer, start: number, length: number) {
+  return buffer.subarray(start, start + length).toString("ascii");
+}
+
+export function detectEvidenceMimeBySignature(buffer: Buffer): string | null {
+  if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+    return "image/jpeg";
+  }
+
+  const pngSignature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+  if (buffer.length >= pngSignature.length && pngSignature.every((byte, index) => buffer[index] === byte)) {
+    return "image/png";
+  }
+
+  if (buffer.length >= 16 && ascii(buffer, 0, 4) === "RIFF" && ascii(buffer, 8, 4) === "WEBP") {
+    const chunk = ascii(buffer, 12, 4);
+    if (chunk === "VP8 " || chunk === "VP8L" || chunk === "VP8X") return "image/webp";
+  }
+
+  return null;
+}
+
+export function validateEvidenceBinarySignature(buffer: Buffer, declaredMime: string) {
+  const detectedMime = detectEvidenceMimeBySignature(buffer);
+  if (!detectedMime || detectedMime !== declaredMime) {
+    throw new Error(EVIDENCE_VALIDATION_ERRORS.SIGNATURE);
+  }
+  return detectedMime;
+}
+
 function parseEvidenceDataUrl(dataUrl: string) {
   const match = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=\s]+)$/.exec(dataUrl);
-  if (!match) throw new Error("Formato de evidência inválido");
+  if (!match) throw new Error(EVIDENCE_VALIDATION_ERRORS.FORMAT);
   const mime = match[1];
-  if (!ALLOWED_MIME_TYPES.has(mime)) throw new Error("Tipo de evidência não permitido");
-  const buffer = Buffer.from(match[2].replace(/\s/g, ""), "base64");
-  if (!buffer.length || buffer.length > MAX_EVIDENCE_BYTES) throw new Error("Tamanho de evidência inválido");
+  if (!ALLOWED_MIME_TYPES.has(mime)) throw new Error(EVIDENCE_VALIDATION_ERRORS.TYPE);
+
+  const encoded = match[2].replace(/\s/g, "");
+  const buffer = Buffer.from(encoded, "base64");
+  const canonicalInput = encoded.replace(/=+$/, "");
+  const canonicalDecoded = buffer.toString("base64").replace(/=+$/, "");
+  if (!buffer.length || canonicalDecoded !== canonicalInput) throw new Error(EVIDENCE_VALIDATION_ERRORS.FORMAT);
+  if (buffer.length > MAX_EVIDENCE_BYTES) throw new Error(EVIDENCE_VALIDATION_ERRORS.SIZE);
+
+  validateEvidenceBinarySignature(buffer, mime);
   return { buffer, mime };
 }
 
@@ -114,8 +158,8 @@ function objectUrl(baseUrl: string, bucket: string, objectPath: string) {
 }
 
 export async function uploadDemandEvidence(demandaId: string, dataUrl: string) {
-  const { url, serviceRoleKey, bucket } = storageConfig();
   const { buffer, mime } = parseEvidenceDataUrl(dataUrl);
+  const { url, serviceRoleKey, bucket } = storageConfig();
   const path = `${demandaId}/${crypto.randomUUID()}.${extensionForMime(mime)}`;
 
   for (let attempt = 1; attempt <= STORAGE_UPLOAD_ATTEMPTS; attempt += 1) {
