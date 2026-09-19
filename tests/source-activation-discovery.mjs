@@ -18,6 +18,11 @@ async function fetchJson(url, attempts = 2) {
       const text = await response.text();
       let json = null;
       try { json = JSON.parse(text); } catch (_) {}
+      const transientUpstreamStatus = response.status === 429 || response.status >= 500;
+      if (transientUpstreamStatus && attempt < attempts) {
+        await new Promise((resolve) => setTimeout(resolve, attempt * 750));
+        continue;
+      }
       return { response, json };
     } catch (error) {
       lastError = error;
@@ -71,6 +76,10 @@ async function verifyTceAm() {
     return;
   }
   const { response, json } = result;
+  if (response.status === 429 || response.status >= 500) {
+    console.warn(`TCE-AM upstream indisponível no runner: HTTP ${response.status}. Contrato não reprovado por falha transitória de terceiro.`);
+    return;
+  }
   assert(response.status === 200, `TCE-AM OpenAPI HTTP ${response.status}`);
   assert(json?.openapi, "TCE-AM respondeu, mas não retornou OpenAPI");
   assert(json?.components?.securitySchemes?.bearerAuth?.scheme === "bearer", "TCE-AM bearerAuth não encontrado");
