@@ -343,7 +343,6 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
               set evidencia_foto_path = null,
                   evidencia_foto_mime = null
               where id = ${transition.demandaId}
-                and evidencia_moderacao_status = 'REJEITADA'
                 and evidencia_foto_path = ${transition.storagePath}
             `;
           }
@@ -442,7 +441,6 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
             set evidencia_foto_path = null,
                 evidencia_foto_mime = null
             where id = ${req.params.id}
-              and evidencia_moderacao_status = 'REJEITADA'
               and evidencia_foto_path = ${transition.storagePath}
           `;
           await tx`
