@@ -2,6 +2,29 @@ import crypto from "node:crypto";
 
 const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_EVIDENCE_BYTES = 2 * 1024 * 1024;
+const STORAGE_REQUEST_TIMEOUT_MS = 4000;
+const STORAGE_UPLOAD_ATTEMPTS = 2;
+
+export class EvidenceStorageUnavailableError extends Error {
+  readonly code = "EVIDENCE_STORAGE_UNAVAILABLE";
+
+  constructor() {
+    super("Armazenamento de evidências temporariamente indisponível");
+    this.name = "EvidenceStorageUnavailableError";
+  }
+}
+
+function storageRequestSignal() {
+  return AbortSignal.timeout(STORAGE_REQUEST_TIMEOUT_MS);
+}
+
+function isTransientStorageStatus(status: number) {
+  return status === 429 || status >= 500;
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 export function validateStorageServiceKey(serviceRoleKey: string) {
   if (serviceRoleKey.startsWith("sb_secret_")) return;
@@ -40,14 +63,21 @@ function storageAuthHeaders(serviceRoleKey: string) {
 
 export async function checkEvidenceBucketPrivate() {
   const { url, serviceRoleKey, bucket } = storageConfig();
-  const response = await fetch(`${url}/storage/v1/bucket/${encodeURIComponent(bucket)}`, {
-    method: "GET",
-    headers: storageAuthHeaders(serviceRoleKey),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${url}/storage/v1/bucket/${encodeURIComponent(bucket)}`, {
+      method: "GET",
+      headers: storageAuthHeaders(serviceRoleKey),
+      signal: storageRequestSignal(),
+    });
+  } catch {
+    throw new EvidenceStorageUnavailableError();
+  }
 
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
     console.error("Falha ao validar bucket de evidências:", response.status, detail.slice(0, 300));
+    if (isTransientStorageStatus(response.status)) throw new EvidenceStorageUnavailableError();
     throw new Error("Bucket de evidências indisponível ou não autorizado");
   }
 
@@ -87,17 +117,39 @@ export async function uploadDemandEvidence(demandaId: string, dataUrl: string) {
   const { url, serviceRoleKey, bucket } = storageConfig();
   const { buffer, mime } = parseEvidenceDataUrl(dataUrl);
   const path = `${demandaId}/${crypto.randomUUID()}.${extensionForMime(mime)}`;
-  const response = await fetch(objectUrl(url, bucket, path), {
-    method: "POST",
-    headers: { ...storageAuthHeaders(serviceRoleKey), "Content-Type": mime, "x-upsert": "false" },
-    body: buffer,
-  });
-  if (!response.ok) {
+
+  for (let attempt = 1; attempt <= STORAGE_UPLOAD_ATTEMPTS; attempt += 1) {
+    let response: Response;
+    try {
+      response = await fetch(objectUrl(url, bucket, path), {
+        method: "POST",
+        headers: { ...storageAuthHeaders(serviceRoleKey), "Content-Type": mime, "x-upsert": "false" },
+        body: buffer,
+        signal: storageRequestSignal(),
+      });
+    } catch {
+      if (attempt < STORAGE_UPLOAD_ATTEMPTS) {
+        await delay(150);
+        continue;
+      }
+      throw new EvidenceStorageUnavailableError();
+    }
+
+    if (response.ok) return { path, mime };
+
     const detail = await response.text().catch(() => "");
     console.error("Falha no upload da evidência:", response.status, detail.slice(0, 300));
+    if (isTransientStorageStatus(response.status)) {
+      if (attempt < STORAGE_UPLOAD_ATTEMPTS) {
+        await delay(150);
+        continue;
+      }
+      throw new EvidenceStorageUnavailableError();
+    }
     throw new Error("Não foi possível armazenar a evidência");
   }
-  return { path, mime };
+
+  throw new EvidenceStorageUnavailableError();
 }
 
 export async function removeDemandEvidence(objectPath: string) {
@@ -106,6 +158,7 @@ export async function removeDemandEvidence(objectPath: string) {
     method: "DELETE",
     headers: { ...storageAuthHeaders(serviceRoleKey), "Content-Type": "application/json" },
     body: JSON.stringify({ prefixes: [objectPath] }),
+    signal: storageRequestSignal(),
   });
   if (!response.ok) console.error("Falha ao remover evidência órfã:", response.status);
 }
@@ -117,6 +170,7 @@ export async function createDemandEvidenceSignedUrl(objectPath: string, expiresI
     method: "POST",
     headers: { ...storageAuthHeaders(serviceRoleKey), "Content-Type": "application/json" },
     body: JSON.stringify({ expiresIn }),
+    signal: storageRequestSignal(),
   });
   if (!response.ok) throw new Error("Não foi possível gerar acesso temporário à evidência");
   const data = await response.json() as { signedURL?: string; signedUrl?: string };
