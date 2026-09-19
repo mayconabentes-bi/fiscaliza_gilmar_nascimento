@@ -83,11 +83,22 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
           select id, protocolo, municipio, bairro, categoria, tipo_problema, descricao,
                  prioridade, status, evidencia_moderacao_status,
                  evidencia_upload_status, evidencia_upload_solicitadas, evidencia_upload_anexadas, evidencia_upload_falhas,
-                 ((select count(*) from public.demanda_evidencias de where de.demanda_id = public.demandas.id and de.storage_path is not null) > 0
-                   or evidencia_foto_path is not null) as tem_evidencia_foto,
+                 ((select count(*) from public.demanda_evidencias de
+                    where de.demanda_id = public.demandas.id
+                      and de.storage_path is not null
+                      and de.moderacao_status in ('PENDENTE','REQUER_ANONIMIZACAO','APROVADA_PRIVADA')) > 0
+                   or (evidencia_foto_path is not null
+                       and evidencia_moderacao_status in ('PENDENTE','REQUER_ANONIMIZACAO','APROVADA_PRIVADA'))) as tem_evidencia_foto,
                  greatest(
-                   (select count(*)::int from public.demanda_evidencias de where de.demanda_id = public.demandas.id and de.storage_path is not null),
-                   case when evidencia_foto_path is not null then 1 else 0 end
+                   (select count(*)::int from public.demanda_evidencias de
+                    where de.demanda_id = public.demandas.id
+                      and de.storage_path is not null
+                      and de.moderacao_status in ('PENDENTE','REQUER_ANONIMIZACAO','APROVADA_PRIVADA')),
+                   case
+                     when evidencia_foto_path is not null
+                      and evidencia_moderacao_status in ('PENDENTE','REQUER_ANONIMIZACAO','APROVADA_PRIVADA')
+                     then 1 else 0
+                   end
                  ) as evidencia_total,
                  created_at, updated_at
           from public.demandas
