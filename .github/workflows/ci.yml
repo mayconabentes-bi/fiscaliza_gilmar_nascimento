@@ -52,6 +52,8 @@ jobs:
         run: npm run test:demand-taxonomy
       - name: Registration P0 hardening
         run: npm run test:registration-p0
+      - name: Registration P1.1 idempotency
+        run: npm run test:registration-idempotency
       - name: Citizen account structure, age bands and CEP
         run: npm run test:citizen-account
       - name: Authenticated citizen experience
@@ -120,6 +122,8 @@ jobs:
         run: npm run test:age-intelligence
       - name: Demand taxonomy structure and validation
         run: npm run test:demand-taxonomy
+      - name: Registration P1.1 idempotency
+        run: npm run test:registration-idempotency
       - name: Citizen account structure, age bands and CEP
         run: npm run test:citizen-account
       - name: Authenticated citizen experience
