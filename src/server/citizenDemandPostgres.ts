@@ -9,6 +9,7 @@ import { cleanProtocol, cleanText } from "./requestValidation.js";
 import { AgePolicyError, ageBandForActiveParticipation, type AgeBand } from "./agePolicy.js";
 import { isValidDemandClassification } from "../shared/demandTaxonomy.js";
 import { demandRequestFingerprint, hashDemandEvidence, isIdempotentReplay, normalizeIdempotencyKey } from "./demandIdempotency.js";
+import { evidenceUploadWarning, isEvidenceValidationFailure, persistedEvidenceSummary, summarizeEvidenceUpload, type EvidenceUploadSummary } from "./demandEvidenceResilience.js";
 
 function jwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -63,6 +64,25 @@ function citizenClaims(req: Request) {
 
 function validationError(res: any, message = "Revise os dados informados.") {
   return res.status(400).json({ error: message });
+}
+
+function evidenceResponse(summary: EvidenceUploadSummary) {
+  const warning = evidenceUploadWarning(summary);
+  return {
+    evidencias: summary,
+    ...(warning ? { warning } : {}),
+  };
+}
+
+function persistedDemandResponse(row: Record<string, unknown>, replay = false) {
+  const summary = persistedEvidenceSummary(row);
+  return {
+    id: row.id,
+    protocolo: row.protocolo,
+    status: row.status,
+    ...(replay ? { idempotent_replay: true } : {}),
+    ...evidenceResponse(summary),
+  };
 }
 
 export function setupCitizenDemandPostgres(app: Express) {
@@ -139,7 +159,8 @@ export function setupCitizenDemandPostgres(app: Express) {
       });
 
       const [existingDemand] = await sql`
-        select id, protocolo, status, request_fingerprint
+        select id, protocolo, status, request_fingerprint,
+               evidencia_upload_status, evidencia_upload_solicitadas, evidencia_upload_anexadas, evidencia_upload_falhas
         from public.demandas
         where idempotency_key = ${idempotencyKey}
         limit 1
@@ -152,12 +173,7 @@ export function setupCitizenDemandPostgres(app: Express) {
           });
         }
         res.setHeader("Idempotent-Replay", "true");
-        return res.status(200).json({
-          id: existingDemand.id,
-          protocolo: existingDemand.protocolo,
-          status: existingDemand.status,
-          idempotent_replay: true,
-        });
+        return res.status(200).json(persistedDemandResponse(existingDemand, true));
       }
 
       let usuarioId: string | null = null;
@@ -183,19 +199,34 @@ export function setupCitizenDemandPostgres(app: Express) {
       }
 
       const id = uuidv4();
-      let uploadedEvidences: Array<{ path: string; mime: string }> = [];
+      let uploadedEvidences: Array<{ path: string; mime: string; ordem: number }> = [];
+      let evidenceSummary = summarizeEvidenceUpload(fotoEvidenciasBase64.length, 0);
       if (fotoEvidenciasBase64.length) {
         await ensureDemandEvidenceSchema();
         const uploads = await Promise.allSettled(
           fotoEvidenciasBase64.map((photo) => uploadDemandEvidence(id, photo))
         );
-        uploadedEvidences = uploads
-          .filter((result): result is PromiseFulfilledResult<{ path: string; mime: string }> => result.status === "fulfilled")
-          .map((result) => result.value);
-        const failed = uploads.find((result): result is PromiseRejectedResult => result.status === "rejected");
-        if (failed) {
-          await Promise.all(uploadedEvidences.map((item) => removeDemandEvidence(item.path).catch(() => undefined)));
-          throw failed.reason;
+
+        const fulfilledUploads = uploads.flatMap((result, index) =>
+          result.status === "fulfilled" ? [{ ...result.value, ordem: index + 1 }] : []
+        );
+        const validationFailure = uploads.find(
+          (result): result is PromiseRejectedResult => result.status === "rejected" && isEvidenceValidationFailure(result.reason)
+        );
+        if (validationFailure) {
+          await Promise.all(fulfilledUploads.map((item) => removeDemandEvidence(item.path).catch(() => undefined)));
+          throw validationFailure.reason;
+        }
+
+        uploadedEvidences = fulfilledUploads;
+        evidenceSummary = summarizeEvidenceUpload(fotoEvidenciasBase64.length, uploadedEvidences.length);
+        if (evidenceSummary.falhas > 0) {
+          console.warn("Registro seguirá com falha técnica de evidência:", {
+            demandaId: id,
+            solicitadas: evidenceSummary.solicitadas,
+            anexadas: evidenceSummary.anexadas,
+            falhas: evidenceSummary.falhas,
+          });
         }
       }
       const firstEvidence = uploadedEvidences[0] || null;
@@ -213,25 +244,35 @@ export function setupCitizenDemandPostgres(app: Express) {
                 categoria, tipo_problema, descricao, prioridade, status, usuario_id, evidencia_foto_path, evidencia_foto_mime,
                 evidencia_moderacao_status, aviso_privacidade_versao, aviso_privacidade_data,
                 faixa_etaria, revisao_reforcada, revisao_reforcada_motivo,
-                idempotency_key, request_fingerprint
+                idempotency_key, request_fingerprint,
+                evidencia_upload_status, evidencia_upload_solicitadas, evidencia_upload_anexadas, evidencia_upload_falhas
               ) values (
                 ${id}, ${protocolo}, ${nome}, ${contato || null}, ${municipio}, ${bairro || null}, ${cep || null}, ${logradouro || null},
                 ${numero || null}, ${complemento || null}, ${uf || null}, ${codigoIbge || null}, ${categoria}, ${tipoProblema}, ${descricao},
                 ${prioridade}, 'RECEBIDA', ${usuarioId}, ${firstEvidence?.path || null}, ${firstEvidence?.mime || null},
                 ${uploadedEvidences.length ? "PENDENTE" : "NAO_ENVIADA"}, ${privacyVersion()}, ${new Date().toISOString()},
                 ${faixaEtaria}, ${revisaoReforcada}, ${revisaoMotivo},
-                ${idempotencyKey}, ${requestFingerprint}
+                ${idempotencyKey}, ${requestFingerprint},
+                ${evidenceSummary.status}, ${evidenceSummary.solicitadas}, ${evidenceSummary.anexadas}, ${evidenceSummary.falhas}
               )
             `;
+            const baseObservation = revisaoReforcada
+              ? "Registro recebido com proteção reforçada P0-E."
+              : usuarioId
+                ? "Registro recebido por cidadão autenticado."
+                : "Registro recebido pelo formulário público.";
+            const evidenceObservation = evidenceSummary.falhas > 0
+              ? ` Evidências: ${evidenceSummary.anexadas}/${evidenceSummary.solicitadas} anexadas; ${evidenceSummary.falhas} com falha técnica de upload.`
+              : "";
             await transaction`
               insert into public.historico_status_demandas (id, demanda_id, status_anterior, status_novo, usuario_responsavel_id, observacao)
-              values (${uuidv4()}, ${id}, null, 'RECEBIDA', ${usuarioId}, ${revisaoReforcada ? "Registro recebido com proteção reforçada P0-E." : usuarioId ? "Registro recebido por cidadão autenticado." : "Registro recebido pelo formulário público."})
+              values (${uuidv4()}, ${id}, null, 'RECEBIDA', ${usuarioId}, ${baseObservation + evidenceObservation})
             `;
             for (let index = 0; index < uploadedEvidences.length; index += 1) {
               const evidence = uploadedEvidences[index];
               await transaction`
                 insert into public.demanda_evidencias (id, demanda_id, storage_path, mime, ordem, moderacao_status)
-                values (${uuidv4()}, ${id}, ${evidence.path}, ${evidence.mime}, ${index + 1}, 'PENDENTE')
+                values (${uuidv4()}, ${id}, ${evidence.path}, ${evidence.mime}, ${evidence.ordem}, 'PENDENTE')
               `;
             }
           });
@@ -240,7 +281,8 @@ export function setupCitizenDemandPostgres(app: Express) {
         } catch (error: any) {
           if (error?.code === "23505") {
             const [existingDemand] = await sql`
-              select id, protocolo, status, request_fingerprint
+              select id, protocolo, status, request_fingerprint,
+                     evidencia_upload_status, evidencia_upload_solicitadas, evidencia_upload_anexadas, evidencia_upload_falhas
               from public.demandas
               where idempotency_key = ${idempotencyKey}
               limit 1
@@ -256,12 +298,7 @@ export function setupCitizenDemandPostgres(app: Express) {
                 });
               }
               res.setHeader("Idempotent-Replay", "true");
-              return res.status(200).json({
-                id: existingDemand.id,
-                protocolo: existingDemand.protocolo,
-                status: existingDemand.status,
-                idempotent_replay: true,
-              });
+              return res.status(200).json(persistedDemandResponse(existingDemand, true));
             }
             continue;
           }
@@ -274,7 +311,7 @@ export function setupCitizenDemandPostgres(app: Express) {
         if (uploadedEvidences.length) await Promise.all(uploadedEvidences.map((item) => removeDemandEvidence(item.path).catch(() => undefined)));
         throw new Error("Não foi possível gerar protocolo único.");
       }
-      return res.status(201).json({ id, protocolo, status: "RECEBIDA" });
+      return res.status(201).json({ id, protocolo, status: "RECEBIDA", ...evidenceResponse(evidenceSummary) });
     } catch (error: any) {
       if (error instanceof AgePolicyError) {
         return res.status(error.statusCode).json({ error: error.message, code: error.code });
