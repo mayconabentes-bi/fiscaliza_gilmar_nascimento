@@ -100,6 +100,8 @@ jobs:
         run: npm run test:triage-admin-security
       - name: T2 triage record integrity
         run: npm run test:triage-record-integrity
+      - name: T3 triage evidence integrity
+        run: npm run test:triage-evidence-integrity
       - name: Audit high and critical vulnerabilities
         run: npm run audit:high
 
@@ -190,6 +192,8 @@ jobs:
         run: npm run test:triage-admin-security
       - name: T2 triage record integrity
         run: npm run test:triage-record-integrity
+      - name: T3 triage evidence integrity
+        run: npm run test:triage-evidence-integrity
       - name: Audit high and critical vulnerabilities
         run: npm run audit:high
       - name: Deep QA with real public data

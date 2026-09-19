@@ -150,8 +150,21 @@ function extensionForMime(mime: string) {
   return "jpg";
 }
 
+export function validateEvidenceObjectPath(objectPath: string) {
+  const normalized = String(objectPath || "").trim();
+  if (!normalized || normalized.startsWith("/") || normalized.includes("\\") || normalized.includes("\0")) {
+    throw new Error("Caminho de evidência inválido");
+  }
+  const segments = normalized.split("/");
+  if (segments.some((segment) => !segment || segment === "." || segment === "..")) {
+    throw new Error("Caminho de evidência inválido");
+  }
+  return normalized;
+}
+
 function objectUrl(baseUrl: string, bucket: string, objectPath: string) {
-  const encodedPath = objectPath.split("/").map(encodeURIComponent).join("/");
+  const safePath = validateEvidenceObjectPath(objectPath);
+  const encodedPath = safePath.split("/").map(encodeURIComponent).join("/");
   return `${baseUrl}/storage/v1/object/${encodeURIComponent(bucket)}/${encodedPath}`;
 }
 
@@ -195,23 +208,36 @@ export async function uploadDemandEvidence(demandaId: string, dataUrl: string) {
 }
 
 export async function removeDemandEvidence(objectPath: string) {
+  const safePath = validateEvidenceObjectPath(objectPath);
   const { url, serviceRoleKey, bucket } = storageConfig();
-  const response = await fetch(`${url}/storage/v1/object/${encodeURIComponent(bucket)}`, {
-    method: "DELETE",
-    headers: { ...storageAuthHeaders(serviceRoleKey), "Content-Type": "application/json" },
-    body: JSON.stringify({ prefixes: [objectPath] }),
-    signal: storageRequestSignal(),
-  });
-  if (!response.ok) console.error("Falha ao remover evidência órfã:", response.status);
+  let response: Response;
+  try {
+    response = await fetch(`${url}/storage/v1/object/${encodeURIComponent(bucket)}`, {
+      method: "DELETE",
+      headers: { ...storageAuthHeaders(serviceRoleKey), "Content-Type": "application/json" },
+      body: JSON.stringify({ prefixes: [safePath] }),
+      signal: storageRequestSignal(),
+    });
+  } catch {
+    throw new EvidenceStorageUnavailableError();
+  }
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    console.error("Falha ao remover evidência do Storage:", response.status, detail.slice(0, 300));
+    if (isTransientStorageStatus(response.status)) throw new EvidenceStorageUnavailableError();
+    throw new Error("Não foi possível remover a evidência do armazenamento");
+  }
 }
 
 export async function createDemandEvidenceSignedUrl(objectPath: string, expiresIn = 300) {
+  const safePath = validateEvidenceObjectPath(objectPath);
+  const safeExpiresIn = Math.min(300, Math.max(30, Math.trunc(expiresIn)));
   const { url, serviceRoleKey, bucket } = storageConfig();
-  const encodedPath = objectPath.split("/").map(encodeURIComponent).join("/");
+  const encodedPath = safePath.split("/").map(encodeURIComponent).join("/");
   const response = await fetch(`${url}/storage/v1/object/sign/${encodeURIComponent(bucket)}/${encodedPath}`, {
     method: "POST",
     headers: { ...storageAuthHeaders(serviceRoleKey), "Content-Type": "application/json" },
-    body: JSON.stringify({ expiresIn }),
+    body: JSON.stringify({ expiresIn: safeExpiresIn }),
     signal: storageRequestSignal(),
   });
   if (!response.ok) throw new Error("Não foi possível gerar acesso temporário à evidência");
