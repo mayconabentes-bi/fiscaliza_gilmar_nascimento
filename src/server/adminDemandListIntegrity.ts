@@ -16,8 +16,8 @@ export type AdminDemandListFilters = {
 };
 
 export type AdminDemandListFilterResult =
-  | { ok: true; filters: AdminDemandListFilters }
-  | { ok: false; error: string };
+  | { ok: true; filters: AdminDemandListFilters; error?: never }
+  | { ok: false; error: string; filters?: never };
 
 function queryString(value: unknown, maxLength: number, upper = false) {
   if (typeof value !== "string") return "";
