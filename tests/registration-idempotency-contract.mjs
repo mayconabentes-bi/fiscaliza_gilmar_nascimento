@@ -26,7 +26,8 @@ expect(precheck >= 0 && upload >= 0 && precheck < upload, "Replay normal deve se
 
 const race = server.indexOf('if (error?.code === "23505")');
 const cleanup = server.indexOf("removeDemandEvidence(item.path)", race);
-const replayReturn = server.indexOf("idempotent_replay: true", race);
+const replayReturn = server.indexOf("persistedDemandResponse(existingDemand, true)", race);
+expect(server.includes("idempotent_replay: true"), "Payload centralizado deve continuar sinalizando replay idempotente.");
 expect(race >= 0 && cleanup > race && replayReturn > cleanup, "Corrida concorrente deve limpar uploads perdedores antes de retornar replay.");
 
 expect(client.includes("sessionStorage.getItem(DEMAND_IDEMPOTENCY_STORAGE_KEY)"), "Cliente deve preservar a chave entre retries.");
