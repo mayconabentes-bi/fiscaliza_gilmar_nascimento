@@ -1,6 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { checkPostgresConnection } from "./postgres.js";
-import { checkEvidenceBucketPrivate } from "./evidenceStorage.js";
+import { checkEvidenceBucketPrivate, validateStorageServiceKey } from "./evidenceStorage.js";
 import { getDb } from "./db.js";
 
 export function validateProductionEnvironment() {
@@ -20,6 +20,15 @@ export function validateProductionEnvironment() {
   const missing = required.filter((key) => !process.env[key]?.trim());
   if (missing.length) throw new Error(`Configuração obrigatória ausente: ${missing.join(", ")}`);
   if ((process.env.JWT_SECRET || "").length < 32) throw new Error("JWT_SECRET deve ter pelo menos 32 caracteres.");
+  validateStorageServiceKey(String(process.env.SUPABASE_SERVICE_ROLE_KEY || ""));
+}
+
+export async function assertProductionReadiness() {
+  if (process.env.NODE_ENV !== "production") return;
+  validateProductionEnvironment();
+  const databaseReady = await checkPostgresConnection();
+  if (!databaseReady) throw new Error("Banco de dados de produção indisponível");
+  await checkEvidenceBucketPrivate();
 }
 
 export function allowedOrigins() {

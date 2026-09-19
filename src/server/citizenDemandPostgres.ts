@@ -5,11 +5,9 @@ import { v4 as uuidv4 } from "uuid";
 import { getHealthyPostgres } from "./postgres.js";
 import { removeDemandEvidence, uploadDemandEvidence } from "./evidenceStorage.js";
 import { ensureDemandEvidenceSchema } from "./demandEvidencePostgres.js";
-import { cleanEnum, cleanProtocol, cleanText } from "./requestValidation.js";
+import { cleanProtocol, cleanText } from "./requestValidation.js";
 import { AgePolicyError, ageBandForActiveParticipation, type AgeBand } from "./agePolicy.js";
 import { isValidDemandClassification } from "../shared/demandTaxonomy.js";
-
-const PRIORITIES = ["BAIXA", "MEDIA", "ALTA", "CRITICA"] as const;
 
 function jwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -88,19 +86,25 @@ export function setupCitizenDemandPostgres(app: Express) {
     try {
       nome = cleanText(req.body?.nome_solicitante, 160, true);
       contato = cleanText(req.body?.contato, 200);
-      municipio = cleanText(req.body?.municipio, 120, true);
+      const municipioInformado = cleanText(req.body?.municipio, 120, true);
       bairro = cleanText(req.body?.bairro, 160);
       cep = cleanCep(req.body?.cep);
       logradouro = cleanText(req.body?.logradouro, 180);
       numero = cleanText(req.body?.numero, 80);
       complemento = cleanText(req.body?.complemento, 180);
-      uf = cleanUf(req.body?.uf);
-      codigoIbge = cleanIbge(req.body?.codigo_ibge);
+      const ufInformada = cleanUf(req.body?.uf);
+      const codigoIbgeInformado = cleanIbge(req.body?.codigo_ibge);
+      if (municipioInformado.toLowerCase() !== "manaus") throw new Error("invalid_municipio");
+      if (ufInformada && ufInformada !== "AM") throw new Error("invalid_uf");
+      if (codigoIbgeInformado && codigoIbgeInformado !== "1302603") throw new Error("invalid_ibge_manaus");
+      municipio = "Manaus";
+      uf = "AM";
+      codigoIbge = codigoIbgeInformado;
       categoria = cleanText(req.body?.categoria, 120, true).toUpperCase();
       tipoProblema = cleanText(req.body?.tipo_problema, 120, true).toUpperCase();
       if (!isValidDemandClassification(categoria, tipoProblema)) throw new Error("invalid_demand_classification");
       descricao = cleanText(req.body?.descricao, 5000, true);
-      prioridade = cleanEnum(req.body?.prioridade, PRIORITIES, "MEDIA");
+      prioridade = "MEDIA";
     } catch {
       return validationError(res);
     }
