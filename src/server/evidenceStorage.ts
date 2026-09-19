@@ -150,7 +150,7 @@ function extensionForMime(mime: string) {
   return "jpg";
 }
 
-function validateEvidenceObjectPath(objectPath: string) {
+export function validateEvidenceObjectPath(objectPath: string) {
   const normalized = String(objectPath || "").trim();
   if (!normalized || normalized.startsWith("/") || normalized.includes("\\") || normalized.includes("\0")) {
     throw new Error("Caminho de evidência inválido");
