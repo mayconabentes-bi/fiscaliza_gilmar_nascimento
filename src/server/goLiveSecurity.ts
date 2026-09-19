@@ -1,6 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { checkPostgresConnection } from "./postgres.js";
-import { checkEvidenceBucketPrivate, validateStorageServiceKey } from "./evidenceStorage.js";
+import { checkEvidenceBucketPrivate, EvidenceStorageUnavailableError, validateStorageServiceKey } from "./evidenceStorage.js";
 import { getDb } from "./db.js";
 
 export function validateProductionEnvironment() {
@@ -28,7 +28,15 @@ export async function assertProductionReadiness() {
   validateProductionEnvironment();
   const databaseReady = await checkPostgresConnection();
   if (!databaseReady) throw new Error("Banco de dados de produção indisponível");
-  await checkEvidenceBucketPrivate();
+  try {
+    await checkEvidenceBucketPrivate();
+  } catch (error) {
+    if (error instanceof EvidenceStorageUnavailableError) {
+      console.warn("Storage de evidências temporariamente indisponível no startup; registro seguirá sem bloquear protocolos.");
+      return;
+    }
+    throw error;
+  }
 }
 
 export function allowedOrigins() {
@@ -91,13 +99,22 @@ export function setupHealthRoutes(app: Express) {
       const databaseReady = await checkPostgresConnection();
       if (!databaseReady) return res.status(503).json({ status: "not_ready", database: "unavailable" });
 
-      const evidenceBucketPrivate = await checkEvidenceBucketPrivate();
-      if (!evidenceBucketPrivate) return res.status(503).json({ status: "not_ready", evidenceStorage: "unavailable" });
+      let evidenceStorage = "supabase-private";
+      try {
+        const evidenceBucketPrivate = await checkEvidenceBucketPrivate();
+        if (!evidenceBucketPrivate) return res.status(503).json({ status: "not_ready", evidenceStorage: "unavailable" });
+      } catch (error) {
+        if (error instanceof EvidenceStorageUnavailableError) {
+          evidenceStorage = "degraded";
+        } else {
+          throw error;
+        }
+      }
 
       return res.json({
         status: "ready",
         database: "postgres",
-        evidenceStorage: "supabase-private",
+        evidenceStorage,
         privacyNoticeVersion: process.env.LGPD_CONSENT_VERSION,
         publicRegistration: process.env.ENABLE_PUBLIC_REGISTRATION === "true" ? "enabled" : "disabled",
         publicDemandIntake: process.env.ENABLE_PUBLIC_DEMAND_INTAKE === "true" ? "enabled" : "disabled",
