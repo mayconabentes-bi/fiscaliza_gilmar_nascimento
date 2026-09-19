@@ -371,11 +371,7 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
         });
       }
 
-      return res.json({
-        success: true,
-        status,
-        storage_removed: status !== "REJEITADA" || !transition.storagePath || true,
-      });
+      return res.json({ success: true, status });
     } catch (error: any) {
       if (error?.message === "REJECTED_EVIDENCE_IS_TERMINAL") {
         return res.status(409).json({ error: "Evidência rejeitada não pode voltar a um estado ativo." });
@@ -420,6 +416,9 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
         const previousStatus = String(row.evidencia_moderacao_status || "PENDENTE");
         if (previousStatus === "REJEITADA" && status !== "REJEITADA") {
           throw new Error("REJECTED_EVIDENCE_IS_TERMINAL");
+        }
+        if (previousStatus === "REQUER_ANONIMIZACAO" && status === "APROVADA_PRIVADA") {
+          throw new Error("ANONYMIZATION_REQUIRED_BEFORE_APPROVAL");
         }
 
         await tx\`
@@ -473,6 +472,9 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
     } catch (error: any) {
       if (error?.message === "REJECTED_EVIDENCE_IS_TERMINAL") {
         return res.status(409).json({ error: "Evidência rejeitada não pode voltar a um estado ativo." });
+      }
+      if (error?.message === "ANONYMIZATION_REQUIRED_BEFORE_APPROVAL") {
+        return res.status(409).json({ error: "A evidência exige anonimização real antes de poder ser aprovada." });
       }
       if (error instanceof EvidenceStorageUnavailableError) {
         console.error("Storage indisponível durante rejeição de evidência legada:", error);
