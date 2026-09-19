@@ -8,6 +8,7 @@ import { ensureDemandEvidenceSchema } from "./demandEvidencePostgres.js";
 import { cleanProtocol, cleanText } from "./requestValidation.js";
 import { AgePolicyError, ageBandForActiveParticipation, type AgeBand } from "./agePolicy.js";
 import { isValidDemandClassification } from "../shared/demandTaxonomy.js";
+import { demandRequestFingerprint, hashDemandEvidence, isIdempotentReplay, normalizeIdempotencyKey } from "./demandIdempotency.js";
 
 function jwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -70,6 +71,12 @@ export function setupCitizenDemandPostgres(app: Express) {
     if (req.body?.aviso_privacidade_aceito !== true) return res.status(400).json({ error: "Confirme o aviso de privacidade para registrar a demanda." });
 
     const claims = citizenClaims(req);
+    let idempotencyKey: string;
+    try {
+      idempotencyKey = normalizeIdempotencyKey(req.get("Idempotency-Key")) || uuidv4();
+    } catch {
+      return res.status(400).json({ error: "Chave de idempotência inválida.", code: "INVALID_IDEMPOTENCY_KEY" });
+    }
     let nome: string, contato: string, municipio: string, bairro: string, categoria: string, tipoProblema: string, descricao: string, prioridade: string;
     let cep: string, logradouro: string, numero: string, complemento: string, uf: string, codigoIbge: string;
     const legacyPhoto = typeof req.body?.foto_evidencia_base64 === "string" ? req.body.foto_evidencia_base64.trim() : "";
