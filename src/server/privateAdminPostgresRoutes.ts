@@ -4,7 +4,7 @@ import { getPostgres } from "./postgres.js";
 import { createDemandEvidenceSignedUrl, removeDemandEvidence } from "./evidenceStorage.js";
 import { applyRetentionPostgres, retentionPreviewPostgres } from "./retentionPostgres.js";
 import { ensureDemandEvidenceSchema } from "./demandEvidencePostgres.js";
-import { isValidDemandCategory, isValidDemandClassification } from "../shared/demandTaxonomy.js";
+import { ADMIN_DEMAND_LIST_LIMIT, normalizeAdminDemandListFilters } from "./adminDemandListIntegrity.js";
 
 const STATUS_VALIDOS = ["RECEBIDA","EM_TRIAGEM","ENCAMINHADA","EM_ANALISE","EM_EXECUCAO","CONCLUIDA","INDEFERIDA"];
 const PRIORIDADES_VALIDAS = ["BAIXA","MEDIA","ALTA","CRITICA"];
@@ -71,32 +71,10 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
   app.get("/api/admin/demandas", async (req, res) => {
     try {
       const sql = getPostgres();
-      const status = typeof req.query.status === "string" ? req.query.status.trim() : "";
-      const prioridade = typeof req.query.prioridade === "string" ? req.query.prioridade.trim().toUpperCase().slice(0, 20) : "";
-      const protocolo = typeof req.query.protocolo === "string" ? req.query.protocolo.trim().toUpperCase().slice(0, 80) : "";
-      const municipio = typeof req.query.municipio === "string" ? req.query.municipio.trim().slice(0, 120) : "";
-      const bairro = typeof req.query.bairro === "string" ? req.query.bairro.trim().slice(0, 160) : "";
-      const categoria = typeof req.query.categoria === "string" ? req.query.categoria.trim() : "";
-      const tipoProblema = typeof req.query.tipo_problema === "string" ? req.query.tipo_problema.trim() : "";
-      const limit = 500;
-
-      if (status && !STATUS_VALIDOS.includes(status)) return res.status(400).json({ error: "Status inválido." });
-      if (prioridade && !PRIORIDADES_VALIDAS.includes(prioridade)) return res.status(400).json({ error: "Prioridade inválida." });
-      if (categoria && !isValidDemandCategory(categoria)) return res.status(400).json({ error: "Categoria inválida." });
-      if (tipoProblema && !categoria) return res.status(400).json({ error: "Categoria é obrigatória ao filtrar por tipo de problema." });
-      if (tipoProblema && !isValidDemandClassification(categoria, tipoProblema)) {
-        return res.status(400).json({ error: "Tipo de problema inválido para a categoria informada." });
-      }
-
-      const filters = {
-        status,
-        prioridade,
-        protocolo,
-        municipio,
-        bairro,
-        categoria,
-        tipoProblema,
-      };
+      const normalized = normalizeAdminDemandListFilters(req.query as Record<string, unknown>);
+      if (!normalized.ok) return res.status(400).json({ error: normalized.error });
+      const filters = normalized.filters;
+      const limit = ADMIN_DEMAND_LIST_LIMIT;
 
       const [rows, countRows] = await Promise.all([
         sql`
