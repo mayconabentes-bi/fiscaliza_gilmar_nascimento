@@ -4,6 +4,7 @@ import { getPostgres } from "./postgres.js";
 import { createDemandEvidenceSignedUrl, removeDemandEvidence } from "./evidenceStorage.js";
 import { applyRetentionPostgres, retentionPreviewPostgres } from "./retentionPostgres.js";
 import { ensureDemandEvidenceSchema } from "./demandEvidencePostgres.js";
+import { isValidDemandCategory, isValidDemandClassification } from "../shared/demandTaxonomy.js";
 
 const STATUS_VALIDOS = ["RECEBIDA","EM_TRIAGEM","ENCAMINHADA","EM_ANALISE","EM_EXECUCAO","CONCLUIDA","INDEFERIDA"];
 const PRIORIDADES_VALIDAS = ["BAIXA","MEDIA","ALTA","CRITICA"];
@@ -77,27 +78,66 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
       const bairro = typeof req.query.bairro === "string" ? req.query.bairro.trim().slice(0, 160) : "";
       const categoria = typeof req.query.categoria === "string" ? req.query.categoria.trim() : "";
       const tipoProblema = typeof req.query.tipo_problema === "string" ? req.query.tipo_problema.trim() : "";
+      const limit = 500;
+
       if (status && !STATUS_VALIDOS.includes(status)) return res.status(400).json({ error: "Status inválido." });
       if (prioridade && !PRIORIDADES_VALIDAS.includes(prioridade)) return res.status(400).json({ error: "Prioridade inválida." });
-      const rows = await sql`
-        select id, protocolo, nome_solicitante, contato, municipio, bairro, categoria, tipo_problema, descricao,
-               prioridade, status, observacao_interna, usuario_id, evidencia_moderacao_status,
-               evidencia_upload_status, evidencia_upload_solicitadas, evidencia_upload_anexadas, evidencia_upload_falhas,
-               (evidencia_foto_path is not null) as tem_evidencia_foto,
-               (select count(*)::int from public.demanda_evidencias de where de.demanda_id = public.demandas.id and de.storage_path is not null) as evidencia_total,
-               created_at, updated_at
-        from public.demandas
-        where (${status} = '' or status = ${status})
-          and (${prioridade} = '' or prioridade = ${prioridade})
-          and (${protocolo} = '' or protocolo ilike ${`%${protocolo}%`})
-          and (${municipio} = '' or municipio ilike ${`%${municipio}%`})
-          and (${bairro} = '' or coalesce(bairro, '') ilike ${`%${bairro}%`})
-          and (${categoria} = '' or categoria = ${categoria})
-          and (${tipoProblema} = '' or tipo_problema = ${tipoProblema})
-        order by created_at desc limit 500
-      `;
+      if (categoria && !isValidDemandCategory(categoria)) return res.status(400).json({ error: "Categoria inválida." });
+      if (tipoProblema && !categoria) return res.status(400).json({ error: "Categoria é obrigatória ao filtrar por tipo de problema." });
+      if (tipoProblema && !isValidDemandClassification(categoria, tipoProblema)) {
+        return res.status(400).json({ error: "Tipo de problema inválido para a categoria informada." });
+      }
+
+      const filters = {
+        status,
+        prioridade,
+        protocolo,
+        municipio,
+        bairro,
+        categoria,
+        tipoProblema,
+      };
+
+      const [rows, countRows] = await Promise.all([
+        sql`
+          select id, protocolo, municipio, bairro, categoria, tipo_problema, descricao,
+                 prioridade, status, evidencia_moderacao_status,
+                 evidencia_upload_status, evidencia_upload_solicitadas, evidencia_upload_anexadas, evidencia_upload_falhas,
+                 (evidencia_foto_path is not null) as tem_evidencia_foto,
+                 (select count(*)::int from public.demanda_evidencias de where de.demanda_id = public.demandas.id and de.storage_path is not null) as evidencia_total,
+                 created_at, updated_at
+          from public.demandas
+          where (${filters.status} = '' or status = ${filters.status})
+            and (${filters.prioridade} = '' or prioridade = ${filters.prioridade})
+            and (${filters.protocolo} = '' or protocolo ilike ${`%${filters.protocolo}%`})
+            and (${filters.municipio} = '' or municipio ilike ${`%${filters.municipio}%`})
+            and (${filters.bairro} = '' or coalesce(bairro, '') ilike ${`%${filters.bairro}%`})
+            and (${filters.categoria} = '' or categoria = ${filters.categoria})
+            and (${filters.tipoProblema} = '' or tipo_problema = ${filters.tipoProblema})
+          order by created_at desc, id desc
+          limit ${limit}
+        `,
+        sql`
+          select count(*)::int as total
+          from public.demandas
+          where (${filters.status} = '' or status = ${filters.status})
+            and (${filters.prioridade} = '' or prioridade = ${filters.prioridade})
+            and (${filters.protocolo} = '' or protocolo ilike ${`%${filters.protocolo}%`})
+            and (${filters.municipio} = '' or municipio ilike ${`%${filters.municipio}%`})
+            and (${filters.bairro} = '' or coalesce(bairro, '') ilike ${`%${filters.bairro}%`})
+            and (${filters.categoria} = '' or categoria = ${filters.categoria})
+            and (${filters.tipoProblema} = '' or tipo_problema = ${filters.tipoProblema})
+        `,
+      ]);
+
+      const total = Number(countRows[0]?.total || 0);
       res.setHeader("Cache-Control", "no-store, private");
-      return res.json(rows);
+      return res.json({
+        items: rows,
+        total,
+        limit,
+        truncated: total > rows.length,
+      });
     } catch (error) {
       console.error("Falha ao listar demandas administrativas:", error);
       return res.status(500).json({ error: "Erro ao listar demandas." });
