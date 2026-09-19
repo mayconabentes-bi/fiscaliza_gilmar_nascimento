@@ -9,7 +9,7 @@ export type EvidenceUploadSummary = {
   falhas: number;
 };
 
-const VALIDATION_MESSAGES = new Set(Object.values(EVIDENCE_VALIDATION_ERRORS));
+const VALIDATION_MESSAGES = new Set<string>(Object.values(EVIDENCE_VALIDATION_ERRORS));
 
 function safeCount(value: unknown) {
   const parsed = Number(value);
