@@ -33,7 +33,9 @@ for (const route of ['/dashboard', '/admin', '/admin/demandas', '/admin/audit', 
 }
 
 expect(access.includes('user.type !== "admin"'), 'Middleware deve aceitar somente token type=admin.');
-expect(access.includes('value === "ADMIN" || value === "SUPER_ADMIN"'), 'Middleware deve aceitar somente perfis ADMIN e SUPER_ADMIN.');
+expect(access.includes('from "./adminAccessPolicy.js"'), 'Middleware deve usar política central de perfis ADMIN e SUPER_ADMIN.');
+const adminPolicy = fs.readFileSync('src/server/adminAccessPolicy.ts', 'utf8');
+expect(adminPolicy.includes('["ADMIN", "SUPER_ADMIN"]'), 'Política deve aceitar somente ADMIN e SUPER_ADMIN.');
 expect(access.includes('if (!token) return res.status(401)'), 'Visitante sem token deve receber 401.');
 expect((access.includes('getPostgres()') || access.includes('getHealthyPostgres()')) && access.includes('from private.admins'), 'Em produção, middleware deve revalidar o administrador no Postgres privado.');
 expect(access.includes('process.env.NODE_ENV === "production"'), 'Revalidação Postgres deve ser restrita ao ambiente de produção.');
@@ -49,7 +51,7 @@ expect(serverApp.includes('setupPrivateAdminAuth(app)'), 'Aplicação deve monta
 expect(serverApp.includes('Rotas internas ainda dependentes do legado SQLite permanecem fail-closed'), 'Módulos internos não migrados devem permanecer fail-closed em produção.');
 
 expect(auth.includes('/api/auth/admin/login'), 'Admin deve usar endpoint privado dedicado.');
-expect(auth.includes('type: "admin"') && auth.includes('perfil_acesso: perfil') && auth.includes('admin.perfil_acesso || "ADMIN"'), 'JWT privado deve carregar perfil administrativo com fallback ADMIN.');
+expect(auth.includes('type: "admin"') && auth.includes('perfil_acesso: perfil') && auth.includes('normalizeAdminProfile'), 'JWT privado deve carregar apenas perfil administrativo normalizado.');
 expect(auth.includes('sameSite: "strict"'), 'Cookie do ADMIN deve usar SameSite=Strict.');
 expect(!auth.includes('sameSite: "none"'), 'Cookie do ADMIN não pode aceitar contexto cross-site.');
 
