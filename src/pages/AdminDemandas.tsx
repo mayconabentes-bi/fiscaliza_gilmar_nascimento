@@ -116,7 +116,8 @@ export default function AdminDemandas() {
       );
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Erro ao carregar demandas.");
-      if (mountedRef.current && !controller.signal.aborted) setDemandas(Array.isArray(data) ? data : []);
+      const items = Array.isArray(data?.items) ? data.items : [];
+      if (mountedRef.current && !controller.signal.aborted) setDemandas(items);
     } catch (err: any) {
       if (controller.signal.aborted || err?.name === "AbortError") return;
       if (mountedRef.current) setError(err.message || "Erro ao carregar demandas.");
