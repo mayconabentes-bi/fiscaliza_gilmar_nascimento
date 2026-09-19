@@ -4,7 +4,7 @@ const expect = (condition, message) => { if (!condition) throw new Error(message
 
 const server = fs.readFileSync("src/server/citizenDemandPostgres.ts", "utf8");
 const client = fs.readFileSync("src/pages/NovaDemanda.tsx", "utf8");
-const migration = fs.readFileSync("supabase/migrations/20260919191500_demand_idempotency.sql", "utf8");
+const migration = fs.readFileSync("supabase/migrations/20260919192133_demand_idempotency.sql", "utf8");
 
 expect(migration.includes("idempotency_key uuid"), "Migração deve criar idempotency_key como UUID.");
 expect(migration.includes("request_fingerprint varchar(64)"), "Migração deve persistir fingerprint SHA-256.");
