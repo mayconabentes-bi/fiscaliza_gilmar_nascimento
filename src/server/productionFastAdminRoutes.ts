@@ -81,11 +81,22 @@ export function setupProductionFastAdminRoutes(app: Express) {
           select d.id, d.protocolo, d.municipio, d.bairro, d.categoria, d.tipo_problema, d.descricao,
                  d.prioridade, d.status, d.evidencia_moderacao_status,
                  d.evidencia_upload_status, d.evidencia_upload_solicitadas, d.evidencia_upload_anexadas, d.evidencia_upload_falhas,
-                 ((select count(*) from public.demanda_evidencias e where e.demanda_id = d.id and e.storage_path is not null) > 0
-                   or d.evidencia_foto_path is not null) as tem_evidencia_foto,
+                 ((select count(*) from public.demanda_evidencias e
+                    where e.demanda_id = d.id
+                      and e.storage_path is not null
+                      and e.moderacao_status in ('PENDENTE','REQUER_ANONIMIZACAO','APROVADA_PRIVADA')) > 0
+                   or (d.evidencia_foto_path is not null
+                       and d.evidencia_moderacao_status in ('PENDENTE','REQUER_ANONIMIZACAO','APROVADA_PRIVADA'))) as tem_evidencia_foto,
                  greatest(
-                   (select count(*)::int from public.demanda_evidencias e where e.demanda_id = d.id and e.storage_path is not null),
-                   case when d.evidencia_foto_path is not null then 1 else 0 end
+                   (select count(*)::int from public.demanda_evidencias e
+                    where e.demanda_id = d.id
+                      and e.storage_path is not null
+                      and e.moderacao_status in ('PENDENTE','REQUER_ANONIMIZACAO','APROVADA_PRIVADA')),
+                   case
+                     when d.evidencia_foto_path is not null
+                      and d.evidencia_moderacao_status in ('PENDENTE','REQUER_ANONIMIZACAO','APROVADA_PRIVADA')
+                     then 1 else 0
+                   end
                  ) as evidencia_total,
                  d.created_at, d.updated_at
           from public.demandas d
