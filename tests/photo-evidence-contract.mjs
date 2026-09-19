@@ -4,6 +4,7 @@ const expect = (condition, message) => { if (!condition) throw new Error(message
 const form = fs.readFileSync("src/pages/NovaDemanda.tsx", "utf8");
 const image = fs.readFileSync("src/lib/mobileImage.ts", "utf8");
 const demand = fs.readFileSync("src/server/citizenDemandPostgres.ts", "utf8");
+const storage = fs.readFileSync("src/server/evidenceStorage.ts", "utf8");
 const admin = fs.readFileSync("src/server/privateAdminPostgresRoutes.ts", "utf8");
 const migration = fs.readFileSync("supabase/migrations/20260918110000_demand_multi_evidence.sql", "utf8");
 const app = fs.readFileSync("src/server/app.ts", "utf8");
@@ -24,6 +25,7 @@ expect(image.includes('import("@discourse/heic")') && packageJson.includes('"@di
 expect(image.includes("armazenamento em nuvem") && image.includes("arquivo está corrompido"), "Falhas devem orientar arquivo incompleto, incompatível ou corrompido.");
 expect(form.includes("failedMessages") && form.includes("preparedPhotos.length"), "Lote deve preservar fotos válidas quando outra imagem falhar.");
 expect(demand.includes("fotoEvidenciasBase64.length > 7"), "Backend deve rejeitar mais de 7 fotos.");
+expect(storage.includes("validateEvidenceBinarySignature") && storage.includes("detectEvidenceMimeBySignature"), "Backend deve validar MIME pelos bytes reais antes do Storage.");
 expect(demand.includes("Promise.allSettled") && demand.includes("public.demanda_evidencias"), "Backend deve persistir múltiplas evidências e limpar uploads parciais.");
 expect(admin.includes("/api/admin/demandas/:id/evidencias"), "Admin deve listar todas as fotos da demanda.");
 expect(migration.includes("ordem between 1 and 7") && migration.includes("enable row level security"), "Migration deve limitar 7 fotos e manter RLS.");
