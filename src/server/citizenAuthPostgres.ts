@@ -25,6 +25,10 @@ function validationError(res: any, message = "Revise os dados informados.") {
 const RECOVERY_AUDIENCE = "fiscalize-password-reset";
 const RECOVERY_ISSUER = "fiscalize";
 
+function passwordFingerprint(passwordHash: string) {
+  return citizenPasswordFingerprint(passwordHash);
+}
+
 function passwordRecoveryEnabled() {
   return process.env.ENABLE_PASSWORD_RECOVERY === "true";
 }
@@ -110,7 +114,7 @@ export function setupCitizenAuthPostgres(app: Express) {
 
       if (user && user.status !== "excluido" && user.status !== "suspenso") {
         const token = jwt.sign(
-          { type: "password_reset", pwd: citizenPasswordFingerprint(String(user.password_hash)) },
+          { type: "password_reset", pwd: passwordFingerprint(String(user.password_hash)) },
           jwtSecret(),
           {
             subject: String(user.id),
@@ -176,7 +180,7 @@ export function setupCitizenAuthPostgres(app: Express) {
       }
 
       const currentHash = String(user.password_hash);
-      if (claims.pwd !== citizenPasswordFingerprint(currentHash)) {
+      if (claims.pwd !== passwordFingerprint(currentHash)) {
         return res.status(400).json({ error: "Este link de recuperação já foi utilizado ou não é mais válido." });
       }
 
@@ -275,7 +279,7 @@ export function setupCitizenAuthPostgres(app: Express) {
       if (!user || user.status === "excluido" || user.status === "suspenso") return res.status(401).json({ error: "Credenciais inválidas." });
       const passwordValid = await bcrypt.compare(password, String(user.password_hash));
       if (!passwordValid) return res.status(401).json({ error: "Credenciais inválidas." });
-      const token = jwt.sign({ id: user.id, type: "cidadao", status: user.status || "ativo", pwd: citizenPasswordFingerprint(String(user.password_hash)) }, jwtSecret(), { expiresIn: "24h" });
+      const token = jwt.sign({ id: user.id, type: "cidadao", status: user.status || "ativo", pwd: passwordFingerprint(String(user.password_hash)) }, jwtSecret(), { expiresIn: "24h" });
       res.cookie("token", token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 24 * 60 * 60 * 1000 });
       res.setHeader("Cache-Control", "no-store, private");
       return res.json({ user: { id: user.id, nome_completo: user.nome_completo, email: user.email, municipio: user.municipio, bairro: user.bairro, faixa_etaria: user.faixa_etaria, protecao_reforcada: Boolean(user.protecao_reforcada), type: "cidadao" } });
@@ -299,7 +303,7 @@ export function setupCitizenAuthPostgres(app: Express) {
         from public.usuarios where id = ${claims.id} limit 1
       `;
       if (!user || user.status === "excluido" || user.status === "suspenso") return res.status(401).json({ authenticated: false });
-      if (!claims.pwd || claims.pwd !== citizenPasswordFingerprint(String(user.password_hash))) {
+      if (!claims.pwd || claims.pwd !== passwordFingerprint(String(user.password_hash))) {
         res.clearCookie("token", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/" });
         return res.status(401).json({ authenticated: false });
       }
