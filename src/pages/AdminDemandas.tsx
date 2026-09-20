@@ -561,7 +561,7 @@ export default function AdminDemandas() {
                     ))}
                   </div>}
                   <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
-                    <img src={evidenciaUrl} alt={`Evidência ${evidenciaIndex + 1} da demanda ${evidenciaDemanda.protocolo}`} className="mx-auto max-h-[52vh] w-auto max-w-full object-contain" />
+                    <img src={evidenciaUrl} alt={`Evidência ${evidenciaIndex + 1} da demanda ${evidenciaDemanda.protocolo}`} onError={() => setEvidenciaError("A imagem não pôde ser exibida. Atualize a evidência ou tente novamente.")} className="mx-auto max-h-[52vh] w-auto max-w-full object-contain" />
                   </div>
                 </>
               )}
