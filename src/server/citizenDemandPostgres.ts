@@ -165,24 +165,6 @@ export function setupCitizenDemandPostgres(app: Express) {
         evidencias: fotoEvidenciasBase64.map(hashDemandEvidence),
       });
 
-      const [existingDemand] = await sql`
-        select id, protocolo, status, request_fingerprint,
-               evidencia_upload_status, evidencia_upload_solicitadas, evidencia_upload_anexadas, evidencia_upload_falhas
-        from public.demandas
-        where idempotency_key = ${idempotencyKey}
-        limit 1
-      `;
-      if (existingDemand) {
-        if (!isIdempotentReplay(existingDemand.request_fingerprint, requestFingerprint)) {
-          return res.status(409).json({
-            error: "Esta tentativa de envio já foi usada com dados diferentes. Revise o formulário e envie novamente.",
-            code: "IDEMPOTENCY_KEY_REUSED",
-          });
-        }
-        res.setHeader("Idempotent-Replay", "true");
-        return res.status(200).json(persistedDemandResponse(existingDemand, true));
-      }
-
       let usuarioId: string | null = null;
       let faixaEtaria: AgeBand | null = null;
       let revisaoReforcada = false;
@@ -204,6 +186,25 @@ export function setupCitizenDemandPostgres(app: Express) {
           faixaEtaria = agePolicy.ageBand;
           revisaoReforcada = Boolean(user.protecao_reforcada) || agePolicy.enhancedProtection;
         }
+      }
+
+
+      const [existingDemand] = await sql`
+        select id, protocolo, status, request_fingerprint,
+               evidencia_upload_status, evidencia_upload_solicitadas, evidencia_upload_anexadas, evidencia_upload_falhas
+        from public.demandas
+        where idempotency_key = ${idempotencyKey}
+        limit 1
+      `;
+      if (existingDemand) {
+        if (!isIdempotentReplay(existingDemand.request_fingerprint, requestFingerprint)) {
+          return res.status(409).json({
+            error: "Esta tentativa de envio já foi usada com dados diferentes. Revise o formulário e envie novamente.",
+            code: "IDEMPOTENCY_KEY_REUSED",
+          });
+        }
+        res.setHeader("Idempotent-Replay", "true");
+        return res.status(200).json(persistedDemandResponse(existingDemand, true));
       }
 
       if (!faixaEtaria) {
