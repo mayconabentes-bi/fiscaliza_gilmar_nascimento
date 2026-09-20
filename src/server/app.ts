@@ -37,8 +37,23 @@ export function createApp() {
   const origins = allowedOrigins();
   const demandIntakeLimiter = limiter(60 * 60 * 1000, 20);
 
+  const evidenceImageOrigin = (() => {
+    const configured = process.env.SUPABASE_URL?.trim();
+    if (!configured) return null;
+    try {
+      return new URL(configured).origin;
+    } catch {
+      return null;
+    }
+  })();
+
   app.use(helmet({
-    contentSecurityPolicy: production ? { directives: { "script-src": ["'self'", "'wasm-unsafe-eval'"] } } : false,
+    contentSecurityPolicy: production ? {
+      directives: {
+        "script-src": ["'self'", "'wasm-unsafe-eval'"],
+        "img-src": ["'self'", "data:", "blob:", ...(evidenceImageOrigin ? [evidenceImageOrigin] : [])],
+      },
+    } : false,
     crossOriginEmbedderPolicy: false,
   }));
   app.set("trust proxy", 1);
