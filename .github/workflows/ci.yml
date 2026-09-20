@@ -78,6 +78,8 @@ jobs:
         run: npm run test:brand-ui
       - name: Account recovery security contract
         run: npm run test:account-recovery
+      - name: Citizen session revocation security
+        run: npm run test:citizen-session-security
       - name: Multi-photo evidence contract
         run: npm run test:photo-evidence
       - name: Public journey refinement contracts
@@ -162,6 +164,8 @@ jobs:
         run: npm run test:brand-ui
       - name: Account recovery security contract
         run: npm run test:account-recovery
+      - name: Citizen session revocation security
+        run: npm run test:citizen-session-security
       - name: Multi-photo evidence contract
         run: npm run test:photo-evidence
       - name: Responsive device matrix
