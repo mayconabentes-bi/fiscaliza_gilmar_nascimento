@@ -11,7 +11,7 @@ const compliance = read("src/server/citizenCompliancePostgres.ts");
 expect(helper.includes("crypto.timingSafeEqual"), "Fingerprint da sessão deve usar comparação de tamanho constante.");
 expect(helper.includes("citizenPasswordFingerprint"), "Fingerprint da senha deve estar centralizado.");
 expect(auth.includes('from "./citizenSessionSecurity.js"'), "Autenticação deve usar o helper compartilhado.");
-expect(auth.includes("pwd: citizenPasswordFingerprint"), "JWT cidadão deve continuar vinculado ao hash atual da senha.");
+expect(auth.includes("pwd: passwordFingerprint"), "JWT cidadão deve continuar vinculado ao hash atual da senha.");
 
 const demandPost = demand.slice(
   demand.indexOf('app.post("/api/demandas"'),
