@@ -104,6 +104,8 @@ jobs:
         run: npm run test:triage-record-integrity
       - name: T3 triage evidence integrity
         run: npm run test:triage-evidence-integrity
+      - name: T3 evidence display CSP regression
+        run: npm run test:triage-evidence-display
       - name: T4 triage status integrity
         run: npm run test:triage-status-integrity
       - name: Audit high and critical vulnerabilities
@@ -200,6 +202,8 @@ jobs:
         run: npm run test:triage-record-integrity
       - name: T3 triage evidence integrity
         run: npm run test:triage-evidence-integrity
+      - name: T3 evidence display CSP regression
+        run: npm run test:triage-evidence-display
       - name: T4 triage status integrity
         run: npm run test:triage-status-integrity
       - name: Audit high and critical vulnerabilities
