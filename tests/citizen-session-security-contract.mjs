@@ -20,6 +20,7 @@ const demandPost = demand.slice(
 expect(demandPost.includes("password_hash"), "Registro autenticado deve carregar o hash atual da conta.");
 expect(demandPost.includes("isCitizenSessionCurrent(claims.pwd, user.password_hash)"), "Registro autenticado deve recusar token anterior à troca de senha.");
 expect(demandPost.includes('res.clearCookie("token"'), "Registro autenticado deve limpar cookie obsoleto.");
+expect(demandPost.indexOf("isCitizenSessionCurrent(claims.pwd, user.password_hash)") < demandPost.indexOf("where idempotency_key"), "Sessão deve ser revalidada antes de qualquer replay idempotente vinculado ao ator.");
 
 const myRecords = demand.slice(
   demand.indexOf('app.get("/api/minha-conta/demandas"'),
