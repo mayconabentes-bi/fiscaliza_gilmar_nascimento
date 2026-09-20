@@ -1,4 +1,3 @@
-import crypto from "node:crypto";
 import type { Express } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -6,6 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { getHealthyPostgres } from "./postgres.js";
 import { cleanEmail, cleanText } from "./requestValidation.js";
 import { AgePolicyError, ageBandForActiveParticipation, type AgeBand } from "./agePolicy.js";
+import { citizenPasswordFingerprint } from "./citizenSessionSecurity.js";
 
 function jwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -26,7 +26,7 @@ const RECOVERY_AUDIENCE = "fiscalize-password-reset";
 const RECOVERY_ISSUER = "fiscalize";
 
 function passwordFingerprint(passwordHash: string) {
-  return crypto.createHash("sha256").update(passwordHash).digest("base64url");
+  return citizenPasswordFingerprint(passwordHash);
 }
 
 function passwordRecoveryEnabled() {

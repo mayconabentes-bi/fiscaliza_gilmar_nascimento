@@ -56,7 +56,8 @@
     "test:registration-evidence-magic-bytes": "node tests/registration-evidence-magic-bytes-contract.mjs && tsx tests/registration-evidence-magic-bytes-runtime.ts",
     "test:registration-evidence-structure": "node tests/registration-evidence-structure-contract.mjs && tsx tests/registration-evidence-structure-runtime.ts",
     "test:citizen-account": "node tests/citizen-account-structure-contract.mjs && tsx tests/citizen-account-age-runtime.ts",
-    "test:citizen-experience": "node tests/citizen-authenticated-experience-contract.mjs"
+    "test:citizen-experience": "node tests/citizen-authenticated-experience-contract.mjs",
+    "test:citizen-session-security": "node tests/citizen-session-security-contract.mjs && tsx tests/citizen-session-security-runtime.ts"
   },
   "dependencies": {
     "@discourse/heic": "^1.0.0",

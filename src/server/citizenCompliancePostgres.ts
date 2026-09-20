@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import { getPostgres } from "./postgres.js";
+import { isCitizenSessionCurrent } from "./citizenSessionSecurity.js";
 
 function jwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -16,7 +17,13 @@ function citizenClaims(req: Request) {
   if (!token) return null;
   try {
     const claims = jwt.verify(token, jwtSecret()) as any;
-    return claims?.type === "cidadao" && claims?.id ? claims : null;
+    return claims?.type === "cidadao"
+      && typeof claims?.id === "string"
+      && claims.id.trim()
+      && typeof claims?.pwd === "string"
+      && claims.pwd
+      ? { id: claims.id as string, pwd: claims.pwd as string }
+      : null;
   } catch {
     return null;
   }
@@ -31,10 +38,18 @@ export function setupCitizenCompliancePostgres(app: Express) {
       const sql = getPostgres();
       const [user] = await sql`
         select id, nome_completo, email, municipio, bairro, status,
-               consentimento_lgpd, data_consentimento, versao_consentimento, created_at
+               consentimento_lgpd, data_consentimento, versao_consentimento, created_at, password_hash
         from public.usuarios where id = ${claims.id} limit 1
       `;
-      if (!user || user.status === "excluido") return res.status(404).json({ error: "Conta não encontrada." });
+      if (
+        !user
+        || user.status === "excluido"
+        || user.status === "suspenso"
+        || !isCitizenSessionCurrent(claims.pwd, user.password_hash)
+      ) {
+        res.clearCookie("token", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/" });
+        return res.status(401).json({ error: "Sessão inválida. Entre novamente." });
+      }
 
       const demandas = await sql`
         select protocolo, municipio, bairro, categoria, descricao, prioridade, status,
@@ -43,7 +58,24 @@ export function setupCitizenCompliancePostgres(app: Express) {
       `;
 
       res.setHeader("Cache-Control", "no-store, private");
-      return res.json({ dados: { conta: user, demandas, exportado_em: new Date().toISOString() } });
+      return res.json({
+        dados: {
+          conta: {
+            id: user.id,
+            nome_completo: user.nome_completo,
+            email: user.email,
+            municipio: user.municipio,
+            bairro: user.bairro,
+            status: user.status,
+            consentimento_lgpd: user.consentimento_lgpd,
+            data_consentimento: user.data_consentimento,
+            versao_consentimento: user.versao_consentimento,
+            created_at: user.created_at,
+          },
+          demandas,
+          exportado_em: new Date().toISOString(),
+        },
+      });
     } catch (error: any) {
       console.error("Falha ao exportar dados do titular:", error);
       return res.status(error?.message === "DATABASE_URL não configurada" ? 503 : 500).json({ error: "Não foi possível exportar os dados." });
@@ -57,8 +89,12 @@ export function setupCitizenCompliancePostgres(app: Express) {
     try {
       const sql = getPostgres();
       const result = await sql.begin(async (tx) => {
-        const [user] = await tx`select id, status from public.usuarios where id = ${claims.id} for update`;
-        if (!user || user.status === "excluido") return false;
+        const [user] = await tx`select id, status, password_hash from public.usuarios where id = ${claims.id} for update`;
+        if (!user || user.status === "excluido") return "missing";
+        if (
+          user.status === "suspenso"
+          || !isCitizenSessionCurrent(claims.pwd, user.password_hash)
+        ) return "invalid_session";
 
         await tx`update public.demandas set usuario_id = null where usuario_id = ${claims.id}`;
         const syntheticEmail = `excluido-${claims.id}@invalid.local`;
@@ -75,11 +111,15 @@ export function setupCitizenCompliancePostgres(app: Express) {
           values (${uuidv4()}, 'usuario', ${claims.id}, 'SOLICITACAO_EXCLUSAO', ${claims.id},
                   ${sql.json({ data: new Date().toISOString(), efeito: "conta pseudonimizada e demandas desvinculadas" })})
         `;
-        return true;
+        return "deleted";
       });
 
-      if (!result) return res.status(404).json({ error: "Conta não encontrada." });
-      res.clearCookie("token", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" });
+      if (result === "invalid_session") {
+        res.clearCookie("token", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/" });
+        return res.status(401).json({ error: "Sessão inválida. Entre novamente." });
+      }
+      if (result === "missing") return res.status(404).json({ error: "Conta não encontrada." });
+      res.clearCookie("token", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/" });
       return res.json({ success: true, message: "Conta desativada e dados cadastrais pseudonimizados. Registros cívicos necessários podem permanecer sem vínculo direto com a conta." });
     } catch (error: any) {
       console.error("Falha ao excluir/pseudonimizar conta:", error);

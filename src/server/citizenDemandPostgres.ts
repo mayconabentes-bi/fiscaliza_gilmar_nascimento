@@ -10,6 +10,7 @@ import { AgePolicyError, ageBandForActiveParticipation, type AgeBand } from "./a
 import { isValidDemandClassification } from "../shared/demandTaxonomy.js";
 import { demandRequestFingerprint, hashDemandEvidence, isIdempotentReplay, normalizeIdempotencyKey } from "./demandIdempotency.js";
 import { evidenceUploadWarning, isEvidenceValidationFailure, persistedEvidenceSummary, summarizeEvidenceUpload, type EvidenceUploadSummary } from "./demandEvidenceResilience.js";
+import { isCitizenSessionCurrent } from "./citizenSessionSecurity.js";
 
 function jwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -55,8 +56,14 @@ function citizenClaims(req: Request) {
   if (!token) return null;
   try {
     const claims = jwt.verify(token, jwtSecret()) as any;
-    if (claims?.type !== "cidadao" || typeof claims?.id !== "string" || !claims.id.trim()) return null;
-    return { id: claims.id as string };
+    if (
+      claims?.type !== "cidadao"
+      || typeof claims?.id !== "string"
+      || !claims.id.trim()
+      || typeof claims?.pwd !== "string"
+      || !claims.pwd
+    ) return null;
+    return { id: claims.id as string, pwd: claims.pwd as string };
   } catch {
     return null;
   }
@@ -158,6 +165,30 @@ export function setupCitizenDemandPostgres(app: Express) {
         evidencias: fotoEvidenciasBase64.map(hashDemandEvidence),
       });
 
+      let usuarioId: string | null = null;
+      let faixaEtaria: AgeBand | null = null;
+      let revisaoReforcada = false;
+
+      if (claims) {
+        const [user] = await sql`select id, status, faixa_etaria, protecao_reforcada, password_hash from public.usuarios where id = ${claims.id} limit 1`;
+        if (
+          !user
+          || user.status === "excluido"
+          || user.status === "suspenso"
+          || !isCitizenSessionCurrent(claims.pwd, user.password_hash)
+        ) {
+          res.clearCookie("token", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/" });
+          return res.status(401).json({ error: "Sessão inválida. Entre novamente para vincular o registro à sua conta." });
+        }
+        usuarioId = claims.id;
+        if (user.faixa_etaria) {
+          const agePolicy = ageBandForActiveParticipation(user.faixa_etaria);
+          faixaEtaria = agePolicy.ageBand;
+          revisaoReforcada = Boolean(user.protecao_reforcada) || agePolicy.enhancedProtection;
+        }
+      }
+
+
       const [existingDemand] = await sql`
         select id, protocolo, status, request_fingerprint,
                evidencia_upload_status, evidencia_upload_solicitadas, evidencia_upload_anexadas, evidencia_upload_falhas
@@ -174,22 +205,6 @@ export function setupCitizenDemandPostgres(app: Express) {
         }
         res.setHeader("Idempotent-Replay", "true");
         return res.status(200).json(persistedDemandResponse(existingDemand, true));
-      }
-
-      let usuarioId: string | null = null;
-      let faixaEtaria: AgeBand | null = null;
-      let revisaoReforcada = false;
-
-      if (claims) {
-        const [user] = await sql`select id, status, faixa_etaria, protecao_reforcada from public.usuarios where id = ${claims.id} limit 1`;
-        if (user && user.status !== "excluido" && user.status !== "suspenso") {
-          usuarioId = claims.id;
-          if (user.faixa_etaria) {
-            const agePolicy = ageBandForActiveParticipation(user.faixa_etaria);
-            faixaEtaria = agePolicy.ageBand;
-            revisaoReforcada = Boolean(user.protecao_reforcada) || agePolicy.enhancedProtection;
-          }
-        }
       }
 
       if (!faixaEtaria) {
@@ -332,13 +347,19 @@ export function setupCitizenDemandPostgres(app: Express) {
     try {
       const sql = await getHealthyPostgres();
       const [user] = await sql`
-        select id, status
+        select id, status, password_hash
         from public.usuarios
         where id = ${claims.id}
         limit 1
       `;
-      if (!user || user.status === "excluido" || user.status === "suspenso") {
-        return res.status(401).json({ error: "Sessão inválida." });
+      if (
+        !user
+        || user.status === "excluido"
+        || user.status === "suspenso"
+        || !isCitizenSessionCurrent(claims.pwd, user.password_hash)
+      ) {
+        res.clearCookie("token", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/" });
+        return res.status(401).json({ error: "Sessão inválida. Entre novamente." });
       }
 
       const registros = await sql`
