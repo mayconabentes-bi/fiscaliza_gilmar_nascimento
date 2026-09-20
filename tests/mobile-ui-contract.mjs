@@ -59,6 +59,7 @@ expect(strategy.includes('Roadmap de inteligência') && strategy.includes('open=
 expect(strategy.includes('/api/admin/strategy/2028') && !strategy.includes('Operação eleitoral') && !strategy.includes('Sala de situação'), 'Arquitetura mobile da Estratégia deve permanecer no perímetro privado e sem conteúdo eleitoral embutido no bundle.');
 expect(triage.includes('data-mobile-triage-cards') && triage.includes('lg:hidden'), 'Triagem deve usar cards dedicados no mobile.');
 expect(triage.includes('hidden overflow-hidden') && triage.includes('lg:block'), 'Tabela de triagem deve ficar restrita ao desktop.');
+expect(triage.includes('min-w-[1180px]') && triage.includes('min-w-[128px]') && triage.includes('min-w-[112px]') && triage.includes('whitespace-nowrap'), 'Triagem desktop deve preservar largura mínima da tabela e da ação Alterar status sem compressão.');
 expect(triage.includes('Abrir triagem') && triage.includes('min-h-12'), 'Ações críticas da triagem mobile devem ter alvo de toque confortável.');
 expect(triage.includes('Buscar protocolo') && triage.includes('Filtrar bairro') && triage.includes('Todas as prioridades'), 'Triagem mobile deve oferecer filtros operacionais por protocolo, bairro e prioridade.');
 expect(triage.includes('Prioridade operacional') && triage.includes('Salvar triagem'), 'Modal de triagem deve permitir alterar prioridade e status no mesmo fluxo.');
