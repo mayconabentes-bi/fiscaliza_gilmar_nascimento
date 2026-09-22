@@ -19,7 +19,7 @@ expect(access.includes("jwt.verify"), "JWT deve ser verificado criptograficament
 expect(auth.includes("ADMIN_EMAIL_MAX_LENGTH = 254"), "Login deve limitar tamanho do e-mail.");
 expect(auth.includes("ADMIN_PASSWORD_MAX_LENGTH = 256"), "Login deve limitar tamanho da senha.");
 expect(auth.includes("DUMMY_ADMIN_PASSWORD_HASH"), "Login deve reduzir enumeração temporal para conta ausente/inativa.");
-expect(auth.includes("normalizeAdminProfile"), "Login deve falhar fechado para perfil administrativo inválido.");
+expect(auth.includes("normalizeStaffProfile"), "Login deve falhar fechado para perfil administrativo inválido.");
 expect(auth.includes("select id, nome, ativo, perfil_acesso") && auth.includes("from private.admins"), "Sessão visual deve revalidar admin no banco.");
 expect(auth.includes('sameSite: "strict"') && auth.includes("httpOnly: true"), "Cookie admin deve manter HttpOnly + SameSite Strict.");
 

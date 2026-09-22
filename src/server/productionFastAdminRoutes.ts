@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { getHealthyPostgres } from "./postgres.js";
 import { ensureDemandEvidenceSchema } from "./demandEvidencePostgres.js";
 import { ADMIN_DEMAND_LIST_LIMIT, normalizeAdminDemandListFilters } from "./adminDemandListIntegrity.js";
+import { setorDoEscopo } from "./adminAccessPolicy.js";
 
 export function setupProductionFastAdminRoutes(app: Express) {
   /**
@@ -66,9 +67,11 @@ export function setupProductionFastAdminRoutes(app: Express) {
   });
 
   /** Fast path da Triagem: payload inicial limitado e filtrável. */
-  app.get("/api/admin/demandas", async (req, res) => {
+  app.get("/api/admin/demandas", async (req: any, res) => {
     const startedAt = Date.now();
     try {
+      // null = acesso total (ADMIN); uuid = só as categorias do setor do usuário.
+      const setorId = setorDoEscopo(req.user?.escopo);
       const normalized = normalizeAdminDemandListFilters(req.query as Record<string, unknown>);
       if (!normalized.ok) return res.status(400).json({ error: normalized.error });
       const filters = normalized.filters;
@@ -107,6 +110,7 @@ export function setupProductionFastAdminRoutes(app: Express) {
             and (${filters.bairro} = '' or coalesce(d.bairro, '') ilike ${`%${filters.bairro}%`})
             and (${filters.categoria} = '' or d.categoria = ${filters.categoria})
             and (${filters.tipoProblema} = '' or d.tipo_problema = ${filters.tipoProblema})
+            and (${setorId}::uuid is null or d.categoria in (select sc.categoria from private.setor_categorias sc where sc.setor_id = ${setorId}::uuid))
           order by d.created_at desc, d.id desc
           limit ${limit}
         `,
@@ -120,6 +124,7 @@ export function setupProductionFastAdminRoutes(app: Express) {
             and (${filters.bairro} = '' or coalesce(d.bairro, '') ilike ${`%${filters.bairro}%`})
             and (${filters.categoria} = '' or d.categoria = ${filters.categoria})
             and (${filters.tipoProblema} = '' or d.tipo_problema = ${filters.tipoProblema})
+            and (${setorId}::uuid is null or d.categoria in (select sc.categoria from private.setor_categorias sc where sc.setor_id = ${setorId}::uuid))
         `,
       ]);
 

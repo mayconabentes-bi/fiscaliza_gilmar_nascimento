@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { getDb } from "./db.js";
 import { getHealthyPostgres } from "./postgres.js";
-import { isAllowedAdminProfile, normalizeAdminProfile } from "./adminAccessPolicy.js";
+import { isStaffProfile, normalizeStaffProfile } from "./adminAccessPolicy.js";
 
 const ADMIN_EMAIL_MAX_LENGTH = 254;
 const ADMIN_PASSWORD_MAX_LENGTH = 256;
@@ -62,7 +62,7 @@ export function setupPrivateAdminAuth(app: Express) {
       const passwordHash = admin?.password_hash ? String(admin.password_hash) : DUMMY_ADMIN_PASSWORD_HASH;
       const valid = await bcrypt.compare(password, passwordHash);
       if (!admin || !active || !valid) return res.status(401).json({ error: "Credenciais inválidas." });
-      const perfil = normalizeAdminProfile(admin.perfil_acesso || (process.env.NODE_ENV === "production" ? "" : "ADMIN"));
+      const perfil = normalizeStaffProfile(admin.perfil_acesso || (process.env.NODE_ENV === "production" ? "" : "ADMIN"));
       if (!perfil) return res.status(401).json({ error: "Credenciais inválidas." });
       const token = jwt.sign({ id: admin.id, type: "admin", status: "ativo", perfil_acesso: perfil }, jwtSecret(), { expiresIn: "12h" });
       res.cookie("token", token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict", path: "/", maxAge: 12 * 60 * 60 * 1000 });
@@ -88,7 +88,7 @@ export function setupPrivateAdminAuth(app: Express) {
     }
 
     if (claims.type !== "admin") return next();
-    if (!claims.id || claims.status !== "ativo" || !isAllowedAdminProfile(claims.perfil_acesso)) {
+    if (!claims.id || claims.status !== "ativo" || !isStaffProfile(claims.perfil_acesso)) {
       return res.status(401).json({ authenticated: false });
     }
 
@@ -100,7 +100,7 @@ export function setupPrivateAdminAuth(app: Express) {
         where id = ${claims.id}
         limit 1
       `;
-      const persistedProfile = normalizeAdminProfile(admin?.perfil_acesso);
+      const persistedProfile = normalizeStaffProfile(admin?.perfil_acesso);
       if (!admin || admin.ativo !== true || !persistedProfile) {
         return res.status(401).json({ authenticated: false });
       }

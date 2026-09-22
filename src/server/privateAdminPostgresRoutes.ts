@@ -7,6 +7,7 @@ import { ensureDemandEvidenceSchema } from "./demandEvidencePostgres.js";
 import { ADMIN_DEMAND_LIST_LIMIT, normalizeAdminDemandListFilters } from "./adminDemandListIntegrity.js";
 import { previewEvidenceOrphansPostgres, reconcileEvidenceOrphansPostgres } from "./evidenceReconciliationPostgres.js";
 import { canTransitionDemandStatus, isDemandStatus } from "../shared/demandStatusWorkflow.js";
+import { setorDoEscopo } from "./adminAccessPolicy.js";
 
 const STATUS_VALIDOS = ["RECEBIDA","EM_TRIAGEM","ENCAMINHADA","EM_ANALISE","EM_EXECUCAO","CONCLUIDA","INDEFERIDA"];
 const PRIORIDADES_VALIDAS = ["BAIXA","MEDIA","ALTA","CRITICA"];
@@ -71,8 +72,10 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
     }
   });
 
-  app.get("/api/admin/demandas", async (req, res) => {
+  app.get("/api/admin/demandas", async (req: any, res) => {
     try {
+      // Rota coberta pelo fast path; o filtro de setor fica aqui também por defesa em profundidade.
+      const setorId = setorDoEscopo(req.user?.escopo);
       const sql = getPostgres();
       const normalized = normalizeAdminDemandListFilters(req.query as Record<string, unknown>);
       if (!normalized.ok) return res.status(400).json({ error: normalized.error });
@@ -110,6 +113,7 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
             and (${filters.bairro} = '' or coalesce(bairro, '') ilike ${`%${filters.bairro}%`})
             and (${filters.categoria} = '' or categoria = ${filters.categoria})
             and (${filters.tipoProblema} = '' or tipo_problema = ${filters.tipoProblema})
+            and (${setorId}::uuid is null or categoria in (select sc.categoria from private.setor_categorias sc where sc.setor_id = ${setorId}::uuid))
           order by created_at desc, id desc
           limit ${limit}
         `,
@@ -123,6 +127,7 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
             and (${filters.bairro} = '' or coalesce(bairro, '') ilike ${`%${filters.bairro}%`})
             and (${filters.categoria} = '' or categoria = ${filters.categoria})
             and (${filters.tipoProblema} = '' or tipo_problema = ${filters.tipoProblema})
+            and (${setorId}::uuid is null or categoria in (select sc.categoria from private.setor_categorias sc where sc.setor_id = ${setorId}::uuid))
         `,
       ]);
 
@@ -140,8 +145,9 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
     }
   });
 
-  app.get("/api/admin/demandas/:id/evidencia", async (req, res) => {
+  app.get("/api/admin/demandas/:id/evidencia", async (req: any, res) => {
     try {
+      const setorId = setorDoEscopo(req.user?.escopo);
       const sql = getPostgres();
       const [row] = await sql`
         select d.evidencia_foto_path, d.evidencia_foto_mime,
@@ -158,6 +164,7 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
                ) as evidencia_status_efetivo
         from public.demandas d
         where d.id = ${req.params.id}
+          and (${setorId}::uuid is null or d.categoria in (select sc.categoria from private.setor_categorias sc where sc.setor_id = ${setorId}::uuid))
         limit 1
       `;
       if (!row?.evidencia_foto_path || !EVIDENCIA_ACESSIVEIS.includes(String(row.evidencia_status_efetivo))) {
@@ -172,8 +179,9 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
     }
   });
 
-  app.get("/api/admin/demandas/:id/evidencias", async (req, res) => {
+  app.get("/api/admin/demandas/:id/evidencias", async (req: any, res) => {
     try {
+      const setorId = setorDoEscopo(req.user?.escopo);
       await ensureDemandEvidenceSchema();
       const sql = getPostgres();
       const rows = await sql`
@@ -182,6 +190,11 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
         where demanda_id = ${req.params.id}
           and storage_path is not null
           and moderacao_status in ('PENDENTE','REQUER_ANONIMIZACAO','APROVADA_PRIVADA')
+          and exists (
+            select 1 from public.demandas d
+            where d.id = demanda_evidencias.demanda_id
+              and (${setorId}::uuid is null or d.categoria in (select sc.categoria from private.setor_categorias sc where sc.setor_id = ${setorId}::uuid))
+          )
         order by ordem asc
       `;
 
@@ -199,8 +212,11 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
       }
 
       const [legacy] = await sql`
-        select evidencia_foto_path, evidencia_foto_mime, evidencia_moderacao_status
-        from public.demandas where id = ${req.params.id} limit 1
+        select d.evidencia_foto_path, d.evidencia_foto_mime, d.evidencia_moderacao_status
+        from public.demandas d
+        where d.id = ${req.params.id}
+          and (${setorId}::uuid is null or d.categoria in (select sc.categoria from private.setor_categorias sc where sc.setor_id = ${setorId}::uuid))
+        limit 1
       `;
       if (!legacy?.evidencia_foto_path || !EVIDENCIA_ACESSIVEIS.includes(String(legacy.evidencia_moderacao_status))) {
         return res.status(404).json({ error: "Evidência não encontrada." });
@@ -234,13 +250,16 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
     if (!expectedUpdatedAt) return res.status(400).json({ error: "Versão da demanda é obrigatória para atualização segura." });
 
     try {
+      const setorId = setorDoEscopo(req.user?.escopo);
       const sql = getPostgres();
       const result = await sql.begin(async (tx) => {
+        // Fora do setor do usuário a demanda "não existe" (404), sem revelar dados.
         const [atual] = await tx`
-          select id, protocolo, status, prioridade, updated_at::text as updated_at
-          from public.demandas
-          where id = ${req.params.id}
-          for update
+          select d.id, d.protocolo, d.status, d.prioridade, d.updated_at::text as updated_at
+          from public.demandas d
+          where d.id = ${req.params.id}
+            and (${setorId}::uuid is null or d.categoria in (select sc.categoria from private.setor_categorias sc where sc.setor_id = ${setorId}::uuid))
+          for update of d
         `;
         if (!atual) return null;
 
@@ -292,6 +311,8 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
               status_novo: status,
               prioridade: prioridadeFinal,
               expected_updated_at: expectedUpdatedAt,
+              perfil_acesso: req.user?.perfil_acesso || null,
+              setor_id: setorId,
             })}
           )
         `;

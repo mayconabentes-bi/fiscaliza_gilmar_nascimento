@@ -2,18 +2,26 @@ import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { getDb } from "./db.js";
 import { getHealthyPostgres } from "./postgres.js";
-import { isAllowedAdminProfile } from "./adminAccessPolicy.js";
+import {
+  isAllowedAdminProfile,
+  isSectorStaffProfile,
+  isSectorStaffRoute,
+  isStaffProfile,
+  type EscopoAcesso,
+} from "./adminAccessPolicy.js";
 
 type PrivateAdmin = {
   id?: string;
   type?: string;
   status?: string;
   perfil_acesso?: string;
+  escopo?: EscopoAcesso;
 };
 
 type PersistedAdminValidation = {
-  state: "allowed" | "inactive" | "forbidden_profile";
+  state: "allowed" | "inactive" | "forbidden_profile" | "missing_sector";
   perfil_acesso?: string;
+  escopo?: EscopoAcesso;
 };
 
 function jwtSecret() {
@@ -26,18 +34,38 @@ function jwtSecret() {
 async function revalidateProductionAdmin(id: string): Promise<PersistedAdminValidation> {
   const sql = await getHealthyPostgres();
   const [admin] = await sql`
-    select id, ativo, perfil_acesso
-    from private.admins
-    where id = ${id}
+    select a.id, a.ativo, a.perfil_acesso, a.setor_id, s.ativo as setor_ativo,
+           coalesce(array_agg(sc.categoria) filter (where sc.categoria is not null), '{}') as categorias
+    from private.admins a
+    left join private.setores s on s.id = a.setor_id
+    left join private.setor_categorias sc on sc.setor_id = s.id
+    where a.id = ${id}
+    group by a.id, a.ativo, a.perfil_acesso, a.setor_id, s.ativo
     limit 1
   `;
 
   if (!admin || admin.ativo !== true) return { state: "inactive" };
 
   const persistedProfile = String(admin.perfil_acesso || "");
-  return isAllowedAdminProfile(persistedProfile)
-    ? { state: "allowed", perfil_acesso: persistedProfile }
-    : { state: "forbidden_profile", perfil_acesso: persistedProfile };
+
+  if (isAllowedAdminProfile(persistedProfile)) {
+    return { state: "allowed", perfil_acesso: persistedProfile, escopo: { tipo: "TOTAL", setorId: null } };
+  }
+
+  if (isSectorStaffProfile(persistedProfile)) {
+    const categorias = Array.isArray(admin.categorias) ? admin.categorias.map(String) : [];
+    // Equipe de setor sem setor ativo ou sem categorias não acessa nada.
+    if (!admin.setor_id || admin.setor_ativo !== true || categorias.length === 0) {
+      return { state: "missing_sector", perfil_acesso: persistedProfile };
+    }
+    return {
+      state: "allowed",
+      perfil_acesso: persistedProfile,
+      escopo: { tipo: "SETOR", setorId: String(admin.setor_id), categorias },
+    };
+  }
+
+  return { state: "forbidden_profile", perfil_acesso: persistedProfile };
 }
 
 export function requireInternalAccess() {
@@ -55,7 +83,7 @@ export function requireInternalAccess() {
       });
     }
 
-    if (!user.id || user.type !== "admin" || user.status !== "ativo" || !isAllowedAdminProfile(user.perfil_acesso)) {
+    if (!user.id || user.type !== "admin" || user.status !== "ativo" || !isStaffProfile(user.perfil_acesso)) {
       return res.status(403).json({ error: "Acesso restrito ao administrador privado." });
     }
 
@@ -71,8 +99,22 @@ export function requireInternalAccess() {
           return res.status(403).json({ error: "Perfil administrativo sem permissão para este núcleo." });
         }
 
-        req.user = { ...user, perfil_acesso: persisted.perfil_acesso || user.perfil_acesso };
+        if (persisted.state === "missing_sector" || !persisted.escopo) {
+          return res.status(403).json({ error: "Usuário sem setor ativo configurado." });
+        }
+
+        // Negar por padrão: equipe de setor só acessa as rotas da lista fechada.
+        if (persisted.escopo.tipo === "SETOR" && !isSectorStaffRoute(req.method, req.originalUrl)) {
+          return res.status(403).json({ error: "Perfil de setor sem permissão para esta área." });
+        }
+
+        req.user = { ...user, perfil_acesso: persisted.perfil_acesso || user.perfil_acesso, escopo: persisted.escopo };
         return next();
+      }
+
+      // Ambiente local (SQLite) não possui setores: somente ADMIN/SUPER_ADMIN.
+      if (!isAllowedAdminProfile(user.perfil_acesso)) {
+        return res.status(403).json({ error: "Perfil de setor disponível apenas com a persistência de produção." });
       }
 
       const db = getDb();
@@ -83,7 +125,7 @@ export function requireInternalAccess() {
         db.close();
       }
 
-      req.user = user;
+      req.user = { ...user, escopo: { tipo: "TOTAL", setorId: null } };
       return next();
     } catch (error: any) {
       console.error("Falha ao revalidar administrador:", error);
