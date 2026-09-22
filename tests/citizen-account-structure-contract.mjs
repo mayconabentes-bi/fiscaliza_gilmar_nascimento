@@ -10,7 +10,7 @@ const privacy = read("src/pages/Privacidade.tsx");
 const terms = read("src/pages/Termos.tsx");
 const db = read("src/server/db.ts");
 const cep = read("src/server/cepLookup.ts");
-const migration = read("supabase/migrations/20260918154500_citizen_profile_cleanup.sql");
+const migration = read("supabase/migrations/20260922185900_citizen_profile_cleanup.sql");
 
 expect(!auth.includes("AGE_18_PLUS"), "Backend de cadastro não deve referenciar AGE_18_PLUS.");
 expect(auth.includes("type AgeBand"), "Backend deve usar o tipo AgeBand real.");

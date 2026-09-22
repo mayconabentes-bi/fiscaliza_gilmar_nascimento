@@ -10,7 +10,7 @@ const stats = read("src/server/ageIntelligence.ts");
 const radarRoutes = read("src/server/productionRadarRoutes.ts");
 const radarPage = read("src/pages/RadarTerritorial.tsx");
 const app = read("src/server/app.ts");
-const migration = read("supabase/migrations/20260918145150_age_intelligence_bands_only.sql");
+const migration = read("supabase/migrations/20260918145845_age_intelligence_bands_only.sql");
 
 for (const code of ["AGE_16_17", "AGE_18_24", "AGE_25_34", "AGE_35_44", "AGE_45_59", "AGE_60_PLUS"]) {
   expect(agePolicy.includes(code), `agePolicy deve aceitar ${code}.`);
