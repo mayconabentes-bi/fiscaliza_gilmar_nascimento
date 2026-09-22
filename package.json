@@ -31,6 +31,7 @@
     "test:devices": "node tests/device-matrix.mjs",
     "test:internal-access": "node tests/internal-access-contract.mjs",
     "test:sector-scope": "node tests/sector-scope-contract.mjs && tsx tests/sector-scope-runtime.ts",
+    "test:team-management": "node tests/team-management-contract.mjs && tsx tests/team-management-runtime.ts",
     "test:triage-admin-security": "node tests/triage-admin-security-contract.mjs && tsx tests/triage-admin-security-runtime.ts",
     "test:triage-record-integrity": "node tests/triage-record-integrity-contract.mjs && tsx tests/triage-record-integrity-runtime.ts",
     "test:triage-evidence-integrity": "node tests/triage-evidence-integrity-contract.mjs && tsx tests/triage-evidence-integrity-runtime.ts",

@@ -102,6 +102,8 @@ jobs:
         run: npm run test:triage-admin-security
       - name: Sector scope access control (Fase 1)
         run: npm run test:sector-scope
+      - name: Team management access control (Fase 1)
+        run: npm run test:team-management
       - name: T2 triage record integrity
         run: npm run test:triage-record-integrity
       - name: T3 triage evidence integrity
@@ -202,6 +204,8 @@ jobs:
         run: npm run test:triage-admin-security
       - name: Sector scope access control (Fase 1)
         run: npm run test:sector-scope
+      - name: Team management access control (Fase 1)
+        run: npm run test:team-management
       - name: T2 triage record integrity
         run: npm run test:triage-record-integrity
       - name: T3 triage evidence integrity
