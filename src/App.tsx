@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from "react-router-dom";
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
-import { CirclePlus, FileBarChart, FileText, Flag, Home as HomeIcon, LayoutDashboard, Lock, LogIn, LogOut, MapPinned, MoreHorizontal, Radar, Search, ShieldCheck, User } from "lucide-react";
+import { CirclePlus, FileBarChart, FileText, Flag, Home as HomeIcon, LayoutDashboard, Lock, LogIn, LogOut, MapPinned, MoreHorizontal, Radar, Search, ShieldCheck, User, Users } from "lucide-react";
 
 import Home from "./pages/Home";
 import NovaDemanda from "./pages/NovaDemanda";
@@ -11,6 +11,7 @@ const Login = lazy(() => import("./pages/Login"));
 const RegisterCidadao = lazy(() => import("./pages/RegisterCidadao"));
 const RecoverAccess = lazy(() => import("./pages/RecoverAccess"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const AdminEquipe = lazy(() => import("./pages/AdminEquipe"));
 const DashboardPrivado = lazy(() => import("./pages/DashboardPrivado"));
 const Metodologia = lazy(() => import("./pages/Metodologia"));
 const Estrategia2028 = lazy(() => import("./pages/Estrategia2028"));
@@ -45,7 +46,7 @@ function MobileNav({ user, onLogout }: { user: any; onLogout: () => void | Promi
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const isAdmin = user?.type === "admin" && ["ADMIN", "SUPER_ADMIN"].includes(user?.perfil_acesso);
   const isCitizen = user?.type === "cidadao";
-  const secondaryAdminPaths = ["/estrategia-2028", "/admin", "/admin/audit", "/relatorios"];
+  const secondaryAdminPaths = ["/estrategia-2028", "/admin", "/admin/equipe", "/admin/audit", "/relatorios"];
   const moreActive = secondaryAdminPaths.includes(location.pathname);
   const itemClass = (path: string) => `relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1.5 py-2 text-[10px] font-bold transition ${location.pathname === path ? "text-[#1f2e6e]" : "text-[#727d94]"}`;
   const actionClass = "relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1.5 py-2 text-[10px] font-bold text-[#727d94] transition hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#c94d06]";
@@ -58,6 +59,7 @@ function MobileNav({ user, onLogout }: { user: any; onLogout: () => void | Promi
   const adminMoreItems = [
     { to: "/estrategia-2028", label: "Estratégia", description: "Leitura estratégica", icon: Flag },
     { to: "/admin", label: "Governança", description: "Moderação e controles", icon: ShieldCheck },
+    { to: "/admin/equipe", label: "Equipe", description: "Usuários, papéis e setores", icon: Users },
     { to: "/admin/audit", label: "Auditoria", description: "Integridade e segurança", icon: Lock },
     { to: "/relatorios", label: "Relatórios", description: "Saídas analíticas", icon: FileBarChart },
   ];
@@ -201,7 +203,7 @@ function AppShell() {
   const onDemandForm = location.pathname === "/demandas/nova";
   const publicNavClass = (path: string) => `rounded-lg px-3 py-2 text-sm font-semibold transition ${location.pathname === path ? "bg-[#eef2fb] text-[#1f2e6e]" : "text-[#657089] hover:bg-white hover:text-[#1f2e6e]"}`;
   const privateNavClass = (path: string) => `rounded-lg px-3 py-2 text-sm font-bold transition ${location.pathname === path ? "bg-white text-[#1f2e6e] shadow-sm" : "text-[#657089] hover:bg-white/80 hover:text-[#1f2e6e]"}`;
-  const privateSection = location.pathname === "/dashboard" ? "Painel" : location.pathname === "/admin/demandas" ? "Triagem" : location.pathname === "/radar-manaus" ? "Radar territorial" : location.pathname === "/estrategia-2028" ? "Estratégia" : location.pathname === "/admin" ? "Governança" : location.pathname === "/admin/audit" ? "Auditoria" : location.pathname === "/relatorios" ? "Relatórios" : "Área privada";
+  const privateSection = location.pathname === "/dashboard" ? "Painel" : location.pathname === "/admin/demandas" ? "Triagem" : location.pathname === "/radar-manaus" ? "Radar territorial" : location.pathname === "/estrategia-2028" ? "Estratégia" : location.pathname === "/admin" ? "Governança" : location.pathname === "/admin/equipe" ? "Equipe" : location.pathname === "/admin/audit" ? "Auditoria" : location.pathname === "/relatorios" ? "Relatórios" : "Área privada";
 
   const publicOnly = (element: ReactNode) => authReady && isAdmin ? <Navigate to="/dashboard" replace /> : element;
   const citizenOnly = (element: ReactNode) => {
@@ -232,6 +234,7 @@ function AppShell() {
               <Link to="/radar-manaus" className={privateNavClass("/radar-manaus")}><span className="flex items-center gap-2"><MapPinned className="h-4 w-4" />Radar</span></Link>
               <Link to="/estrategia-2028" className={privateNavClass("/estrategia-2028")}><span className="flex items-center gap-2"><Flag className="h-4 w-4" />Estratégia</span></Link>
               <Link to="/admin" className={privateNavClass("/admin")}><span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4" />Governança</span></Link>
+              <Link to="/admin/equipe" className={privateNavClass("/admin/equipe")}><span className="flex items-center gap-2"><Users className="h-4 w-4" />Equipe</span></Link>
               <Link to="/admin/audit" className={privateNavClass("/admin/audit")}><span className="flex items-center gap-2"><Lock className="h-4 w-4" />Auditoria</span></Link>
               <Link to="/relatorios" className={privateNavClass("/relatorios")}><span className="flex items-center gap-2"><FileBarChart className="h-4 w-4" />Relatórios</span></Link>
               <div className="ml-2 flex items-center gap-2 border-l border-[#d7e0f2] pl-3"><div className="flex max-w-40 items-center gap-2 rounded-lg border border-[#dde4ef] bg-white px-3 py-2 text-sm font-semibold text-[#526078]"><User className="h-4 w-4" /><span className="truncate">{user.nome}</span></div><button onClick={handleLogout} aria-label="Sair" className="rounded-lg p-2 text-[#7b8599] transition hover:bg-red-50 hover:text-red-600"><LogOut className="h-4.5 w-4.5" /></button></div>
@@ -270,6 +273,7 @@ function AppShell() {
           <Route path="/dashboard" element={adminOnly(<DashboardPrivado />)} />
           <Route path="/admin" element={adminOnly(<AdminDashboard />)} />
           <Route path="/admin/demandas" element={adminOnly(<AdminDemandas />)} />
+          <Route path="/admin/equipe" element={adminOnly(<AdminEquipe user={user} />)} />
           <Route path="/admin/audit" element={adminOnly(<SecurityAudit />)} />
           <Route path="/radar-manaus" element={adminOnly(<RadarTerritorial />)} />
           <Route path="/estrategia-2028" element={adminOnly(<Estrategia2028 />)} />
