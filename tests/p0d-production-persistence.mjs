@@ -15,14 +15,15 @@ const evidence = read('src/server/evidenceStorage.ts');
 const mobile = read('src/server/mobileConversion.ts');
 const backup = read('src/modules/infraestrutura-operacional/infrastructure/backup/BackupService.ts');
 const migration = read('supabase/migrations/20260915040000_p0d_production_persistence.sql');
-const vercel = read('vercel.json');
+const dockerfile = read('Dockerfile');
+const server = read('server.ts');
 
 assert(app.includes('setupCitizenAuthPostgres') && app.includes('setupCitizenDemandPostgres'), 'Produção deve registrar fluxos cidadãos Postgres.');
 assert(app.includes('setupCitizenCompliancePostgres') && app.includes('setupPrivateAdminPostgresRoutes'), 'Produção deve registrar compliance e triagem Postgres.');
 assert(app.includes('Rotas internas ainda dependentes do legado SQLite permanecem fail-closed'), 'Módulos SQLite não migrados devem permanecer fail-closed em produção.');
 assert(ready.includes('DATABASE_URL') && ready.includes('SUPABASE_EVIDENCE_BUCKET'), 'Readiness deve validar Postgres e Storage.');
 assert(ready.includes('checkEvidenceBucketPrivate') && ready.includes('supabase-private'), 'Readiness deve falhar quando o bucket de evidências não for privado.');
-assert(!ready.includes('CIVIC_DB_PATH') && !ready.includes('BACKUP_EXTERNAL_DIR'), 'Produção Vercel não deve depender de caminhos SQLite locais.');
+assert(!ready.includes('CIVIC_DB_PATH') && !ready.includes('BACKUP_EXTERNAL_DIR'), 'Produção não deve depender de caminhos SQLite locais.');
 assert(postgres.includes('select 1 as ok') && postgres.includes('ssl: "require"'), 'Cliente Postgres deve possuir health check e TLS.');
 assert(demand.includes('aviso_privacidade_versao') && demand.includes('aviso_privacidade_data'), 'Demanda Postgres deve registrar trilha do aviso de privacidade.');
 assert(demand.includes('uploadDemandEvidence') && demand.includes('evidencia_moderacao_status') && demand.includes('PENDENTE'), 'Evidência de produção deve ir ao Storage e iniciar pendente.');
@@ -42,6 +43,9 @@ assert(mobile.includes('process.env.NODE_ENV !== "production"') && mobile.includ
 assert(backup.includes("process.env.NODE_ENV === 'production'") && backup.includes('Backup SQLite é exclusivo'), 'Backup SQLite deve recusar execução em produção.');
 assert(migration.includes('private.admins') && migration.includes('public.logs_auditoria'), 'Migration deve cobrir administração e auditoria.');
 assert(migration.includes('enable row level security') && migration.includes('revoke all'), 'Migration deve bloquear acesso direto anônimo/autenticado.');
-assert(vercel.includes('/api/index') && vercel.includes('/ready'), 'Vercel deve encaminhar API/readiness ao backend serverless.');
+assert(!fs.existsSync('vercel.json') && !fs.existsSync('api/index.ts'), 'Produção roda no Railway via Dockerfile; artefatos serverless da Vercel não devem voltar.');
+assert(dockerfile.includes('NODE_ENV=production') && dockerfile.includes('CMD ["npm", "start"]'), 'Dockerfile deve subir o servidor Node em modo produção.');
+assert(server.includes('assertProductionReadiness') && server.includes('process.env.PORT') && server.includes('"0.0.0.0"'), 'Servidor deve validar readiness, usar PORT do Railway e escutar em 0.0.0.0.');
+assert(ready.includes('RAILWAY_PUBLIC_DOMAIN') && !ready.includes('VERCEL_URL'), 'Origens confiáveis devem incluir o domínio público do Railway e não depender de variáveis da Vercel.');
 
 console.log('p0d-production-persistence: ok');

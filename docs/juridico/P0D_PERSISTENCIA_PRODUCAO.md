@@ -4,7 +4,7 @@ Versão: 2026-09-P0-D
 
 ## Arquitetura adotada
 
-No ambiente Vercel de produção, o FISCALIZE não deve usar SQLite nem o filesystem efêmero como fonte de verdade.
+Em produção, o FISCALIZE roda como serviço Docker no Railway (migrado da Vercel em 2026-09). O filesystem do container é efêmero e é substituído a cada deploy; por isso o FISCALIZE não deve usar SQLite nem arquivos locais como fonte de verdade.
 
 - Banco transacional: PostgreSQL acessado por `DATABASE_URL`.
 - Evidências fotográficas: Supabase Storage por backend, em bucket configurado por `SUPABASE_EVIDENCE_BUCKET`.
@@ -14,7 +14,7 @@ No ambiente Vercel de produção, o FISCALIZE não deve usar SQLite nem o filesy
 
 ## Fail-closed em produção
 
-Rotas que ainda dependem do legado SQLite não são registradas como funcionalidades normais no runtime de produção. Módulos internos ainda não migrados retornam indisponibilidade até receberem implementação Postgres específica. Isso evita gravação acidental em disco efêmero da Vercel.
+Rotas que ainda dependem do legado SQLite não são registradas como funcionalidades normais no runtime de produção. Módulos internos ainda não migrados retornam indisponibilidade até receberem implementação Postgres específica. Isso evita gravação acidental no disco efêmero do container.
 
 O núcleo público já migrado inclui:
 
@@ -67,7 +67,7 @@ A CI do commit `0163b45` concluiu com sucesso na execução #275. Alterações d
 
 ## Backup
 
-O backup de produção não pode ser implementado copiando arquivos dentro da Vercel. O serviço `BackupService` recusa execução quando `NODE_ENV=production`.
+O backup de produção não pode ser implementado copiando arquivos dentro do container de hospedagem. O serviço `BackupService` recusa execução quando `NODE_ENV=production`.
 
 O projeto Supabase está atualmente no plano Free. Nesse cenário, o procedimento adotado é manter backup lógico externo do PostgreSQL.
 
