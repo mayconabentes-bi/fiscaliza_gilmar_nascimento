@@ -15,7 +15,7 @@ function createPostgresClient() {
   return postgres(connectionString, {
     // O projeto usa o Transaction Pooler do Supabase (porta 6543). Mantemos
     // um pool local pequeno, mas maior que 1, porque as telas privadas fazem
-    // algumas leituras concorrentes na mesma instância quente da Vercel.
+    // algumas leituras concorrentes na mesma instância.
     max: 3,
     prepare: false,
     ssl: "require",

@@ -45,10 +45,10 @@ export function allowedOrigins() {
     const origin = value.trim();
     if (origin) origins.add(origin);
   }
-  for (const host of [process.env.VERCEL_URL, process.env.VERCEL_BRANCH_URL, process.env.VERCEL_PROJECT_PRODUCTION_URL]) {
-    const normalized = host?.trim();
-    if (normalized) origins.add(`https://${normalized}`);
-  }
+  // Railway injeta o domínio público gerado do serviço (sem protocolo).
+  // Domínios personalizados continuam sendo declarados em APP_ORIGIN.
+  const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN?.trim();
+  if (railwayDomain) origins.add(`https://${railwayDomain}`);
   return [...origins];
 }
 

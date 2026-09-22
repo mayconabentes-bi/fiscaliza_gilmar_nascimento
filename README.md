@@ -55,7 +55,9 @@ O Radar pode consumir **fontes públicas de dados** para análise territorial. I
 - React + TypeScript + Vite;
 - Tailwind CSS;
 - Express + Node.js;
-- SQLite / Better-SQLite3;
+- PostgreSQL + Supabase Storage em produção;
+- SQLite / Better-SQLite3 em desenvolvimento e testes locais;
+- Docker + Railway para hospedagem;
 - JWT em cookie HttpOnly;
 - bcrypt para senhas;
 - Helmet, CORS, rate limiting e validações de origem;
@@ -102,6 +104,16 @@ npm run audit:high
 ```
 
 O contrato `test:internal-access` existe para impedir regressões que permitam acesso ao núcleo privado por cidadão, visitante ou identidade legada.
+
+## Produção (Railway)
+
+A produção roda no Railway como serviço Docker, construído pelo `Dockerfile` da raiz. Banco e evidências ficam no Supabase (PostgreSQL + Storage privado); o disco do container é efêmero e não guarda dados.
+
+- URL pública: https://fiscalizagilmarnascimento-production.up.railway.app
+- Verificação de saúde: `/health` (processo) e `/ready` (Postgres, Storage e flags públicas).
+- O Railway define `PORT` e `RAILWAY_PUBLIC_DOMAIN`; o domínio gerado já é aceito como origem confiável. Domínios personalizados devem ser incluídos em `APP_ORIGIN` (separados por vírgula, sem barra final).
+- Variáveis obrigatórias em produção (o servidor não sobe sem elas): `JWT_SECRET`, `DATABASE_URL`, `APP_ORIGIN`, `DPO_CONTACT_EMAIL`, `LGPD_CONSENT_VERSION`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_EVIDENCE_BUCKET`.
+- Se o domínio de produção mudar, atualize também as tags `og:image`/`twitter:image` do `index.html`.
 
 ## Independência
 

@@ -14,7 +14,7 @@ Nenhum fornecedor deve receber mais dados do que o necessário para sua função
 
 | Fornecedor / componente | Função | Dados potencialmente envolvidos | Papel esperado | Confirmação pendente antes do go-live |
 |---|---|---|---|---|
-| Vercel ou provedor de hospedagem equivalente | hospedagem, entrega, funções e logs | requisições HTTP, logs técnicos e conteúdo processado pela aplicação | operador ou agente independente conforme serviço contratado | confirmar projeto de produção, região/configuração, retenção de logs, contrato/DPA e variáveis reais |
+| Railway (hospedagem de produção desde 2026-09; substituiu a Vercel) | hospedagem do container da aplicação, entrega HTTP e logs | requisições HTTP, logs técnicos e conteúdo processado pela aplicação | operador ou agente independente conforme serviço contratado | confirmar região do serviço, retenção de logs, contrato/DPA e variáveis reais; desativar ou excluir o projeto legado na Vercel e seus logs |
 | armazenamento persistente da aplicação | banco cívico | contas, demandas, contatos, histórico e metadados | infraestrutura sob instruções do controlador | confirmar tecnologia efetiva de produção, região, backup, criptografia e acesso |
 | armazenamento de evidências | arquivos de foto | imagens enviadas por cidadãos e metadados mínimos | infraestrutura sob instruções do controlador | confirmar diretório/storage real, controle de acesso, retenção e descarte |
 | serviço de backup externo | continuidade e recuperação | cópia do banco e eventualmente evidências | operador | confirmar destino, criptografia, acesso e rotação real em até 35 dias ou prazo documentado |
