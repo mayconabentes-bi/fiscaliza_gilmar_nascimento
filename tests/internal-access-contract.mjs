@@ -51,7 +51,7 @@ expect(serverApp.includes('setupPrivateAdminAuth(app)'), 'Aplicação deve monta
 expect(serverApp.includes('Rotas internas ainda dependentes do legado SQLite permanecem fail-closed'), 'Módulos internos não migrados devem permanecer fail-closed em produção.');
 
 expect(auth.includes('/api/auth/admin/login'), 'Admin deve usar endpoint privado dedicado.');
-expect(auth.includes('type: "admin"') && auth.includes('perfil_acesso: perfil') && auth.includes('normalizeAdminProfile'), 'JWT privado deve carregar apenas perfil administrativo normalizado.');
+expect(auth.includes('type: "admin"') && auth.includes('perfil_acesso: perfil') && auth.includes('normalizeStaffProfile'), 'JWT privado deve carregar apenas perfil administrativo normalizado.');
 expect(auth.includes('sameSite: "strict"'), 'Cookie do ADMIN deve usar SameSite=Strict.');
 expect(!auth.includes('sameSite: "none"'), 'Cookie do ADMIN não pode aceitar contexto cross-site.');
 

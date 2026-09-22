@@ -100,6 +100,8 @@ jobs:
         run: npm run test:internal-access
       - name: T1 admin security attack suite
         run: npm run test:triage-admin-security
+      - name: Sector scope access control (Fase 1)
+        run: npm run test:sector-scope
       - name: T2 triage record integrity
         run: npm run test:triage-record-integrity
       - name: T3 triage evidence integrity
@@ -198,6 +200,8 @@ jobs:
         run: npm run test:internal-access
       - name: T1 admin security attack suite
         run: npm run test:triage-admin-security
+      - name: Sector scope access control (Fase 1)
+        run: npm run test:sector-scope
       - name: T2 triage record integrity
         run: npm run test:triage-record-integrity
       - name: T3 triage evidence integrity
