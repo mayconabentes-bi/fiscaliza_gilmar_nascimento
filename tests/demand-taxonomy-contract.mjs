@@ -10,8 +10,8 @@ const local = read("src/server/routes.ts");
 const admin = read("src/pages/AdminDemandas.tsx");
 const adminFast = read("src/server/productionFastAdminRoutes.ts");
 const radar = read("src/server/productionRadarRoutes.ts");
-const expand = read("supabase/migrations/20260918151000_demand_taxonomy_expand.sql");
-const enforce = read("supabase/migrations/20260918152000_demand_taxonomy_enforce.sql");
+const expand = read("supabase/migrations/20260918151404_demand_taxonomy_expand.sql");
+const enforce = read("supabase/migrations/20260918152427_demand_taxonomy_enforce.sql");
 
 for (const code of [
   "INFRAESTRUTURA_URBANA","LIMPEZA_URBANA","MOBILIDADE_TRANSITO","MEIO_AMBIENTE",

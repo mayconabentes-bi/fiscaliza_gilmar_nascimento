@@ -9,7 +9,7 @@ const agePolicy = read('src/server/agePolicy.ts');
 const auth = read('src/server/citizenAuthPostgres.ts');
 const demand = read('src/server/citizenDemandPostgres.ts');
 const foundationMigration = read('supabase/migrations/20260915160000_p0e_age_protection.sql');
-const effectiveMigration = read('supabase/migrations/20260918145150_age_intelligence_bands_only.sql');
+const effectiveMigration = read('supabase/migrations/20260918145845_age_intelligence_bands_only.sql');
 
 expectIncludes(agePolicy, [
   'UNDER_16', 'AGE_16_17', 'AGE_18_24', 'AGE_25_34', 'AGE_35_44', 'AGE_45_59', 'AGE_60_PLUS',
