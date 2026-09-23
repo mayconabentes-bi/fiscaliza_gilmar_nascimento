@@ -27,10 +27,20 @@ function sourceFiles(dir) {
   });
 }
 
+// Frontend — dois níveis de guarda:
+// - adminOnly: somente ADMIN/SUPER_ADMIN (equipe de setor é devolvida à Triagem);
+// - internalOnly: ADMIN/SUPER_ADMIN + COORDENADOR/ATENDENTE, usado SOMENTE na Triagem.
+// A autorização real continua no backend (requireInternalAccess + lista fechada de rotas).
 expect(app.includes('const adminOnly ='), 'Rotas privadas devem usar guarda ADMIN no frontend.');
-for (const route of ['/dashboard', '/admin', '/admin/demandas', '/admin/audit', '/radar-manaus', '/estrategia-2028', '/relatorios']) {
+expect(app.includes('const internalOnly ='), 'Triagem deve usar guarda de usuário interno no frontend.');
+for (const route of ['/dashboard', '/admin', '/admin/equipe', '/admin/audit', '/radar-manaus', '/estrategia-2028', '/relatorios']) {
   expect(app.includes(`path="${route}" element={adminOnly(`), `${route} deve exigir ADMIN no frontend.`);
 }
+expect(app.includes('path="/admin/demandas" element={internalOnly('), '/admin/demandas deve aceitar usuário interno (admin ou equipe de setor).');
+expect(app.split('element={internalOnly(').length - 1 === 1, 'Somente a Triagem pode ser liberada para a equipe de setor no frontend.');
+expect(app.includes('["ADMIN", "SUPER_ADMIN"].includes(user?.perfil_acesso)'), 'Acesso total no frontend deve ser somente ADMIN e SUPER_ADMIN.');
+expect(app.includes('const SECTOR_STAFF_PROFILES = ["COORDENADOR", "ATENDENTE"];'), 'Equipe de setor no frontend deve ser somente COORDENADOR e ATENDENTE.');
+expect(app.includes('if (isSectorStaff) return <Navigate to={privateHome} replace />;'), 'Equipe de setor deve ser devolvida à Triagem ao tentar abrir rota de ADMIN.');
 
 expect(access.includes('user.type !== "admin"'), 'Middleware deve aceitar somente token type=admin.');
 expect(access.includes('from "./adminAccessPolicy.js"'), 'Middleware deve usar política central de perfis ADMIN e SUPER_ADMIN.');
@@ -120,4 +130,4 @@ expect(strategyPage.includes('/api/admin/strategy/2028'), 'Estratégia deve ser 
 expect(!strategyPage.includes('Operação eleitoral') && !strategyPage.includes('Sala de situação'), 'Conteúdo estratégico não pode permanecer no bundle frontend.');
 expect(strategyRoutes.includes('Cache-Control') && strategyRoutes.includes('no-store'), 'Resposta estratégica não deve ser cacheada publicamente.');
 
-console.log('Private-admin attack contract OK: ADMIN/SUPER_ADMIN, revalidação Postgres em produção, cadastro minimizado, cookies endurecidos e ausência global de arquitetura institucional.');
+console.log('Private-admin attack contract OK: ADMIN/SUPER_ADMIN com acesso total, equipe de setor limitada à Triagem, revalidação Postgres em produção, cadastro minimizado, cookies endurecidos e ausência global de arquitetura institucional.');

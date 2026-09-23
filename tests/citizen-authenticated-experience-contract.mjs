@@ -51,7 +51,8 @@ for (const source of [postgres, local]) {
   expect(source.includes('Cache-Control", "no-store, private"'), "Resposta da conta deve impedir cache público.");
 }
 
-expect(app.includes('{!isAdmin && !isCitizen && <footer'), "Conta cidadã não deve exibir o rodapé/navegação pública.");
-expect(app.includes('!isAdmin && !isCitizen && !onDemandForm && <LGPDConsent />'), "Conta autenticada não deve repetir o aviso público de consentimento.");
+// isInternal = ADMIN/SUPER_ADMIN + equipe de setor (COORDENADOR/ATENDENTE).
+expect(app.includes('{!isInternal && !isCitizen && <footer'), "Conta cidadã e equipe interna não devem exibir o rodapé/navegação pública.");
+expect(app.includes('!isInternal && !isCitizen && !onDemandForm && <LGPDConsent />'), "Conta autenticada (cidadã ou equipe interna) não deve repetir o aviso público de consentimento.");
 
 console.log("Citizen authenticated experience contract OK: Meus registros, Registrar, Acompanhar, Perfil e Sair.");
