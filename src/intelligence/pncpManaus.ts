@@ -55,7 +55,7 @@ async function fetchJson(url: string, timeoutMs = 18000, attempts = 3) {
       const text = await response.text();
       if (!response.ok) {
         const retryable = response.status === 429 || response.status >= 500;
-        const error = new Error(`HTTP ${response.status}: ${text.slice(0, 160).replace(/\\s+/g, " ")}`);
+        const error = new Error(`HTTP ${response.status}: ${text.slice(0, 160).replace(/\s+/g, " ")}`);
         lastError = error;
         // Credenciais/parâmetros incorretos não devem ser disfarçados como falha temporária.
         if (!retryable) break;
@@ -81,7 +81,7 @@ async function fetchJson(url: string, timeoutMs = 18000, attempts = 3) {
           try {
             return JSON.parse(normalized);
           } catch {
-            const error = new Error(`PNCP respondeu JSON inválido: ${normalized.slice(0, 120).replace(/\\s+/g, " ")}`);
+            const error = new Error(`PNCP respondeu JSON inválido: ${normalized.slice(0, 120).replace(/\s+/g, " ")}`);
             if (attempt === attempts) throw error;
             lastError = error;
           }
