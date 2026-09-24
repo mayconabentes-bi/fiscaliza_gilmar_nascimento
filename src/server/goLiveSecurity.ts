@@ -1,4 +1,5 @@
 import type { Express, Request, Response, NextFunction } from "express";
+import { timingSafeEqual } from "node:crypto";
 import { checkPostgresConnection } from "./postgres.js";
 import { checkEvidenceBucketPrivate, EvidenceStorageUnavailableError, validateStorageServiceKey } from "./evidenceStorage.js";
 import { getDb } from "./db.js";
@@ -62,9 +63,39 @@ export function csrfOriginGuard(req: Request, res: Response, next: NextFunction)
   next();
 }
 
+// One-account QA gate; remains closed on production even if QA variables are accidentally copied.
+const QA_ORIGIN = "https://fiscalize-homologacao-homologacao.up.railway.app";
+const QA_SUPABASE = "https://zqxouixpokuprqqscnwf.supabase.co";
+const QA_EMAIL = /^fiscalize-qa-[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}@example[.]invalid$/;
+
+function allowIsolatedQaRegistration(req: Request): boolean {
+  const token = process.env.FISCALIZE_QA_REGISTRATION_TOKEN || "";
+  const supplied = req.get("x-fiscalize-qa-registration-token") || "";
+  if (
+    process.env.FISCALIZE_QA_REGISTRATION_ENABLED !== "true" ||
+    process.env.ENABLE_PUBLIC_REGISTRATION === "true" ||
+    process.env.NODE_ENV !== "production" ||
+    process.env.RAILWAY_ENVIRONMENT_NAME !== "homologacao" ||
+    process.env.RAILWAY_SERVICE_NAME !== "fiscalize-homologacao" ||
+    process.env.APP_ORIGIN !== QA_ORIGIN ||
+    process.env.SUPABASE_URL !== QA_SUPABASE ||
+    process.env.RAILWAY_PUBLIC_DOMAIN !== new URL(QA_ORIGIN).host ||
+    req.get("origin") !== QA_ORIGIN ||
+    req.body?.nome_completo !== "FISCALIZE QA AUTOMATIZADO" ||
+    req.body?.municipio !== "Manaus" ||
+    req.body?.bairro !== "QA AUTOMATIZADO" ||
+    req.body?.faixa_etaria !== "AGE_25_34" ||
+    typeof req.body?.email !== "string" ||
+    !QA_EMAIL.test(req.body.email) ||
+    token.length < 32 ||
+    supplied.length !== token.length
+  ) return false;
+  return timingSafeEqual(Buffer.from(supplied), Buffer.from(token));
+}
+
 export function citizenRegistrationGuard(req: Request, res: Response, next: NextFunction) {
   if (req.path !== "/api/auth/register/cidadao" || req.method !== "POST") return next();
-  if (process.env.NODE_ENV === "production" && process.env.ENABLE_PUBLIC_REGISTRATION !== "true") {
+  if (process.env.NODE_ENV === "production" && process.env.ENABLE_PUBLIC_REGISTRATION !== "true" && !allowIsolatedQaRegistration(req)) {
     return res.status(503).json({ error: "Cadastro público ainda não habilitado neste ambiente." });
   }
   if (req.body?.aceite_lgpd !== true || req.body?.aceite_codigo !== true) {
