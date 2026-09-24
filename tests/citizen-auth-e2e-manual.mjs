@@ -5,6 +5,9 @@ import postgres from "postgres";
 // Manual-only E2E against an explicitly configured environment.
 // The DB connection must point to the SAME database as TARGET_BASE_URL.
 // QA DB role has EXECUTE only on two constrained security-definer functions.
+const HOMOLOGATION_ORIGIN = "https://fiscalize-homologacao-homologacao.up.railway.app";
+const HOMOLOGATION_DB_REF = "zqxouixpokuprqqscnwf";
+const EXPECTED_QA_ROLE = "fiscalize_qa_runner";
 const base = process.env.FISCALIZE_QA_BASE_URL;
 const databaseUrl = process.env.FISCALIZE_QA_DATABASE_URL;
 if (!base || !databaseUrl) throw new Error("QA URL and QA database connection are required.");
@@ -13,10 +16,23 @@ if (url.protocol !== "https:" || url.username || url.password || url.search || u
   throw new Error("QA URL must be an HTTPS origin only.");
 }
 const allowed = process.env.FISCALIZE_QA_ALLOWED_ORIGIN;
-if (!allowed || url.origin !== new URL(allowed).origin || allowed !== url.origin) {
+if (!allowed || url.origin !== HOMOLOGATION_ORIGIN || allowed !== HOMOLOGATION_ORIGIN) {
   throw new Error("QA target does not exactly match explicit allowlisted origin.");
 }
 
+// Refuse to run if configuration points to production or uses a privileged DB account.
+const dbConnection = new URL(databaseUrl);
+const dbUser = decodeURIComponent(dbConnection.username);
+const host = dbConnection.hostname.toLowerCase();
+const directHost = host === `db.${HOMOLOGATION_DB_REF}.supabase.co`;
+const poolerHost = host.endsWith(".pooler.supabase.com");
+if (dbConnection.protocol !== "postgresql:" && dbConnection.protocol !== "postgres:") {
+  throw new Error("QA connection must use PostgreSQL.");
+}
+if (!(directHost && dbUser === EXPECTED_QA_ROLE) &&
+    !(poolerHost && dbUser === `${EXPECTED_QA_ROLE}.${HOMOLOGATION_DB_REF}`)) {
+  throw new Error("QA DB host, project ref or technical role does not match isolated homologation.");
+}
 const sql = postgres(databaseUrl, { max: 1, prepare: false, ssl: "require", connect_timeout: 5 });
 const id = randomUUID();
 const email = `fiscalize-qa-${id}@example.invalid`;
@@ -40,6 +56,8 @@ async function post(path, body) {
   return { status: res.status, id: typeof payload.id === "string" ? payload.id : null, hasUser: Boolean(payload.user) };
 }
 try {
+  const identity = await sql`select current_user as role`;
+  assert.equal(identity[0]?.role, EXPECTED_QA_ROLE, "QA login did not use restricted technical role");
   const existing = await sql`select id from public.fiscalize_qa_lookup_citizen(${email})`;
   assert.equal(existing.length, 0, "QA identity collision");
   const reg = await post("/api/auth/register/cidadao", {
