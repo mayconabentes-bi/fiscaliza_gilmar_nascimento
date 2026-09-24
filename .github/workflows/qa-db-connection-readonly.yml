@@ -1,0 +1,26 @@
+name: Homologation QA DB permission probe (read only)
+on:
+  push:
+    branches:
+      - fix/citizen-login-contract-diagnostics-20260924
+    paths:
+      - .github/workflows/qa-db-connection-readonly.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  restricted-db-readonly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    environment: citizen-auth-qa
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Verify restricted QA login against staging only (read only)
+        env:
+          FISCALIZE_QA_DATABASE_URL: ${{ secrets.FISCALIZE_QA_DATABASE_URL }}
+        run: node tests/qa-db-connection-readonly.mjs
