@@ -9,7 +9,18 @@ const HOMOLOGATION_ORIGIN = "https://fiscalize-homologacao-homologacao.up.railwa
 const HOMOLOGATION_DB_REF = "zqxouixpokuprqqscnwf";
 const EXPECTED_QA_ROLE = "fiscalize_qa_runner";
 const base = process.env.FISCALIZE_QA_BASE_URL;
-const databaseUrl = process.env.FISCALIZE_QA_DATABASE_URL;
+// Build the QA database URL using the already-verified restricted-role password.
+// Do not parse/reuse old admin or incorrectly encoded database connection secrets.
+const dbPassword = process.env.FISCALIZE_QA_DB_PASSWORD;
+const registrationToken = process.env.FISCALIZE_QA_REGISTRATION_TOKEN;
+if (!dbPassword || !registrationToken || registrationToken.length < 32) {
+  throw new Error("QA restricted DB password and distinct registration token required.");
+}
+const dbTarget = new URL("postgresql://aws-0-us-west-2.pooler.supabase.com:5432/postgres");
+dbTarget.username = "fiscalize_qa_runner.zqxouixpokuprqqscnwf";
+dbTarget.password = dbPassword;
+dbTarget.searchParams.set("sslmode", "require");
+const databaseUrl = dbTarget.toString();
 if (!base || !databaseUrl) throw new Error("QA URL and QA database connection are required.");
 const url = new URL(base);
 if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash || url.pathname !== "/") {
@@ -43,10 +54,14 @@ let outcome = "NOT_STARTED";
 let cleanup = "NOT_REQUIRED";
 const timeoutMs = 12000;
 
-async function post(path, body) {
+async function post(path, body, isRegistration = false) {
   const res = await fetch(new URL(path, url), {
     method: "POST",
-    headers: { "content-type": "application/json", "cache-control": "no-store" },
+    headers: {
+      "content-type": "application/json", "cache-control": "no-store",
+      origin: HOMOLOGATION_ORIGIN,
+      ...(isRegistration ? { "x-fiscalize-qa-registration-token": registrationToken } : {}),
+    },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(timeoutMs),
     redirect: "error",
@@ -64,7 +79,7 @@ try {
     nome_completo: "FISCALIZE QA AUTOMATIZADO",
     email, password, municipio: "Manaus", bairro: "QA AUTOMATIZADO",
     faixa_etaria: "AGE_25_34", aceite_codigo: true, aceite_lgpd: true,
-  });
+  }, true);
   outcome = `REGISTER_HTTP_${reg.status}`;
   if (reg.status !== 201 || !reg.id) throw new Error(outcome);
   registered = true;
