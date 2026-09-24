@@ -12,6 +12,8 @@ process.env.PNCP_TIMEOUT_MS = "5000";
 
 const originalFetch = globalThis.fetch;
 const { loadPncpManausContracts } = await import("../dist-server/src/intelligence/pncpManaus.js");
+const { manausPublicEntities } = await import("../dist-server/src/intelligence/manausPublicEntities.js");
+const entityCount = manausPublicEntities().filter((entity) => entity.ativo).length;
 
 function contract(cnpj) {
   return {
@@ -49,7 +51,7 @@ try {
   assert.equal(attempts.get("22222222000122"), 1);
   assert.equal(peak, 1, "órgãos não devem consultar o PNCP simultaneamente");
   assert.equal(recovered.availability, "available");
-  assert.equal(recovered.data.length, 2);
+  assert.equal(recovered.data.length, entityCount, "inclui os quatro órgãos padrão e os dois órgãos de teste");
 
   attempts.clear();
   globalThis.fetch = async (input) => {
@@ -62,7 +64,7 @@ try {
   const permanent = await loadPncpManausContracts(2026);
   assert.equal(attempts.get("11111111000111"), 1, "4xx permanente não pode repetir");
   assert.equal(permanent.availability, "degraded");
-  assert.equal(permanent.data.length, 1);
+  assert.equal(permanent.data.length, entityCount - 1, "somente o órgão com 400 deve faltar");
   assert.match(permanent.error || "", /HTTP 400/);
 
   attempts.clear();
