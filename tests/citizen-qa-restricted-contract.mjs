@@ -10,7 +10,7 @@ assert.match(sql, /REVOKE ALL ON FUNCTION public\.fiscalize_qa_lookup_citizen\(t
 assert.match(sql, /REVOKE ALL ON FUNCTION public\.fiscalize_qa_delete_citizen\(uuid,text\) FROM PUBLIC/);
 assert.match(sql, /p_email !~ '\^fiscalize-qa-/);
 assert.doesNotMatch(sql, /p_email <> \('fiscalize-qa-' \|\| p_id/, "Server ID is NOT email random UUID");
-assert.match(sql, /u\.id = p_id AND u\.email = p_email/);
+assert.match(sql, /u\.id = p_id\s+AND u\.email = p_email/);
 assert.match(sql, /u\.nome_completo = 'FISCALIZE QA AUTOMATIZADO'/);
 assert.match(sql, /u\.created_at >= pg_catalog\.now\(\) - interval '1 hour'/);
 for (const table of ["agradecimentos_propostas","apoios_qualificados","comentarios_tecnicos","demandas","denuncias","propostas_civicas","publicacoes"]) {
