@@ -21,9 +21,21 @@ assert.match(script, /HOMOLOGATION_ORIGIN/);
 assert.match(script, /HOMOLOGATION_DB_REF/);
 assert.match(script, /EXPECTED_QA_ROLE/);
 assert.match(script, /current_user as role/);
+assert.match(script, /FISCALIZE_QA_DB_PASSWORD/);
+assert.match(script, /FISCALIZE_QA_REGISTRATION_TOKEN/);
+assert.match(script, /x-fiscalize-qa-registration-token/);
+const gate = readFileSync("src/server/goLiveSecurity.ts", "utf8");
+for (const check of [
+  "FISCALIZE_QA_REGISTRATION_ENABLED", "RAILWAY_ENVIRONMENT_NAME",
+  "RAILWAY_SERVICE_NAME", "QA_SUPABASE", "QA_ORIGIN",
+  "timingSafeEqual", "QA_EMAIL"
+]) assert.ok(gate.includes(check), "QA gate missing " + check);
 const workflow = readFileSync(".github/workflows/citizen-auth-e2e-manual.yml", "utf8");
 assert.match(workflow, /FISCALIZE_QA_BASE_URL: https:\/\/fiscalize-homologacao-homologacao[.]up[.]railway[.]app/);
 assert.doesNotMatch(workflow, /secrets[.]FISCALIZE_QA_BASE_URL|vars[.]FISCALIZE_QA_ALLOWED_ORIGIN/, "Old production URL sources cannot control manual QA target");
+assert.match(workflow, /secrets[.]FISCALIZE_QA_DB_PASSWORD/);
+assert.match(workflow, /secrets[.]FISCALIZE_QA_REGISTRATION_TOKEN/);
+assert.doesNotMatch(workflow, /secrets[.]FISCALIZE_QA_DATABASE_URL/, "Never reuse old DB URL secret");
 assert.match(script, /type: "cidadao"/);
 assert.match(script, /fiscalize_qa_lookup_citizen/);
 assert.match(script, /fiscalize_qa_delete_citizen/);
