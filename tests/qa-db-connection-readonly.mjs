@@ -1,0 +1,47 @@
+import assert from "node:assert/strict";
+import postgres from "postgres";
+
+// Read-only probe. Never emit credentials, database host or connection errors
+// containing URLs. Exit before connecting if ANY target-identity check fails.
+const raw = process.env.FISCALIZE_QA_DATABASE_URL;
+if (!raw) throw new Error("QA_DATABASE_SECRET_MISSING");
+let target;
+try { target = new URL(raw); } catch { throw new Error("QA_DATABASE_URL_INVALID"); }
+const ref = "zqxouixpokuprqqscnwf";
+const user = decodeURIComponent(target.username);
+const direct = target.hostname === `db.${ref}.supabase.co` && user === "fiscalize_qa_runner";
+const pooler = target.hostname.endsWith(".pooler.supabase.com") && user === `fiscalize_qa_runner.${ref}`;
+assert.ok(["postgres:", "postgresql:"].includes(target.protocol), "QA_DB_INVALID_PROTOCOL");
+assert.ok(direct || pooler, "QA_DB_IS_NOT_STAGING_RESTRICTED_ROLE");
+assert.equal(target.pathname, "/postgres", "QA_DB_UNEXPECTED_DATABASE");
+assert.equal(target.searchParams.get("sslmode"), "require", "QA_DB_MUST_REQUIRE_SSL");
+
+const sql = postgres(raw, {
+  max: 1, prepare: false, ssl: "require", connect_timeout: 6,
+  idle_timeout: 1
+});
+try {
+  const [row] = await sql`
+    select current_user as db_role,
+      has_table_privilege(current_user, 'public.usuarios', 'SELECT') as direct_read,
+      has_table_privilege(current_user, 'public.usuarios', 'DELETE') as direct_delete,
+      has_function_privilege(current_user, 'public.fiscalize_qa_lookup_citizen(text)', 'EXECUTE') as qa_lookup,
+      has_function_privilege(current_user, 'public.fiscalize_qa_delete_citizen(uuid,text)', 'EXECUTE') as qa_delete
+  `;
+  assert.equal(row.db_role, "fiscalize_qa_runner", "QA_DB_WRONG_LOGIN_ROLE");
+  assert.equal(row.direct_read, false, "QA_DB_DIRECT_READ_FORBIDDEN");
+  assert.equal(row.direct_delete, false, "QA_DB_DIRECT_DELETE_FORBIDDEN");
+  assert.equal(row.qa_lookup, true, "QA_DB_LOOKUP_PERMISSION_MISSING");
+  assert.equal(row.qa_delete, true, "QA_DB_CLEANUP_PERMISSION_MISSING");
+  const found = await sql`select id from public.fiscalize_qa_lookup_citizen(
+    'fiscalize-qa-00000000-0000-0000-0000-000000000000@example.invalid')`;
+  assert.equal(found.length, 0, "QA_DB_TEST_IDENTITY_NOT_EMPTY");
+  console.log("QA_DB_READ_ONLY_CHECK_PASS: restricted role, permissions, staging target, no test identity");
+} catch (err) {
+  // Deliberately never print raw database error, which may embed endpoint details.
+  console.error("QA_DB_READ_ONLY_CHECK_FAILED:", err?.code?.startsWith?.("ASSERTION") ?
+    "permission or identity assertion" : "connection or query failure");
+  process.exitCode = 1;
+} finally {
+  await sql.end({ timeout: 3 }).catch(() => {});
+}
