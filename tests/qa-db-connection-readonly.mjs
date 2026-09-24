@@ -3,10 +3,17 @@ import postgres from "postgres";
 
 // Read-only probe. Never emit credentials, database host or connection errors
 // containing URLs. Exit before connecting if ANY target-identity check fails.
-const raw = process.env.FISCALIZE_QA_DATABASE_URL;
-if (!raw) throw new Error("QA_DATABASE_SECRET_MISSING");
+// Build the URI from the raw restricted-role password to eliminate URL encoding errors.
+// The host/project/role are pinned to the isolated homologation database.
+const qaPassword = process.env.FISCALIZE_QA_DB_PASSWORD;
+if (!qaPassword) throw new Error("QA_DB_PASSWORD_SECRET_MISSING");
+const raw = new URL("postgresql://aws-0-us-west-2.pooler.supabase.com:5432/postgres");
+raw.username = "fiscalize_qa_runner.zqxouixpokuprqqscnwf";
+raw.password = qaPassword;
+raw.searchParams.set("sslmode", "require");
+const databaseUrl = raw.toString();
 let target;
-try { target = new URL(raw); } catch { throw new Error("QA_DATABASE_URL_INVALID"); }
+try { target = new URL(databaseUrl); } catch { throw new Error("QA_DATABASE_URL_INVALID"); }
 const ref = "zqxouixpokuprqqscnwf";
 const user = decodeURIComponent(target.username);
 const direct = target.hostname === `db.${ref}.supabase.co` && user === "fiscalize_qa_runner";
@@ -26,7 +33,7 @@ assert.ok(direct || pooler, "QA_DB_IS_NOT_STAGING_RESTRICTED_ROLE");
 assert.equal(target.pathname, "/postgres", "QA_DB_UNEXPECTED_DATABASE");
 assert.equal(target.searchParams.get("sslmode"), "require", "QA_DB_MUST_REQUIRE_SSL");
 
-const sql = postgres(raw, {
+const sql = postgres(databaseUrl, {
   max: 1, prepare: false, ssl: "require", connect_timeout: 6,
   idle_timeout: 1
 });
