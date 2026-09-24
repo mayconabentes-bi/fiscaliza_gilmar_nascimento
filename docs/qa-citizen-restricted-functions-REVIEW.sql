@@ -8,7 +8,7 @@ LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = pg_catalog, pg_temp
 AS $$
 BEGIN
-  IF p_email IS NULL OR p_email !~ '^fiscalize-qa-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}@example\\.invalid$' THEN
+  IF p_email IS NULL OR p_email !~ '^fiscalize-qa-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}@example[.]invalid$' THEN
     RAISE EXCEPTION 'QA_IDENTITY_REJECTED';
   END IF;
   RETURN QUERY SELECT u.id, u.status::text FROM public.usuarios u WHERE u.email = p_email;
