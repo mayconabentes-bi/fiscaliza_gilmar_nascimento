@@ -12,6 +12,16 @@ const user = decodeURIComponent(target.username);
 const direct = target.hostname === `db.${ref}.supabase.co` && user === "fiscalize_qa_runner";
 const pooler = target.hostname.endsWith(".pooler.supabase.com") && user === `fiscalize_qa_runner.${ref}`;
 assert.ok(["postgres:", "postgresql:"].includes(target.protocol), "QA_DB_INVALID_PROTOCOL");
+// Non-sensitive diagnostics only: never log host, user, URL or credential.
+if (!direct && !pooler) {
+  console.error("QA_DB_TARGET_CLASSIFICATION", JSON.stringify({
+    expectedDirectHost: target.hostname === `db.${ref}.supabase.co`,
+    isSupabasePoolerHost: target.hostname.endsWith(".pooler.supabase.com"),
+    isRestrictedDirectUser: user === "fiscalize_qa_runner",
+    isRestrictedPoolerUser: user === `fiscalize_qa_runner.${ref}`,
+    hasPassword: Boolean(target.password)
+  }));
+}
 assert.ok(direct || pooler, "QA_DB_IS_NOT_STAGING_RESTRICTED_ROLE");
 assert.equal(target.pathname, "/postgres", "QA_DB_UNEXPECTED_DATABASE");
 assert.equal(target.searchParams.get("sslmode"), "require", "QA_DB_MUST_REQUIRE_SSL");
