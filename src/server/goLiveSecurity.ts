@@ -87,10 +87,11 @@ function allowIsolatedQaRegistration(req: Request): boolean {
     req.body?.faixa_etaria !== "AGE_25_34" ||
     typeof req.body?.email !== "string" ||
     !QA_EMAIL.test(req.body.email) ||
-    token.length < 32 ||
-    supplied.length !== token.length
+    token.length < 32
   ) return false;
-  return timingSafeEqual(Buffer.from(supplied), Buffer.from(token));
+  const expected = Buffer.from(token);
+  const actual = Buffer.from(supplied);
+  return expected.length === actual.length && timingSafeEqual(actual, expected);
 }
 
 export function citizenRegistrationGuard(req: Request, res: Response, next: NextFunction) {
