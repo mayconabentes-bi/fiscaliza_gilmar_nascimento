@@ -1,0 +1,30 @@
+name: Manual citizen registration and login E2E
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  citizen-auth-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: citizen-auth-qa
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Validate QA secrets configured
+        env:
+          QA_URL: ${{ secrets.FISCALIZE_QA_BASE_URL }}
+          QA_ALLOW: ${{ vars.FISCALIZE_QA_ALLOWED_ORIGIN }}
+          QA_DB: ${{ secrets.FISCALIZE_QA_DATABASE_URL }}
+        run: |
+          test -n "$QA_URL" && test -n "$QA_ALLOW" && test -n "$QA_DB" || { echo "QA configuration incomplete"; exit 1; }
+      - name: Register, login and verified cleanup (single synthetic account)
+        env:
+          FISCALIZE_QA_BASE_URL: ${{ secrets.FISCALIZE_QA_BASE_URL }}
+          FISCALIZE_QA_ALLOWED_ORIGIN: ${{ vars.FISCALIZE_QA_ALLOWED_ORIGIN }}
+          FISCALIZE_QA_DATABASE_URL: ${{ secrets.FISCALIZE_QA_DATABASE_URL }}
+        run: node tests/citizen-auth-e2e-manual.mjs
