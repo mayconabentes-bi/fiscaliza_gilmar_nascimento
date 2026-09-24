@@ -4,7 +4,7 @@ import postgres from "postgres";
 
 // Manual-only E2E against an explicitly configured environment.
 // The DB connection must point to the SAME database as TARGET_BASE_URL.
-// A narrowly scoped QA DB role is recommended (SELECT/DELETE on public.usuarios).
+// QA DB role has EXECUTE only on two constrained security-definer functions.
 const base = process.env.FISCALIZE_QA_BASE_URL;
 const databaseUrl = process.env.FISCALIZE_QA_DATABASE_URL;
 if (!base || !databaseUrl) throw new Error("QA URL and QA database connection are required.");
@@ -40,7 +40,7 @@ async function post(path, body) {
   return { status: res.status, id: typeof payload.id === "string" ? payload.id : null, hasUser: Boolean(payload.user) };
 }
 try {
-  const existing = await sql`select id from public.usuarios where email = ${email} limit 1`;
+  const existing = await sql`select id from public.fiscalize_qa_lookup_citizen(${email})`;
   assert.equal(existing.length, 0, "QA identity collision");
   const reg = await post("/api/auth/register/cidadao", {
     nome_completo: "FISCALIZE QA AUTOMATIZADO",
@@ -51,7 +51,7 @@ try {
   if (reg.status !== 201 || !reg.id) throw new Error(outcome);
   registered = true;
   createdId = reg.id;
-  const rows = await sql`select id, status from public.usuarios where id = ${createdId} and email = ${email}`;
+  const rows = await sql`select id, status from public.fiscalize_qa_lookup_citizen(${email})`;
   if (rows.length !== 1) throw new Error("REGISTERED_ACCOUNT_NOT_IN_QA_DATABASE");
   if (rows[0].status !== "ativo") throw new Error("REGISTERED_ACCOUNT_NOT_ACTIVE");
   const login = await post("/api/auth/login", { email, password, type: "cidadao" });
@@ -65,31 +65,16 @@ try {
   // Cleanup by BOTH returned UUID and random QA email. No broad deletion.
   // If registration succeeded but response was interrupted, look up the exact QA email.
   try {
-    const rows = await sql`select id from public.usuarios where email = ${email}`;
+    const rows = await sql`select id from public.fiscalize_qa_lookup_citizen(${email})`;
     if (rows.length > 1 || (createdId && rows.some(row => row.id !== createdId))) {
       throw new Error("QA_CLEANUP_IDENTITY_MISMATCH");
     }
     if (rows.length === 1) {
-      const exactId = rows[0].id;
-      // Abort deletion if this account unexpectedly owns non-QA records.
-      const deps = await sql`
-        select tc.table_schema, tc.table_name, kcu.column_name
-        from information_schema.table_constraints tc
-        join information_schema.key_column_usage kcu
-          on tc.constraint_name = kcu.constraint_name and tc.table_schema = kcu.table_schema
-        join information_schema.constraint_column_usage ccu
-          on tc.constraint_name = ccu.constraint_name and tc.table_schema = ccu.table_schema
-        where tc.constraint_type = 'FOREIGN KEY'
-          and ccu.table_schema = 'public' and ccu.table_name = 'usuarios' and ccu.column_name = 'id'
-      `;
-      for (const dep of deps) {
-        const count = await sql`select count(*)::int as n from ${sql(dep.table_schema)}.${sql(dep.table_name)} where ${sql(dep.column_name)} = ${exactId}`;
-        if (count[0].n !== 0) throw new Error("QA_ACCOUNT_HAS_DEPENDENCIES");
-      }
-      await sql`delete from public.usuarios where id = ${exactId} and email = ${email}`;
+      const result = await sql`select public.fiscalize_qa_delete_citizen(${rows[0].id}, ${email}) as deleted`;
+      if (result[0]?.deleted !== true) throw new Error("QA_CLEANUP_NOT_DELETED");
     }
-    const after = await sql`select count(*)::int as n from public.usuarios where email = ${email}`;
-    if (after[0].n !== 0) throw new Error("QA_CLEANUP_NOT_VERIFIED");
+    const after = await sql`select id from public.fiscalize_qa_lookup_citizen(${email})`;
+    if (after.length !== 0) throw new Error("QA_CLEANUP_NOT_VERIFIED");
     cleanup = "VERIFIED";
   } catch (error) {
     cleanup = "FAILED_REQUIRES_MANUAL_REVIEW";
