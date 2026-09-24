@@ -33,11 +33,20 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function retryAfterMs(raw: string | null): number | null {
+  if (!raw) return null;
+  const seconds = Number(raw);
+  if (Number.isFinite(seconds) && seconds >= 0) return seconds * 1000;
+  const absolute = Date.parse(raw);
+  return Number.isFinite(absolute) ? Math.max(0, absolute - Date.now()) : null;
+}
+
 async function fetchJson(url: string, timeoutMs = 18000, attempts = 3) {
   let lastError: Error | null = null;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
+    let delayMs = Math.min(4000, 400 * 2 ** (attempt - 1));
     try {
       const response = await fetch(url, {
         signal: controller.signal,
@@ -47,8 +56,21 @@ async function fetchJson(url: string, timeoutMs = 18000, attempts = 3) {
       if (!response.ok) {
         const retryable = response.status === 429 || response.status >= 500;
         const error = new Error(`HTTP ${response.status}: ${text.slice(0, 160).replace(/\s+/g, " ")}`);
-        if (!retryable || attempt === attempts) throw error;
         lastError = error;
+        // Credenciais/parâmetros incorretos não devem ser disfarçados como falha temporária.
+        if (!retryable) break;
+        if (attempt === attempts) throw error;
+
+        if (response.status === 429) {
+          const advisedMs = retryAfterMs(response.headers.get("retry-after"));
+          // Evita manter requisições web presas por longos períodos. Não antecipar
+          // um Retry-After superior ao orçamento: reportar indisponibilidade.
+          if (advisedMs !== null && advisedMs > 30000) {
+            lastError = new Error(`HTTP 429: Retry-After de ${Math.ceil(advisedMs / 1000)} s; consulta adiada`);
+            break;
+          }
+          delayMs = Math.max(Math.min(12000, 2000 * 2 ** (attempt - 1)), advisedMs ?? 0);
+        }
       } else {
         const normalized = normalizeJsonText(text);
         if (!normalized) {
@@ -72,7 +94,7 @@ async function fetchJson(url: string, timeoutMs = 18000, attempts = 3) {
     } finally {
       clearTimeout(timer);
     }
-    await sleep(Math.min(4000, 400 * 2 ** (attempt - 1)));
+    if (attempt < attempts) await sleep(delayMs);
   }
   throw lastError || new Error("Falha ao consultar PNCP");
 }
@@ -94,13 +116,18 @@ export async function loadPncpManausContracts(year = new Date().getFullYear()): 
   const pageSize = Math.min(100, Math.max(10, Number(process.env.PNCP_PAGE_SIZE || 100)));
   const timeoutMs = Math.min(60000, Math.max(5000, Number(process.env.PNCP_TIMEOUT_MS || 18000)));
   const attempts = Math.min(5, Math.max(1, Number(process.env.PNCP_RETRY_ATTEMPTS || 3)));
+  const requestGapMs = Math.min(5000, Math.max(0, Number(process.env.PNCP_REQUEST_GAP_MS ?? 500)));
   const start = `${year}0101`;
   const now = new Date();
   const end = year === now.getFullYear()
     ? `${year}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`
     : `${year}1231`;
 
-  const results = await Promise.all(entries.map(async (entry) => {
+  // Um órgão por vez evita bursts de requisições ao PNCP.
+  const results = [];
+  for (const entry of entries) {
+    if (results.length && requestGapMs) await sleep(requestGapMs);
+    const result = await (async () => {
     const rows: any[] = [];
     let total = 0;
     let truncated = false;
@@ -109,6 +136,7 @@ export async function loadPncpManausContracts(year = new Date().getFullYear()): 
     let errorMessage: string | null = null;
 
     for (let page = 1; page <= maxPages; page += 1) {
+      if (page > 1 && requestGapMs) await sleep(requestGapMs);
       const url = new URL(`${PNCP_BASE}/contratos`);
       url.searchParams.set("dataInicial", start);
       url.searchParams.set("dataFinal", end);
@@ -143,7 +171,9 @@ export async function loadPncpManausContracts(year = new Date().getFullYear()): 
       failedPage,
       error: errorMessage,
     };
-  }));
+    })();
+    results.push(result);
+  }
 
   const byId = new Map<string, any>();
   for (const result of results) {

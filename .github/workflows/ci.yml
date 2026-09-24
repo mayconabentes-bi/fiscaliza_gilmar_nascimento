@@ -114,6 +114,8 @@ jobs:
         run: npm run test:triage-status-integrity
       - name: Audit high and critical vulnerabilities
         run: npm run audit:high
+      - name: External data transient classification contract
+        run: node tests/real-data-availability-contract.mjs
 
   validate:
     name: Full QA, intelligence, backup and dependency audit
@@ -190,6 +192,8 @@ jobs:
         run: npm run test:intelligence-advanced
       - name: PNCP retry and deduplication contract
         run: npm run test:pncp-resilience
+      - name: PNCP HTTP 429 and Retry-After contract
+        run: node tests/pncp-rate-limit.mjs
       - name: Official data source activation discovery
         run: npm run test:source-activation
       - name: Go-live readiness smoke tests
@@ -216,5 +220,14 @@ jobs:
         run: npm run test:triage-status-integrity
       - name: Audit high and critical vulnerabilities
         run: npm run audit:high
+      - name: External data transient classification contract
+        run: node tests/real-data-availability-contract.mjs
       - name: Deep QA with real public data
-        run: npm run test:real-data
+        run: |
+          set -o pipefail
+          npm run test:real-data 2>&1 | tee deep-qa.log
+          if grep -q '^QA DEGRADED:' deep-qa.log; then
+            echo '### Deep QA: fonte pública com disponibilidade reduzida' >> "$GITHUB_STEP_SUMMARY"
+            echo 'As verificações de conteúdo real dessa fonte foram adiadas. Consulte os avisos nos logs e execute nova validação quando a API estiver disponível.' >> "$GITHUB_STEP_SUMMARY"
+            echo '::warning title=Deep QA externo degradado::Verifique as fontes públicas temporariamente indisponíveis nos logs.'
+          fi

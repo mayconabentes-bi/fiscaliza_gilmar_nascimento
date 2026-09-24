@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { isTransientExternalFailure } from "./real-data-availability.mjs";
 
 const expansion = await import("../dist-server/src/intelligence/expansionSources.js");
 const sources = await import("../dist-server/src/intelligence/sources.js");
@@ -108,21 +109,6 @@ async function verifySiconfi() {
   console.log(`SICONFI fiscal QA: realizado=${engine.stages.realizado.value} | empenhado=${engine.stages.empenhado.value} | liquidado=${engine.stages.liquidado.value} | pago=${engine.stages.pago.value} | previsto=indisponível no DCA`);
 }
 
-function isTransientExternalFailure(source) {
-  const message = String(source?.error || "").toLowerCase();
-  return source?.availability === "unavailable" && (
-    message.includes("operation was aborted") ||
-    message.includes("timeout") ||
-    message.includes("timed out") ||
-    message.includes("econnreset") ||
-    message.includes("fetch failed") ||
-    message.includes("temporarily unavailable") ||
-    message.includes("http 403") ||
-    message.includes("just a moment") ||
-    message.includes("cloudflare")
-  );
-}
-
 async function verifyPncp() {
   const registry = publicEntities.manausPublicEntities();
   ok(registry.length >= 3, `Cadastro PNCP de Manaus muito pequeno: ${registry.length}`);
@@ -133,6 +119,7 @@ async function verifyPncp() {
     const warning = `PNCP temporariamente indisponível; QA de conteúdo real adiado: ${source.error || "sem detalhe"}`;
     warnings.push(warning);
     console.warn(`QA DEGRADED: PNCP: ${warning}`);
+    console.warn("::warning title=PNCP indisponível::Consulta pública PNCP temporariamente indisponível; conteúdo real não validado. Consulte os logs e reprocesse a verificação.");
     return;
   }
 
