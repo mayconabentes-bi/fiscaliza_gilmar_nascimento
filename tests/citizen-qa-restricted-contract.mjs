@@ -17,6 +17,13 @@ for (const table of ["agradecimentos_propostas","apoios_qualificados","comentari
   assert.ok(sql.includes("public." + table), "Missing FK dependency guard: " + table);
 }
 assert.match(script, /FISCALIZE_QA_ALLOWED_ORIGIN/);
+assert.match(script, /HOMOLOGATION_ORIGIN/);
+assert.match(script, /HOMOLOGATION_DB_REF/);
+assert.match(script, /EXPECTED_QA_ROLE/);
+assert.match(script, /current_user as role/);
+const workflow = readFileSync(".github/workflows/citizen-auth-e2e-manual.yml", "utf8");
+assert.match(workflow, /FISCALIZE_QA_BASE_URL: https:\/\/fiscalize-homologacao-homologacao[.]up[.]railway[.]app/);
+assert.doesNotMatch(workflow, /secrets[.]FISCALIZE_QA_BASE_URL|vars[.]FISCALIZE_QA_ALLOWED_ORIGIN/, "Old production URL sources cannot control manual QA target");
 assert.match(script, /type: "cidadao"/);
 assert.match(script, /fiscalize_qa_lookup_citizen/);
 assert.match(script, /fiscalize_qa_delete_citizen/);
