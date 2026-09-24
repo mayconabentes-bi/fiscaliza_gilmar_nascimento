@@ -49,8 +49,21 @@ try {
   console.log("QA_DB_READ_ONLY_CHECK_PASS: restricted role, permissions, staging target, no test identity");
 } catch (err) {
   // Deliberately never print raw database error, which may embed endpoint details.
-  console.error("QA_DB_READ_ONLY_CHECK_FAILED:", err?.code?.startsWith?.("ASSERTION") ?
-    "permission or identity assertion" : "connection or query failure");
+  // Log only a fixed diagnostic category, never the raw message, URL, user or password.
+  const safeCategory = {
+    "28P01": "AUTH_INVALID_PASSWORD",
+    "28000": "AUTH_OR_POOLER_TENANT",
+    "42501": "DATABASE_PERMISSION_DENIED",
+    "3D000": "DATABASE_NAME_REJECTED",
+    "ENOTFOUND": "DNS_LOOKUP_FAILED",
+    "EAI_AGAIN": "DNS_TEMPORARY_FAILURE",
+    "ETIMEDOUT": "NETWORK_TIMEOUT",
+    "ECONNREFUSED": "NETWORK_CONNECTION_REFUSED",
+    "SELF_SIGNED_CERT_IN_CHAIN": "TLS_CERTIFICATE_REJECTED"
+  }[err?.code] || (err?.name === "AssertionError"
+      ? "RESTRICTED_ROLE_OR_PERMISSION_ASSERTION"
+      : "OTHER_CONNECTION_OR_QUERY_FAILURE");
+  console.error("QA_DB_READ_ONLY_CHECK_FAILED:", safeCategory);
   process.exitCode = 1;
 } finally {
   await sql.end({ timeout: 3 }).catch(() => {});
