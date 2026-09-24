@@ -5,6 +5,7 @@ on:
       - fix/citizen-login-contract-diagnostics-20260924
     paths:
       - .github/workflows/qa-db-connection-readonly.yml
+      - tests/qa-db-connection-readonly.mjs
   workflow_dispatch:
 permissions:
   contents: read
