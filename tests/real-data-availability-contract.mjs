@@ -10,6 +10,17 @@ assert.equal(isTransientExternalFailure(pncp(
 assert.equal(isTransientExternalFailure(pncp("PMM: HTTP 503 | SEMSA: HTTP 429")), true);
 assert.equal(isTransientExternalFailure(pncp("PMM: HTTP 429 | SEMSA: HTTP 400")), false,
   "não esconder erros permanentes misturados aos 429");
+assert.equal(isTransientExternalFailure(pncp(
+  'Falhas parciais: PMM página 1: PNCP respondeu com corpo vazio | SEMSA página 1: HTTP 422: {"message":"could not execute query; SQL [select..."} | IMMU página 1: HTTP 422: {"message":"could not execute query; SQL"}'
+)), true, "erro SQL upstream 422 e respostas vazias reiteradas devem gerar aviso explícito");
+assert.equal(isTransientExternalFailure(pncp(
+  'Falhas parciais: PMM página 1: HTTP 429 | SEMSA página 1: HTTP 422: {"message":"campo cnpjOrgao inválido"}'
+)), false, "422 de parâmetros inválidos continua bloqueando");
+assert.equal(isTransientExternalFailure(pncp(
+  'Falhas parciais: PMM página 1: HTTP 422: {"message":"could not execute query; SQL"} | SEMSA página 1: HTTP 400'
+)), false, "erro permanente não pode ser escondido por um SQL 422 transitório");
+assert.equal(isTransientExternalFailure(pncp("HTTP 422: invalid input syntax")), false);
+assert.equal(isTransientExternalFailure(pncp("PNCP respondeu com corpo vazio")), true);
 assert.equal(isTransientExternalFailure(pncp("PNCP respondeu JSON inválido")), false);
 assert.equal(isTransientExternalFailure(pncp("PMM: HTTP 429", "degraded")), false,
   "indisponibilidade parcial com dados deve passar pelas verificações dos dados retornados");
