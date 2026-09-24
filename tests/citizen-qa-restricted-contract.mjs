@@ -1,0 +1,24 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+
+const sql = readFileSync("docs/qa-citizen-restricted-functions-REVIEW.sql", "utf8");
+const script = readFileSync("tests/citizen-auth-e2e-manual.mjs", "utf8");
+
+assert.match(sql, /SECURITY DEFINER/g, "Functions must be explicit security definers");
+assert.match(sql, /SET search_path = pg_catalog, pg_temp/g, "Functions must use a controlled search path");
+assert.match(sql, /REVOKE ALL ON FUNCTION public\.fiscalize_qa_lookup_citizen\(text\) FROM PUBLIC/);
+assert.match(sql, /REVOKE ALL ON FUNCTION public\.fiscalize_qa_delete_citizen\(uuid,text\) FROM PUBLIC/);
+assert.match(sql, /p_email !~ '\^fiscalize-qa-/);
+assert.doesNotMatch(sql, /p_email <> \('fiscalize-qa-' \|\| p_id/, "Server ID is NOT email random UUID");
+assert.match(sql, /u\.id = p_id AND u\.email = p_email/);
+assert.match(sql, /u\.nome_completo = 'FISCALIZE QA AUTOMATIZADO'/);
+assert.match(sql, /u\.created_at >= pg_catalog\.now\(\) - interval '1 hour'/);
+for (const table of ["agradecimentos_propostas","apoios_qualificados","comentarios_tecnicos","demandas","denuncias","propostas_civicas","publicacoes"]) {
+  assert.ok(sql.includes("public." + table), "Missing FK dependency guard: " + table);
+}
+assert.match(script, /FISCALIZE_QA_ALLOWED_ORIGIN/);
+assert.match(script, /type: "cidadao"/);
+assert.match(script, /fiscalize_qa_lookup_citizen/);
+assert.match(script, /fiscalize_qa_delete_citizen/);
+assert.doesNotMatch(script, /(?:delete from|select id from) public\.usuarios/i, "No direct base table access");
+console.log("QA constrained SQL and manual E2E contract OK (static only; no DB/HTTP calls).");
