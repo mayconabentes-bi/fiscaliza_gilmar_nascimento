@@ -23,5 +23,5 @@ jobs:
       - run: npm ci
       - name: Verify restricted QA login against staging only (read only)
         env:
-          FISCALIZE_QA_DATABASE_URL: ${{ secrets.FISCALIZE_QA_DATABASE_URL }}
+          FISCALIZE_QA_DB_PASSWORD: ${{ secrets.FISCALIZE_QA_DB_PASSWORD }}
         run: node tests/qa-db-connection-readonly.mjs
