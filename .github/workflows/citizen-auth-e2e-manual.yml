@@ -17,12 +17,14 @@ jobs:
       - run: npm ci
       - name: Validate isolated QA database secret configured
         env:
-          QA_DB: ${{ secrets.FISCALIZE_QA_DATABASE_URL }}
+          QA_PASSWORD: ${{ secrets.FISCALIZE_QA_DB_PASSWORD }}
+          QA_TOKEN: ${{ secrets.FISCALIZE_QA_REGISTRATION_TOKEN }}
         run: |
-          test -n "$QA_DB" || { echo "Homologation QA DB credential missing"; exit 1; }
+          test -n "$QA_PASSWORD" && test -n "$QA_TOKEN" || { echo "Staging-only QA secrets missing"; exit 1; }
       - name: Register, login and verified cleanup (single synthetic account)
         env:
           FISCALIZE_QA_BASE_URL: https://fiscalize-homologacao-homologacao.up.railway.app
           FISCALIZE_QA_ALLOWED_ORIGIN: https://fiscalize-homologacao-homologacao.up.railway.app
-          FISCALIZE_QA_DATABASE_URL: ${{ secrets.FISCALIZE_QA_DATABASE_URL }}
+          FISCALIZE_QA_DB_PASSWORD: ${{ secrets.FISCALIZE_QA_DB_PASSWORD }}
+          FISCALIZE_QA_REGISTRATION_TOKEN: ${{ secrets.FISCALIZE_QA_REGISTRATION_TOKEN }}
         run: node tests/citizen-auth-e2e-manual.mjs
