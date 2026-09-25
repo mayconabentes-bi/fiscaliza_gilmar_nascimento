@@ -17,7 +17,11 @@ async function startServer() {
     app.get("*", (_req, res) => res.sendFile("dist/index.html", { root: "." }));
   }
 
-  startIntelligenceRefreshScheduler();
+  // Production serves PostgreSQL-backed intelligence; the legacy SQLite scheduler
+  // is for the local development stack only. Production must never open SQLite.
+  if (process.env.NODE_ENV !== "production") {
+    startIntelligenceRefreshScheduler();
+  }
   app.listen(port, "0.0.0.0", () => console.log(`Server running on http://localhost:${port}`));
 }
 

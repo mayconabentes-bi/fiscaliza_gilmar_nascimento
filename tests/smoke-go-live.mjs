@@ -4,6 +4,13 @@ import os from 'node:os';
 import path from 'node:path';
 import Database from 'better-sqlite3';
 
+// Regression: production uses PostgreSQL intelligence endpoints; it must never
+// start the legacy SQLite refresh scheduler on a missing/ephemeral directory.
+const serverEntrypoint = fs.readFileSync(new URL('../server.ts', import.meta.url), 'utf8');
+if (!/if\s*\(process\.env\.NODE_ENV\s*!==\s*["']production["']\)\s*\{\s*startIntelligenceRefreshScheduler\(\);\s*\}/.test(serverEntrypoint)) {
+  throw new Error('Legacy SQLite intelligence scheduler must be explicitly disabled in production.');
+}
+
 const PORT = Number(process.env.GO_LIVE_SMOKE_PORT || 3220);
 const BASE = `http://127.0.0.1:${PORT}`;
 const APP_ORIGIN = BASE;
