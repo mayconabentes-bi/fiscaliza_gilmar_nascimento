@@ -111,7 +111,8 @@ jobs:
           supabase db dump --db-url "$SUPABASE_DB_URL" --role-only -f "$backup_dir/db/roles.sql"
           supabase db dump --db-url "$SUPABASE_DB_URL" --schema public,private -f "$backup_dir/db/schema.sql"
           supabase db dump --db-url "$SUPABASE_DB_URL" --schema public,private --data-only --use-copy -f "$backup_dir/db/data.sql"
-          test -f "$backup_dir/db/roles.sql"\n          for file in schema.sql data.sql; do test -s "$backup_dir/db/$file"; done
+          test -f "$backup_dir/db/roles.sql"
+          for file in schema.sql data.sql; do test -s "$backup_dir/db/$file"; done
           (
             cd "$backup_dir/db"
             sha256sum roles.sql schema.sql data.sql > SHA256SUMS
