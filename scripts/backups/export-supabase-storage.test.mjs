@@ -7,7 +7,7 @@ import { createHash } from "node:crypto";
 import { exportStorage, safeSegment } from "./export-supabase-storage.mjs";
 
 test("nega nomes que escapariam do diretório de backup", () => {
-  for (const name of ["", ".", "..", "../secret", "a/b", "a\\b", "x\0y"]) {
+  for (const name of ["", ".", "..", "../secret", "a/b", "a\\b", "x\0y", "C:secret", "NUL.jpg", "file?.png", "foto."]) {
     assert.throws(() => safeSegment(name));
   }
   assert.equal(safeSegment("foto-única.jpg"), "foto-única.jpg");
