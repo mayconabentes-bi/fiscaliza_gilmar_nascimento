@@ -1,0 +1,141 @@
+name: External encrypted backup (PostgreSQL + private Storage)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/backup-offsite.yml"
+      - "scripts/backups/**"
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: "Inicializar um repositório novo ou executar backup"
+        required: true
+        default: backup
+        type: choice
+        options:
+          - backup
+          - initialize
+  schedule:
+    - cron: "20 6 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fiscalize-production-offsite-backup
+  cancel-in-progress: false
+
+jobs:
+  contract:
+    name: Backup exporter — tests without secrets
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --check scripts/backups/export-supabase-storage.mjs
+      - run: node --test scripts/backups/export-supabase-storage.test.mjs
+
+  backup:
+    name: Export and encrypt offsite
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production-backup
+    timeout-minutes: 110
+    env:
+      SUPABASE_DB_URL: ${{ secrets.BACKUP_SUPABASE_DB_URL }}
+      SUPABASE_URL: ${{ secrets.BACKUP_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.BACKUP_SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_EVIDENCE_BUCKET: ${{ secrets.BACKUP_SUPABASE_EVIDENCE_BUCKET }}
+      RESTIC_REPOSITORY: ${{ secrets.OFFSITE_RESTIC_REPOSITORY }}
+      RESTIC_PASSWORD: ${{ secrets.OFFSITE_RESTIC_PASSWORD }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.OFFSITE_S3_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.OFFSITE_S3_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ${{ vars.OFFSITE_S3_REGION || 'auto' }}
+      BACKUP_DIR: ""
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install official Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Install restic
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq restic
+
+      - name: Check external-backup configuration (no secrets printed)
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in SUPABASE_DB_URL SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY SUPABASE_EVIDENCE_BUCKET RESTIC_REPOSITORY RESTIC_PASSWORD AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; do
+            test -n "$(printenv "$name")" || { echo "Ausente: $name"; exit 1; }
+          done
+          case "$SUPABASE_DB_URL" in
+            *:5432/*) ;;
+            *) echo "Use o pooler de sessão ou conexão direta na porta 5432; não use o pooler de transação."; exit 1 ;;
+          esac
+
+      - name: Initialize empty offsite repository (manual only)
+        if: github.event_name == 'workflow_dispatch' && inputs.operation == 'initialize'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if restic cat config >/dev/null 2>&1; then
+            echo "Repositório já inicializado: nenhuma alteração."
+          else
+            restic init
+          fi
+
+      - name: Preflight existing remote repository
+        if: github.event_name == 'schedule' || inputs.operation == 'backup'
+        shell: bash
+        run: |
+          set -euo pipefail
+          restic cat config >/dev/null
+
+      - name: Export database and private evidence files
+        if: github.event_name == 'schedule' || inputs.operation == 'backup'
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          backup_dir="$(mktemp -d "$RUNNER_TEMP/fiscalize-offsite-XXXXXXXX")"
+          echo "BACKUP_DIR=$backup_dir" >> "$GITHUB_ENV"
+          mkdir -p "$backup_dir/db" "$backup_dir/storage"
+          supabase db dump --db-url "$SUPABASE_DB_URL" --role-only -f "$backup_dir/db/roles.sql"
+          supabase db dump --db-url "$SUPABASE_DB_URL" --schema public,private -f "$backup_dir/db/schema.sql"
+          supabase db dump --db-url "$SUPABASE_DB_URL" --schema public,private --data-only --use-copy -f "$backup_dir/db/data.sql"
+          for file in roles.sql schema.sql data.sql; do test -s "$backup_dir/db/$file"; done
+          (
+            cd "$backup_dir/db"
+            sha256sum roles.sql schema.sql data.sql > SHA256SUMS
+          )
+          node scripts/backups/export-supabase-storage.mjs "$backup_dir/storage"
+          test -s "$backup_dir/storage/manifest.json"
+
+      - name: Encrypt and upload snapshot outside GitHub
+        if: github.event_name == 'schedule' || inputs.operation == 'backup'
+        shell: bash
+        run: |
+          set -euo pipefail
+          restic backup --tag fiscalize-production -- "$BACKUP_DIR"
+          restic check
+          restic snapshots --latest 1
+          echo "Snapshot encrypted and checked. A full restore drill is still required."
+
+      - name: Erase plaintext from ephemeral runner
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "$BACKUP_DIR" ] && [ -d "$BACKUP_DIR" ]; then
+            chmod -R u+rwX "$BACKUP_DIR"
+            rm -rf -- "$BACKUP_DIR"
+          fi
