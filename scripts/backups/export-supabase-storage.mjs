@@ -16,7 +16,9 @@ const transient = new Set([429, 500, 502, 503, 504]);
 
 export function safeSegment(name) {
   if (typeof name !== "string" || !name || name === "." || name === ".." ||
-      name.includes("/") || name.includes("\\") || name.includes("\0")) {
+      name.includes("/") || name.includes("\\") || name.includes("\0") ||
+      /[<>:"|?*]/u.test(name) || /[. ]$/u.test(name) ||
+      /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/iu.test(name)) {
     throw new Error("Nome de objeto inválido no Storage.");
   }
   return name;
