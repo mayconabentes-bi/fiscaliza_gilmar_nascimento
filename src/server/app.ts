@@ -22,6 +22,7 @@ import { ensureMobileConversionSchema, setupMobileConversion } from "./mobileCon
 import { requireInternalAccess } from "./internalAccess.js";
 import { ensurePrivateAdminSchema, setupPrivateAdminAuth } from "./privateAdminAuth.js";
 import { setupCepLookup } from "./cepLookup.js";
+import { setupFieldTicketIssuance } from "./fieldRegistration.js";
 import { ensureIntelligenceSchema } from "../intelligence/schema.js";
 import { setupIntelligenceRoutes } from "../intelligence/routes.js";
 import { setupIntelligenceRefreshRoutes } from "../intelligence/refreshRoutes.js";
@@ -71,6 +72,9 @@ export function createApp() {
   app.use("/api/auth/admin/login", limiter(15 * 60 * 1000, 10, true));
   app.use("/api/auth/login", limiter(15 * 60 * 1000, 15, true));
   app.use("/api/auth/register/cidadao", limiter(60 * 60 * 1000, 10));
+  // Separate controlled field enrollment: an expiring single-use staff ticket is
+  // still required in the handler, and this route retains its own IP budget.
+  app.use("/api/field/register/cidadao", limiter(15 * 60 * 1000, 80));
   app.use("/api/auth/recovery/request", limiter(60 * 60 * 1000, 6));
   app.use("/api/auth/recovery/reset", limiter(15 * 60 * 1000, 12));
   app.use("/api/demandas/protocolo", limiter(15 * 60 * 1000, 30));
@@ -104,6 +108,7 @@ export function createApp() {
 
     const requireAdmin = requireInternalAccess();
     app.use("/api/admin", requireAdmin);
+    setupFieldTicketIssuance(app);
     app.use("/api/demandas/metricas", requireAdmin);
     app.use("/api/relatorios", requireAdmin);
     app.use("/api/radar/manaus", requireAdmin);
