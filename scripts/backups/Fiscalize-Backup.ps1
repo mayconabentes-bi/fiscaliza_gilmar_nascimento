@@ -267,7 +267,7 @@ function Schedule {
   $taskName="FISCALIZE Backup Local"
   if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) { throw "Agendamento ja existe." }
   $actor=[Security.Principal.WindowsIdentity]::GetCurrent().Name
-  $principal=New-ScheduledTaskPrincipal -UserId $actor -LogonType Interactive -RunLevel LeastPrivilege
+  $principal=New-ScheduledTaskPrincipal -UserId $actor -LogonType Interactive -RunLevel Limited
   $arguments='-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "'+$PSCommandPath+'" -Action Backup'
   $job=New-ScheduledTaskAction -Execute (Join-Path $PSHOME "powershell.exe") -Argument $arguments
   $trigger=New-ScheduledTaskTrigger -Daily -At $when
