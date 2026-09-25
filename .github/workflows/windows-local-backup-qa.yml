@@ -1,0 +1,49 @@
+name: Windows local backup kit QA
+
+on:
+  pull_request:
+    paths:
+      - "scripts/backups/**"
+      - ".github/workflows/windows-local-backup-qa.yml"
+      - "docs/backup-local-windows11.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-backup-kit:
+    name: PowerShell syntax, safe doctor and mocked Storage export
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate Windows PowerShell 5.1 source syntax
+        shell: powershell
+        run: |
+          $tokens = $null
+          $errors = $null
+          $scriptFile = (Resolve-Path "scripts/backups/Fiscalize-Backup.ps1").Path
+          [System.Management.Automation.Language.Parser]::ParseFile($scriptFile, [ref]$tokens, [ref]$errors) | Out-Null
+          if (@($errors).Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
+          Write-Host "Windows PowerShell parse: OK"
+      - name: Doctor should not request secrets or call production
+        shell: powershell
+        run: |
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File "scripts/backups/Fiscalize-Backup.ps1" -Action Doctor
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Private Storage export simulation
+        shell: pwsh
+        run: |
+          node --check scripts/backups/export-supabase-storage.mjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node --test scripts/backups/export-supabase-storage.test.mjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
