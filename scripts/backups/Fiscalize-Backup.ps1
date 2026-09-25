@@ -6,7 +6,7 @@
 #>
 [CmdletBinding()]
 param(
-  [ValidateSet("Doctor","Setup","Backup","Verify","Schedule")] [string]$Action="Doctor",
+  [ValidateSet("Doctor","Setup","Backup","Verify","Schedule","SelfTest")] [string]$Action="Doctor",
   [ValidatePattern('^([01][0-9]|2[0-3]):[0-5][0-9]$')] [string]$At="21:00"
 )
 Set-StrictMode -Version Latest
@@ -209,6 +209,123 @@ function Backup {
     if (Test-Path -LiteralPath $stage) { Remove-Item -LiteralPath $stage -Recurse -Force }
   }
 }
+function Get-LatestFiscalizeSnapshotId([string]$json) {
+  if ([string]::IsNullOrWhiteSpace($json)) { throw "Lista de snapshots vazia." }
+  $parsed=ConvertFrom-Json -InputObject $json
+  $items=New-Object 'System.Collections.Generic.List[object]'
+  foreach($item in $parsed) {
+    if ($null -eq $item) { continue }
+    if ($item -is [array]) {
+      foreach($inner in $item) {
+        if ($null -ne $inner) { $items.Add($inner) }
+      }
+    } else {
+      $items.Add($item)
+    }
+  }
+  if ($items.Count -eq 0) { throw "Nenhum snapshot do FISCALIZE." }
+  $latest=$items | Sort-Object -Property time -Descending | Select-Object -First 1
+  if ($null -eq $latest -or $null -eq $latest.PSObject.Properties['id']) {
+    throw "Resposta de snapshots sem identificador."
+  }
+  $snapshotId=[string]$latest.id
+  if ($snapshotId -notmatch '^[a-fA-F0-9]{64}
+  WindowsOnly
+  foreach($exe in @("restic","pg_restore")) { MustHave $exe }
+  $cfg=Settings
+  PrivateFolder $ScratchHome
+  $target=Join-Path $ScratchHome ("verify-"+[guid]::NewGuid().ToString("N"))
+  $null=New-Item -ItemType Directory -Path $target
+  try {
+    ResticEnv $cfg
+    & restic check --read-data
+    NativeOK "restic check --read-data"
+    # Evitar recriar C:/Users: localizar apenas a subpasta da copia.
+    $json=(& restic snapshots --json --tag fiscalize-production | Out-String)
+    NativeOK "restic snapshots"
+    # Converter explicitamente o array JSON, sem encapsular a lista retornada
+    # pelo ConvertFrom-Json do Windows PowerShell 5.1 como um unico elemento.
+    $id=Get-LatestFiscalizeSnapshotId $json
+    $lines=@(& restic ls --json $id)
+    NativeOK "restic ls"
+    $nodes=@($lines | ForEach-Object { $_ | ConvertFrom-Json } | Where-Object { $_.struct_type -eq "node" })
+    $dumpsInside=@($nodes | Where-Object {
+      $_.type -eq "file" -and $_.path -match '/db/application[.]dump$'
+    })
+    if ($dumpsInside.Count -ne 1) { throw "Arquivo dump ausente ou ambiguo." }
+    $fullPath=[string]$dumpsInside[0].path
+    $root=$fullPath.Substring(0,$fullPath.Length-("/db/application.dump").Length)
+    if (@($nodes | Where-Object {
+      $_.type -eq "file" -and $_.path -ceq ($root+"/storage/manifest.json")
+    }).Count -ne 1) { throw "Manifesto de Storage nao corresponde ao dump." }
+    $source=$id
+    if ($root.Length -gt 0) { $source=$id+":"+$root }
+    & restic restore $source --target $target --verify
+    NativeOK "restic restore subarvore"
+    $dumps=@(Get-ChildItem -LiteralPath $target -File -Recurse -Filter "application.dump")
+    $manifests=@(Get-ChildItem -LiteralPath $target -File -Recurse -Filter "manifest.json")
+    if ($dumps.Count -ne 1 -or $manifests.Count -ne 1) { throw "Restauracao incompleta." }
+    $dump=$dumps[0].FullName
+    ValidateDump $dump
+    $hashFile=Join-Path $dumps[0].DirectoryName "application.sha256"
+    if (-not (Test-Path -LiteralPath $hashFile)) { throw "Checksum PostgreSQL ausente." }
+    if ((Get-FileHash -LiteralPath $dump -Algorithm SHA256).Hash.ToLowerInvariant() -cne
+        (Get-Content -Raw -LiteralPath $hashFile).Trim()) { throw "Checksum PostgreSQL diferente." }
+    ValidateEvidence $manifests[0].DirectoryName
+    Info "RESTORE DE ARQUIVOS E HASH: OK. Ainda falta restaurar o SQL em banco isolado."
+  } finally {
+    ClearProcessSecrets
+    if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Recurse -Force }
+  }
+}
+function Schedule {
+  WindowsOnly
+  $null=Settings
+  $when=[DateTime]::ParseExact($At,"HH:mm",[Globalization.CultureInfo]::InvariantCulture)
+  $taskName="FISCALIZE Backup Local"
+  if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) { throw "Agendamento ja existe." }
+  $actor=[Security.Principal.WindowsIdentity]::GetCurrent().Name
+  $principal=New-ScheduledTaskPrincipal -UserId $actor -LogonType Interactive -RunLevel Limited
+  $arguments='-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "'+$PSCommandPath+'" -Action Backup'
+  $job=New-ScheduledTaskAction -Execute (Join-Path $PSHOME "powershell.exe") -Argument $arguments
+  $trigger=New-ScheduledTaskTrigger -Daily -At $when
+  $settings=New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 3)
+  $null=Register-ScheduledTask -TaskName $taskName -Description "Copia encriptada FISCALIZE" -Action $job -Trigger $trigger -Settings $settings -Principal $principal
+  Info "Agendado diariamente as $At, horario do Windows. PC ligado, usuario logado."
+}
+try {
+  switch ($Action) {
+    "Doctor" { Doctor }
+    "Setup" { Setup }
+    "Backup" { Backup }
+    "Verify" { Verify }
+    "Schedule" { Schedule }
+    "SelfTest" { SelfTest }
+  }
+} catch {
+  Write-Error ("Backup interrompido: "+$_.Exception.Message)
+  exit 1
+}
+) { throw "ID de snapshot invalido." }
+  return $snapshotId.ToLowerInvariant()
+}
+function SelfTest {
+  $older=("a"*64)
+  $newer=("b"*64)
+  $fixture='[{"time":"2026-09-25T13:25:30-04:00","id":"'+$older+'","short_id":"aaaaaaaa"},'+
+    '{"time":"2026-09-25T13:59:47-04:00","id":"'+$newer+'","short_id":"bbbbbbbb"}]'
+  if ((Get-LatestFiscalizeSnapshotId $fixture) -cne $newer) {
+    throw "Teste de selecao com dois snapshots falhou."
+  }
+  if ((Get-LatestFiscalizeSnapshotId ('[{"time":"2026-09-25T13:25:30-04:00","id":"'+$older+'"}]')) -cne $older) {
+    throw "Teste de selecao com um snapshot falhou."
+  }
+  $invalid='[{"time":"2026-09-25T13:59:47-04:00","short_id":"bbbbbbbb"}]'
+  $rejected=$false
+  try { $null=Get-LatestFiscalizeSnapshotId $invalid } catch { $rejected=$true }
+  if (-not $rejected) { throw "Teste de identificador ausente falhou." }
+  Info "SELFTEST: selecao de snapshots aprovada."
+}
 function Verify {
   WindowsOnly
   foreach($exe in @("restic","pg_restore")) { MustHave $exe }
@@ -223,11 +340,9 @@ function Verify {
     # Evitar recriar C:/Users: localizar apenas a subpasta da copia.
     $json=(& restic snapshots --json --tag fiscalize-production | Out-String)
     NativeOK "restic snapshots"
-    $snapshots=@($json | ConvertFrom-Json)
-    if ($snapshots.Count -lt 1) { throw "Nenhum snapshot do FISCALIZE." }
-    $snapshot=$snapshots | Sort-Object time -Descending | Select-Object -First 1
-    $id=[string]$snapshot.id
-    if ($id -notmatch '^[a-f0-9]{64}$') { throw "ID de snapshot invalido." }
+    # Converter explicitamente o array JSON, sem encapsular a lista retornada
+    # pelo ConvertFrom-Json do Windows PowerShell 5.1 como um unico elemento.
+    $id=Get-LatestFiscalizeSnapshotId $json
     $lines=@(& restic ls --json $id)
     NativeOK "restic ls"
     $nodes=@($lines | ForEach-Object { $_ | ConvertFrom-Json } | Where-Object { $_.struct_type -eq "node" })
