@@ -40,6 +40,11 @@ jobs:
         run: |
           powershell.exe -NoProfile -ExecutionPolicy Bypass -File "scripts/backups/Fiscalize-Backup.ps1" -Action Doctor
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Regression — choose newest snapshot among two without any secrets
+        shell: powershell
+        run: |
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File "scripts/backups/Fiscalize-Backup.ps1" -Action SelfTest
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Private Storage export simulation
         shell: pwsh
         run: |
