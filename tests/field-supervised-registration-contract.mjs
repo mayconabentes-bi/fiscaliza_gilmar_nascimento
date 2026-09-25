@@ -10,6 +10,7 @@ const migration = read("db/migrations/20260925_supervised_field_registration.sql
 assert.match(app, /app\.use\("\/api\/admin", requireAdmin\);\s*setupFieldTicketIssuance\(app\);/, "ticket issuance must sit behind revalidated staff ACL");
 assert.match(roles, /POST.*admin\\\/field-registration\\\/tickets/, "sector staff route must have an explicit allowlist");
 assert.match(app, /api\/field\/register\/cidadao.*limiter\(15 \* 60 \* 1000, 80\)/, "separate field route needs its own narrow IP limiter");
+assert.match(app, /app\.use\("\/api\/auth\/register\/cidadao", limiter\(60 \* 60 \* 1000, 10\)\)/, "public 10/hour/IP antiabuse limiter must remain unchanged");
 assert.match(citizens, /fieldMode && !fieldRegistrationEnabled\(\)/, "field flow disabled without explicit flag");
 assert.match(citizens, /aceite_lgpd !== true \|\| req\.body\?\.aceite_codigo !== true/, "field consent must be explicit");
 assert.match(citizens, /validUnusedFieldTicket\(hash\)/, "require existing valid ticket before hashing password");
