@@ -220,120 +220,30 @@ function Verify {
     ResticEnv $cfg
     & restic check --read-data
     NativeOK "restic check --read-data"
-    # Encontrar a raiz do backup dentro do snapshot. A restauracao da arvore
-    # inteira em Windows tenta recriar C:/Users e pode falhar nos timestamps.
-    $snapshotsJson=(& restic snapshots --json --tag fiscalize-production | Out-String)
+    # Evitar recriar C:/Users: localizar apenas a subpasta da copia.
+    $json=(& restic snapshots --json --tag fiscalize-production | Out-String)
     NativeOK "restic snapshots"
-    $snapshots=@($snapshotsJson | ConvertFrom-Json)
-    if ($snapshots.Count -lt 1) { throw "Nao existem snapshots do FISCALIZE." }
+    $snapshots=@($json | ConvertFrom-Json)
+    if ($snapshots.Count -lt 1) { throw "Nenhum snapshot do FISCALIZE." }
     $snapshot=$snapshots | Sort-Object time -Descending | Select-Object -First 1
-    $snapshotId=[string]$snapshot.id
-    if ($snapshotId -notmatch '^[a-f0-9]{64}
-    $dumps=@(Get-ChildItem -LiteralPath $target -File -Recurse -Filter "application.dump")
-    $manifests=@(Get-ChildItem -LiteralPath $target -File -Recurse -Filter "manifest.json")
-    if ($dumps.Count -ne 1 -or $manifests.Count -ne 1) { throw "Restauracao incompleta." }
-    $dump=$dumps[0].FullName
-    ValidateDump $dump
-    $hashFile=Join-Path $dumps[0].DirectoryName "application.sha256"
-    if (-not (Test-Path -LiteralPath $hashFile)) { throw "Checksum PostgreSQL ausente." }
-    if ((Get-FileHash -LiteralPath $dump -Algorithm SHA256).Hash.ToLowerInvariant() -cne
-        (Get-Content -Raw -LiteralPath $hashFile).Trim()) { throw "Checksum PostgreSQL diferente." }
-    ValidateEvidence $manifests[0].DirectoryName
-    Info "RESTORE DE ARQUIVOS E HASH: OK. Ainda falta restaurar o SQL em banco isolado."
-  } finally {
-    ClearProcessSecrets
-    if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Recurse -Force }
-  }
-}
-function Schedule {
-  WindowsOnly
-  $null=Settings
-  $when=[DateTime]::ParseExact($At,"HH:mm",[Globalization.CultureInfo]::InvariantCulture)
-  $taskName="FISCALIZE Backup Local"
-  if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) { throw "Agendamento ja existe." }
-  $actor=[Security.Principal.WindowsIdentity]::GetCurrent().Name
-  $principal=New-ScheduledTaskPrincipal -UserId $actor -LogonType Interactive -RunLevel LeastPrivilege
-  $arguments='-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "'+$PSCommandPath+'" -Action Backup'
-  $job=New-ScheduledTaskAction -Execute (Join-Path $PSHOME "powershell.exe") -Argument $arguments
-  $trigger=New-ScheduledTaskTrigger -Daily -At $when
-  $settings=New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 3)
-  $null=Register-ScheduledTask -TaskName $taskName -Description "Copia encriptada FISCALIZE" -Action $job -Trigger $trigger -Settings $settings -Principal $principal
-  Info "Agendado diariamente as $At, horario do Windows. PC ligado, usuario logado."
-}
-try {
-  switch ($Action) {
-    "Doctor" { Doctor }
-    "Setup" { Setup }
-    "Backup" { Backup }
-    "Verify" { Verify }
-    "Schedule" { Schedule }
-  }
-} catch {
-  Write-Error ("Backup interrompido: "+$_.Exception.Message)
-  exit 1
-}
-) { throw "Identificador de snapshot invalido." }
-    $lines=@(& restic ls --json $snapshotId)
+    $id=[string]$snapshot.id
+    if ($id -notmatch '^[a-f0-9]{64}$') { throw "ID de snapshot invalido." }
+    $lines=@(& restic ls --json $id)
     NativeOK "restic ls"
     $nodes=@($lines | ForEach-Object { $_ | ConvertFrom-Json } | Where-Object { $_.struct_type -eq "node" })
-    $dumpNodes=@($nodes | Where-Object {
-      $_.type -eq "file" -and $_.path -match '/db/application[.]dump
-    $dumps=@(Get-ChildItem -LiteralPath $target -File -Recurse -Filter "application.dump")
-    $manifests=@(Get-ChildItem -LiteralPath $target -File -Recurse -Filter "manifest.json")
-    if ($dumps.Count -ne 1 -or $manifests.Count -ne 1) { throw "Restauracao incompleta." }
-    $dump=$dumps[0].FullName
-    ValidateDump $dump
-    $hashFile=Join-Path $dumps[0].DirectoryName "application.sha256"
-    if (-not (Test-Path -LiteralPath $hashFile)) { throw "Checksum PostgreSQL ausente." }
-    if ((Get-FileHash -LiteralPath $dump -Algorithm SHA256).Hash.ToLowerInvariant() -cne
-        (Get-Content -Raw -LiteralPath $hashFile).Trim()) { throw "Checksum PostgreSQL diferente." }
-    ValidateEvidence $manifests[0].DirectoryName
-    Info "RESTORE DE ARQUIVOS E HASH: OK. Ainda falta restaurar o SQL em banco isolado."
-  } finally {
-    ClearProcessSecrets
-    if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Recurse -Force }
-  }
-}
-function Schedule {
-  WindowsOnly
-  $null=Settings
-  $when=[DateTime]::ParseExact($At,"HH:mm",[Globalization.CultureInfo]::InvariantCulture)
-  $taskName="FISCALIZE Backup Local"
-  if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) { throw "Agendamento ja existe." }
-  $actor=[Security.Principal.WindowsIdentity]::GetCurrent().Name
-  $principal=New-ScheduledTaskPrincipal -UserId $actor -LogonType Interactive -RunLevel LeastPrivilege
-  $arguments='-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "'+$PSCommandPath+'" -Action Backup'
-  $job=New-ScheduledTaskAction -Execute (Join-Path $PSHOME "powershell.exe") -Argument $arguments
-  $trigger=New-ScheduledTaskTrigger -Daily -At $when
-  $settings=New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 3)
-  $null=Register-ScheduledTask -TaskName $taskName -Description "Copia encriptada FISCALIZE" -Action $job -Trigger $trigger -Settings $settings -Principal $principal
-  Info "Agendado diariamente as $At, horario do Windows. PC ligado, usuario logado."
-}
-try {
-  switch ($Action) {
-    "Doctor" { Doctor }
-    "Setup" { Setup }
-    "Backup" { Backup }
-    "Verify" { Verify }
-    "Schedule" { Schedule }
-  }
-} catch {
-  Write-Error ("Backup interrompido: "+$_.Exception.Message)
-  exit 1
-}
-
+    $dumpsInside=@($nodes | Where-Object {
+      $_.type -eq "file" -and $_.path -match '/db/application[.]dump$'
     })
-    if ($dumpNodes.Count -ne 1) { throw "Snapshot sem caminho unico do banco." }
-    $dumpPath=[string]$dumpNodes[0].path
-    $root=$dumpPath.Substring(0,$dumpPath.Length-("/db/application.dump").Length)
-    $manifestPath=$root+"/storage/manifest.json"
-    if (@($nodes | Where-Object { $_.type -eq "file" -and $_.path -ceq $manifestPath }).Count -ne 1) {
-      throw "Snapshot nao contem manifesto do Storage na mesma raiz do banco."
-    }
-    $source=$snapshotId
-    if ($root.Length -gt 0) { $source=$snapshotId+":"+$root }
+    if ($dumpsInside.Count -ne 1) { throw "Arquivo dump ausente ou ambiguo." }
+    $fullPath=[string]$dumpsInside[0].path
+    $root=$fullPath.Substring(0,$fullPath.Length-("/db/application.dump").Length)
+    if (@($nodes | Where-Object {
+      $_.type -eq "file" -and $_.path -ceq ($root+"/storage/manifest.json")
+    }).Count -ne 1) { throw "Manifesto de Storage nao corresponde ao dump." }
+    $source=$id
+    if ($root.Length -gt 0) { $source=$id+":"+$root }
     & restic restore $source --target $target --verify
-    NativeOK "restic restore subpasta"
+    NativeOK "restic restore subarvore"
     $dumps=@(Get-ChildItem -LiteralPath $target -File -Recurse -Filter "application.dump")
     $manifests=@(Get-ChildItem -LiteralPath $target -File -Recurse -Filter "manifest.json")
     if ($dumps.Count -ne 1 -or $manifests.Count -ne 1) { throw "Restauracao incompleta." }
