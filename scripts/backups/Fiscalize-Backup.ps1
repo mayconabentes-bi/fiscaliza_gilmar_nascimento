@@ -132,6 +132,13 @@ function Setup {
   if (-not $dest) { $dest=$DefaultHome }
   $dest=[IO.Path]::GetFullPath($dest)
   if ($dest.StartsWith("\\")) { throw "Use um disco LOCAL, nao compartilhamento de rede." }
+  $leaf=[IO.Path]::GetFileName($dest.TrimEnd([IO.Path]::DirectorySeparatorChar,[IO.Path]::AltDirectorySeparatorChar))
+  if ($leaf -ine "FISCALIZE-Backups") {
+    throw "Para evitar alterar ACL de pastas existentes, escolha uma pasta dedicada chamada FISCALIZE-Backups."
+  }
+  if ((Test-Path -LiteralPath $dest) -and @(Get-ChildItem -LiteralPath $dest -Force).Count -gt 0) {
+    throw "Pasta de backup ja contem arquivos. Escolha uma pasta FISCALIZE-Backups NOVA e vazia."
+  }
   $dbPass=Read-Host "Senha PostgreSQL (campo oculto)" -AsSecureString
   $storageKey=Read-Host "Supabase service_role key (campo oculto)" -AsSecureString
   $restic=Read-Host "Nova senha FORTE (20+ caracteres) do backup criptografado" -AsSecureString
