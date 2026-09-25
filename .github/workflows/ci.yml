@@ -64,6 +64,10 @@ jobs:
         run: npm run test:citizen-account
       - name: Authenticated citizen experience
         run: npm run test:citizen-experience
+      - name: QA restricted DB function static contract (no production access)
+        run: node tests/citizen-qa-restricted-contract.mjs
+      - name: Staging synthetic registration gate runtime (no external calls)
+        run: npx tsx tests/qa-registration-gate-runtime.ts
       - name: P0-E age flow runtime
         run: npm run test:p0e-age-flow
       - name: P0-E data boundary
