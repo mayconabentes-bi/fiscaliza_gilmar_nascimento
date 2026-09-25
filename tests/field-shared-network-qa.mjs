@@ -80,7 +80,17 @@ try {
       email: `field-qa-staff-${i}@example.invalid`, password,
     }));
   }
-  assertResults(staffResults, 10, 200, "50 independent staff sharing one IP");
+  if (staffResults.length !== 50 || staffResults.some(status => status !== 200)) {
+    throw new Error(`Shared-IP staff login regression: ${JSON.stringify(staffResults)}`);
+  }
+  // Failed attempts are still capped per IP even when valid staff share a network.
+  const failedResults = [];
+  for (let i = 0; i < 11; i++) {
+    failedResults.push(await post("/api/auth/admin/login", {
+      email: `fake-unknown-staff-${i}@example.invalid`, password: "Local-Invalid-Password",
+    }));
+  }
+  assertResults(failedResults, 10, 401, "anti-brute-force failure budget");
   // 15 synthetic citizens register on the very same connection, no personal data.
   const citizenResults = [];
   for (let i = 0; i < 15; i++) {
@@ -96,10 +106,11 @@ try {
     }));
   }
   assertResults(citizenResults, 10, 201, "15 synthetic field registrations sharing one IP");
-  console.log("FIELD_QA_DIAGNOSTIC=PASS: local app accurately reproduces launch block.");
-  console.log("STAFF_SHARED_IP: 10 authenticated / 40 HTTP 429 of 50 synthetic accounts.");
+  console.log("FIELD_QA_DIAGNOSTIC=PASS: isolated local runtime regression.");
+  console.log("STAFF_SHARED_IP: 50/50 authenticated, no inappropriate HTTP 429.");
+  console.log("STAFF_FAILURES: 10 denied (HTTP 401), 11th rate-limited (HTTP 429).");
   console.log("CITIZEN_SHARED_IP: 10 registered / 5 HTTP 429 of 15 synthetic accounts.");
-  console.log("GO_LIVE_SHARED_NAT=BLOCKED until safe scoped limiter and repeat QA.");
+  console.log("GO_LIVE_FIELD_SIGNUP=BLOCKED until safe supervised-registration design and end-to-end staging QA.");
 } finally {
   server.kill("SIGTERM");
   fs.rmSync(root, { recursive: true, force: true });
