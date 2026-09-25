@@ -1,0 +1,25 @@
+import fs from "node:fs";
+import assert from "node:assert/strict";
+const read = p => fs.readFileSync(p, "utf8");
+const app = read("src/server/app.ts");
+const citizens = read("src/server/citizenAuthPostgres.ts");
+const field = read("src/server/fieldRegistration.ts");
+const roles = read("src/server/adminAccessPolicy.ts");
+const migration = read("db/migrations/20260925_supervised_field_registration.sql");
+
+assert.match(app, /app\.use\("\/api\/admin", requireAdmin\);\s*setupFieldTicketIssuance\(app\);/, "ticket issuance must sit behind revalidated staff ACL");
+assert.match(roles, /POST.*admin\\\/field-registration\\\/tickets/, "sector staff route must have an explicit allowlist");
+assert.match(app, /api\/field\/register\/cidadao.*limiter\(15 \* 60 \* 1000, 80\)/, "separate field route needs its own narrow IP limiter");
+assert.match(citizens, /fieldMode && !fieldRegistrationEnabled\(\)/, "field flow disabled without explicit flag");
+assert.match(citizens, /aceite_lgpd !== true \|\| req\.body\?\.aceite_codigo !== true/, "field consent must be explicit");
+assert.match(citizens, /validUnusedFieldTicket\(hash\)/, "require existing valid ticket before hashing password");
+assert.match(citizens, /insertCitizenWithFieldTicket\(hash!/, "transactional registration must consume field token");
+assert.match(field, /tx`[\s\S]*for update of t/, "lock single-use ticket row before insert");
+assert.match(field, /tx`[\s\S]*update private\.field_registration_tickets[\s\S]*consumed_at = now\(\)/, "persist ticket consumption");
+assert.match(field, /const issued = await sql\.begin/, "token issuance must enforce quota transactionally");
+assert.match(field, /pg_advisory_xact_lock/, "enforce assessor issuance quota under concurrent requests");
+assert.match(field, /20\) return false/, "per-assessor quota must remain");
+assert.match(migration, /ENABLE ROW LEVEL SECURITY/, "private ticket table must use RLS");
+assert.match(migration, /REVOKE ALL.*PUBLIC, anon, authenticated/, "browser Supabase credentials must not access ticket table");
+assert.doesNotMatch(field, /console\.log\(.*(raw|token)/, "never log opaque tickets");
+console.log("FIELD_SUPERVISED_CONTRACT=PASS: fail-closed issuance, atomic ticket use, consent and ACL checks.");
