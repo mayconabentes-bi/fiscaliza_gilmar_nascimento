@@ -48,6 +48,7 @@ export function normalizeStaffProfile(value: unknown): StaffProfile | null {
  * Qualquer rota fora desta lista continua exclusiva de ADMIN/SUPER_ADMIN.
  */
 const SECTOR_STAFF_ROUTES: ReadonlyArray<{ method: string; pattern: RegExp }> = [
+  { method: "POST", pattern: /^\/api\/admin\/field-registration\/tickets\/?$/ },
   { method: "GET", pattern: /^\/api\/admin\/demandas\/?$/ },
   { method: "GET", pattern: /^\/api\/admin\/demandas\/[^/]+\/evidencias?\/?$/ },
   { method: "PATCH", pattern: /^\/api\/admin\/demandas\/[^/]+\/status\/?$/ },
