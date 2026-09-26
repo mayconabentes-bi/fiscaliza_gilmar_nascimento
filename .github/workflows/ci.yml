@@ -94,6 +94,10 @@ jobs:
         run: npm run test:performance
       - name: Go-live readiness smoke tests
         run: npm run test:go-live
+      - name: Shared-network field registration and staff baseline (synthetic local only)
+        run: node tests/field-shared-network-qa.mjs
+      - name: Supervised field registration contract and default-off token runtime
+        run: node tests/field-supervised-registration-contract.mjs && npx tsx tests/field-supervised-registration-runtime.ts
       - name: Mobile conversion and public intake test
         run: npm run test:mobile
       - name: Private intelligence access attack contract
@@ -198,6 +202,10 @@ jobs:
         run: npm run test:source-activation
       - name: Go-live readiness smoke tests
         run: npm run test:go-live
+      - name: Shared-network field registration and staff baseline (synthetic local only)
+        run: node tests/field-shared-network-qa.mjs
+      - name: Supervised field registration contract and default-off token runtime
+        run: node tests/field-supervised-registration-contract.mjs && npx tsx tests/field-supervised-registration-runtime.ts
       - name: Real backup and restore test
         run: npm run test:backup
       - name: Mobile conversion and public intake test

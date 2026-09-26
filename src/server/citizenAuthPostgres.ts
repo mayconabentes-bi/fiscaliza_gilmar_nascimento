@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import { getHealthyPostgres } from "./postgres.js";
+import { fieldRegistrationEnabled, fieldTicketHash, validUnusedFieldTicket, insertCitizenWithFieldTicket } from "./fieldRegistration.js";
 import { cleanEmail, cleanText } from "./requestValidation.js";
 import { AgePolicyError, ageBandForActiveParticipation, type AgeBand } from "./agePolicy.js";
 import { citizenPasswordFingerprint } from "./citizenSessionSecurity.js";
@@ -207,7 +208,16 @@ export function setupCitizenAuthPostgres(app: Express) {
     }
   });
 
-  app.post("/api/auth/register/cidadao", async (req, res) => {
+  app.post(["/api/auth/register/cidadao", "/api/field/register/cidadao"], async (req, res) => {
+    const fieldMode = req.path === "/api/field/register/cidadao";
+    if (fieldMode && !fieldRegistrationEnabled()) {
+      return res.status(404).json({ error: "Indisponível." });
+    }
+    // The public flow keeps its existing consent guard. The separate field
+    // route requires the exact same recorded, versioned consent.
+    if (fieldMode && (req.body?.aceite_lgpd !== true || req.body?.aceite_codigo !== true)) {
+      return res.status(400).json({ error: "Aceite das regras e da Política de Privacidade obrigatório." });
+    }
     let nomeCompleto: string;
     let normalizedEmail: string;
     let municipio: string;
@@ -234,22 +244,37 @@ export function setupCitizenAuthPostgres(app: Express) {
     }
 
     try {
-      const sql = await getHealthyPostgres();
+      // Refuse unknown/replayed tickets before doing expensive password hashing.
+      // The check is only preflight; a row lock and atomic consumption below
+      // make the final insertion safe against a concurrent replay.
+      const hash = fieldMode ? fieldTicketHash(req.get("x-fiscalize-field-ticket")) : null;
+      if (fieldMode && (!hash || !(await validUnusedFieldTicket(hash)))) {
+        return res.status(403).json({ error: "Convite de cadastro inválido ou expirado." });
+      }
       const id = uuidv4();
       const passwordHash = await bcrypt.hash(password, 12);
       const consentimento = req.body?.aceite_lgpd === true;
       const acceptedAt = consentimento ? new Date().toISOString() : null;
       const version = consentimento ? consentVersion() : null;
-      await sql`
-        insert into public.usuarios (
-          id, nome_completo, email, municipio, bairro, password_hash,
-          consentimento_lgpd, data_consentimento, versao_consentimento,
-          faixa_etaria, protecao_reforcada
-        ) values (
-          ${id}, ${nomeCompleto}, ${normalizedEmail}, ${municipio}, ${bairro}, ${passwordHash},
-          ${consentimento}, ${acceptedAt}, ${version}, ${faixaEtaria}, ${protecaoReforcada}
-        )
-      `;
+      if (fieldMode) {
+        const inserted = await insertCitizenWithFieldTicket(hash!, {
+          id, nomeCompleto, email: normalizedEmail, municipio, bairro, passwordHash,
+          consentimento, acceptedAt, version, faixaEtaria, protecaoReforcada,
+        });
+        if (!inserted) return res.status(409).json({ error: "Convite já utilizado ou expirado." });
+      } else {
+        const sql = await getHealthyPostgres();
+        await sql`
+          insert into public.usuarios (
+            id, nome_completo, email, municipio, bairro, password_hash,
+            consentimento_lgpd, data_consentimento, versao_consentimento,
+            faixa_etaria, protecao_reforcada
+          ) values (
+            ${id}, ${nomeCompleto}, ${normalizedEmail}, ${municipio}, ${bairro}, ${passwordHash},
+            ${consentimento}, ${acceptedAt}, ${version}, ${faixaEtaria}, ${protecaoReforcada}
+          )
+        `;
+      }
       return res.status(201).json({ id, message: "Cadastro realizado." });
     } catch (error: any) {
       if (error?.code === "23505") return res.status(409).json({ error: "E-mail já cadastrado." });
