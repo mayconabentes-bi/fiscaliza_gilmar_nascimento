@@ -23,7 +23,7 @@ expect(auth.includes("normalizeStaffProfile"), "Login deve falhar fechado para p
 expect(auth.includes("select id, nome, ativo, perfil_acesso") && auth.includes("from private.admins"), "Sessão visual deve revalidar admin no banco.");
 expect(auth.includes('sameSite: "strict"') && auth.includes("httpOnly: true"), "Cookie admin deve manter HttpOnly + SameSite Strict.");
 
-expect(app.includes('app.use("/api/auth/admin/login", limiter(15 * 60 * 1000, 10))'), "Login admin deve ter rate limit dedicado.");
+expect(app.includes('app.use("/api/auth/admin/login", limiter(15 * 60 * 1000, 10, true))'), "Login admin deve limitar falhas, sem penalizar autenticacoes validas em IP compartilhado.");
 for (const prefix of ["/api/admin", "/api/demandas/metricas", "/api/relatorios", "/api/radar/manaus"]) {
   expect(app.includes(`app.use("${prefix}", requireAdmin)`), `${prefix} deve permanecer atrás do middleware admin.`);
 }

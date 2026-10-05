@@ -30,7 +30,7 @@ import { setupIntelligenceExpansionRoutes } from "../intelligence/expansionRoute
 import { setupAdvancedIntelligenceRoutes } from "../intelligence/advancedRoutes.js";
 import { sharePreviewJpeg } from "./sharePreview.js";
 
-const limiter = (windowMs: number, max: number) => rateLimit({ windowMs, max, standardHeaders: "draft-8", legacyHeaders: false, message: { error: "Muitas solicitações. Tente novamente mais tarde." } });
+const limiter = (windowMs: number, max: number, skipSuccessfulRequests = false) => rateLimit({ windowMs, max, skipSuccessfulRequests, standardHeaders: "draft-8", legacyHeaders: false, message: { error: "Muitas solicitações. Tente novamente mais tarde." } });
 
 export function createApp() {
   const app = express();
@@ -68,8 +68,8 @@ export function createApp() {
   app.use(cookieParser());
   app.use(csrfOriginGuard);
   app.use(citizenRegistrationGuard);
-  app.use("/api/auth/admin/login", limiter(15 * 60 * 1000, 10));
-  app.use("/api/auth/login", limiter(15 * 60 * 1000, 15));
+  app.use("/api/auth/admin/login", limiter(15 * 60 * 1000, 10, true));
+  app.use("/api/auth/login", limiter(15 * 60 * 1000, 15, true));
   app.use("/api/auth/register/cidadao", limiter(60 * 60 * 1000, 10));
   app.use("/api/auth/recovery/request", limiter(60 * 60 * 1000, 6));
   app.use("/api/auth/recovery/reset", limiter(15 * 60 * 1000, 12));
