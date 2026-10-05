@@ -1,0 +1,30 @@
+name: Manual citizen registration and login E2E (homologation only)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  citizen-auth-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: citizen-auth-qa
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Validate isolated QA database secret configured
+        env:
+          QA_PASSWORD: ${{ secrets.FISCALIZE_QA_DB_PASSWORD }}
+          QA_TOKEN: ${{ secrets.FISCALIZE_QA_REGISTRATION_TOKEN }}
+        run: |
+          test -n "$QA_PASSWORD" && test -n "$QA_TOKEN" || { echo "Staging-only QA secrets missing"; exit 1; }
+      - name: Register, login and verified cleanup (single synthetic account)
+        env:
+          FISCALIZE_QA_BASE_URL: https://fiscalize-homologacao-homologacao.up.railway.app
+          FISCALIZE_QA_ALLOWED_ORIGIN: https://fiscalize-homologacao-homologacao.up.railway.app
+          FISCALIZE_QA_DB_PASSWORD: ${{ secrets.FISCALIZE_QA_DB_PASSWORD }}
+          FISCALIZE_QA_REGISTRATION_TOKEN: ${{ secrets.FISCALIZE_QA_REGISTRATION_TOKEN }}
+        run: node tests/citizen-auth-e2e-manual.mjs
