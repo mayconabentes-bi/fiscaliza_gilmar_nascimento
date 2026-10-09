@@ -56,3 +56,19 @@
 - [x] Produção permanece com deployment anterior `ac88cb02-d036-4305-929d-c95592fe046f` `SUCCESS`; nenhum deploy ou merge de `main` efetuado pela validação.
 - [ ] **Pendente de auditoria:** confirmar por lote/UUID a contagem e retenção adequada de eventos em `public.logs_auditoria` e que não contém dados sensíveis; preservá-los conforme LGPD. Zero auditoria por protocolo não é prova de ausência de eventos, pois `entidade_id` de status usa UUID.
 - [ ] Antes de promover PR #95 a `main` e produção: checar CI atual, divergências de branches/PRs, plano de rollback e eventuais alterações pendentes no Railway de produção (uma operação pendente foi reportada; investigar separadamente, sem aplicar).
+
+
+## Parecer de fechamento de homologação e pendências — 09/10/2026
+
+**GO para encerramento dos testes de homologação do PR #95; NO-GO para publicação em produção sem aprovação específica.**
+
+- [x] Execução QA E2E autenticada com dois setores e teardown `SUCCESS`, lote `86c29a4b1f2ba5bb`.
+- [x] Supabase homologação reconsultado: 3 administradores, 2 demandas, 0 contas e 0 demandas remanescentes identificadas com o lote.
+- [x] Auditoria agregada: 6 registros em `public.logs_auditoria`, 1 evento global `STATUS_ATUALIZADO`, 0 ocorrências do identificador do lote em `metadata` ou `entidade_id`. O evento de status pode estar associado à demanda QA excluída porque `entidade_id` armazena UUID; NÃO excluir auditoria sem avaliação de retenção.
+- [x] PR #95 head `8bcb724e2be92d6199f080d4c14c1ace72e7014a`, CI `37948199475` e Visual QA `37948199334` `success`; diff restrito ao lockfile (`proxy-addr` 2.0.7→2.0.8 e `source-map-js` 1.2.1→1.2.2). Homologação roda o mesmo commit.
+- [x] PR #97 head `d53748e1f21ea73970a5401326353ce2c7c94ade`, CI `37980430786`, Visual QA `37980430691` e guardas QA `37980430754` `success`. PR #97 permanece draft, sem merge.
+- [x] PR #96 com checks isolados `success`, mas CI geral `failure` no head `ec664c58219afd851f69a743e38380a1fe2746d6`; precisa integrar lockfile de #95 ou descartar se não necessário.
+- [x] Produção segue no commit `e51ef50d86b80b03c786ae3193a8a802ff9e5cfb` com deployment `ac88cb02-d036-4305-929d-c95592fe046f`, `SUCCESS`. Nenhum merge/deploy realizado.
+- [ ] Verificar discrepância: `environment_status` da produção informou 1 `EnvironmentPatch` staged, enquanto `get_staged_changes` informou `null`; consultar novamente antes de qualquer alteração e jamais aplicar patch de conteúdo não verificado.
+- [ ] Registrar decisão de política de retenção do evento de auditoria associado a uma demanda já removida (registro pseudonimizado, integridade referencial e exigências LGPD), sem apagar rastros.
+- [ ] Para lançar a correção em produção: revisão de diff, aprovar merge PR #95, revalidar CI da main, confirmar staged pendente, backup e plano de rollback, então solicitar autorização específica de deploy e realizar smoke pós-deploy.
