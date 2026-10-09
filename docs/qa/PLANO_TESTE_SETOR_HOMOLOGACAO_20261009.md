@@ -83,3 +83,19 @@
 - [x] **Decisão conservadora de retenção:** preservar os 6 eventos; não apagar, editar nem anonimizar por suposição. Aplicar futura política formal de retenção e minimização LGPD antes de eventuais exclusões. Revisar se `usuario_responsavel_id` de conta sintética removida e metadata com dados pessoais requerem tratamento; não expor dados pessoais na revisão pública.
 - [ ] Falta aprovação funcional/documental da política de retenção pelo responsável pelo tratamento/DPO; não tratar como aprovação jurídica definitiva.
 - [ ] Falta aprovação específica para merge do PR #95, revisão do CI pós-merge, conferência de backup e rollback e publicação controlada em produção.
+
+
+## Pré-merge do PR #95 — risco de deploy automático (09/10/2026)
+
+- [x] PR #95 aberto, não-draft, sem conflitos, head `8bcb724e2be92d6199f080d4c14c1ace72e7014a`; branch `main` em `e51ef50d86b80b03c786ae3193a8a802ff9e5cfb`. Compare: ahead=1, behind=0, somente `package-lock.json` (6 adições/6 exclusões).
+- [x] Check runs head: `P0 jurídico...`, `Full QA...`, `screenshots` = SUCCESS. Nenhuma revisão humana registrada no PR #95. Proteção de branch retornou GitHub 403 para esta integração, portanto estado de aprovação/restrições de branch não foi comprovado.
+- [x] **BLOQUEADOR DE MERGE CONTROLADO:** Railway produção está ligado ao repo GitHub e branch `main`, `checkSuites=false`; merge na main poderá iniciar deploy automático antes de qualquer checkpoint manual. NÃO executar merge enquanto gatilho de auto-deploy não for desabilitado/controlado e seu status efetivo confirmado no Railway.
+- [x] Railway homologação segue com source pinado no commit #95 e deployment `b8121296-fff0-4e9a-9099-b7c5dbd173d7` SUCCESS.
+- [x] Produção segue no commit `e51ef50d86b80b03c786ae3193a8a802ff9e5cfb` e deployment `ac88cb02-d036-4305-929d-c95592fe046f` SUCCESS, `canRollback=true`; isso verifica disponibilidade técnica da opção rollback, **não um teste de recuperação de dados**.
+- [x] Workflow CI contém teste sintético `npm run test:backup` e existe ação de migração PostgreSQL usando banco temporário. **Esses testes não comprovam backup restaurável do banco PostgreSQL de produção**.
+- [ ] Comprovar backup do Supabase Postgres da produção e possibilidade concreta de restauração isolada, com horário, retenção e acesso; sem emitir dump de dados pessoais nem alterar tabelas.
+- [ ] Definir/confirmar controle de deploy automático para merge: gatilho GitHub da main e configuração Railway efetiva; não modificar configuração de produção sem revisão explícita.
+- [ ] Obter aprovação/revisão e validação de regras de proteção de branch, e aprovação específica para operação de merge/deploy; CI pós-merge, smoke e rollback.
+- [ ] PRs #96/#97 de ferramentas de QA permanecem drafts e não precisam ser mesclados junto com a correção de dependências.
+
+**Decisão do pré-merge:** NO-GO para merge imediato porque pode provocar publicação automática em produção e o backup PostgreSQL real não foi demonstrado.
