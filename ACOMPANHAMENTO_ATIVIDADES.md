@@ -32,6 +32,7 @@
 - [x] Consultar privilégios SQL e grants efetivos dos papéis `anon`/`authenticated` para `private.setores` e `private.setor_categorias` (09/10/2026: sem USAGE no schema e sem SELECT/INSERT/UPDATE/DELETE nas duas tabelas). **Acesso funcional pela API ainda pendente.**
 - [x] Analisar exposição por privilégios do catálogo PostgreSQL: `anon` e `authenticated` não possuem `SELECT` em nenhuma das tabelas do schema `private` consultadas; nenhuma função de setor com `SECURITY DEFINER` e `EXECUTE` público foi encontrada no inventário filtrado (09/10/2026).
 - [x] Revisar proteção das rotas no código `main`: middleware `requireInternalAccess` obrigatório sob `/api/admin`, revalidação da conta ativa no Postgres e lista fechada para perfis setoriais; listagem de equipe fora do escopo de assessor.
+- [x] Verificar catálogo `pg_roles.rolconfig` do `authenticator`: sem override local de `pgrst.db_schemas` em 09/10/2026. **Isto não revela a lista efetiva dos schemas publicados pelo painel.**
 - [ ] Confirmar configuração efetiva dos schemas expostos na Data API e testar negação **HTTP** com identidade não autorizada, sem segredos nem dados reais; sem prova HTTP, não marcar como concluído.
 - [x] Comparar estado RLS produção/homologação (09/10/2026: desligado nas duas tabelas em produção; ligado em homologação; sem políticas detectadas na consulta de produção).
 - [ ] Revisar a necessidade e desenho de RLS nessas tabelas; **não habilitar RLS nem criar policies sem ensaio e plano de retorno**.
@@ -135,6 +136,8 @@
 | 09/10/2026 | A01 — levantamento SQL somente leitura | Produção: `private.setores` e `private.setor_categorias` sem RLS, mas `anon`, `authenticated`, `authenticator` e `service_role` não têm USAGE no schema nem privilégios de tabela; homologação tem RLS ligado. Não foi demonstrada exploração nem validada a superfície HTTP/Data API. Advisor: 25 tabelas RLS sem policies (INFO), aviso de senhas comprometidas desativado (WARN). | Consultas de catálogo `pg_class`, `pg_namespace`, `pg_roles`, `has_schema_privilege`, `has_table_privilege`, `pg_policies` e Supabase Security Advisors, executadas sem mutações em 09/10/2026. | Conferir Data API, negação HTTP e fluxo da aplicação antes de propor mudança de RLS |
 
 > Adicionar uma linha a cada etapa comprovada. Se uma tentativa falhar, registrar como **falhou/pendente**, sem marcar o checkbox.
+
+| 09/10/2026 | A01 — tentativa de verificação HTTP | Railway confirmou domínio produtivo `fiscalizagilmarnascimento-production.up.railway.app`; Supabase confirmou URL e existência de chave pública (valor não registrado). Requisições GET sem autenticação para `/health`, `/api/admin/equipe` e REST `private.setores` **não chegaram aos serviços** por erro de resolução DNS no executor. Sem status HTTP: teste INCONCLUSIVO, não equivale a falha do sistema. `pg_roles.rolconfig` do `authenticator` não mostra override `pgrst.db_schemas`; publicação real de schemas ainda não confirmada. | Railway list-domains; Supabase get-project-url/get-publishable-keys sem revelar chaves; consultas somente leitura; tentativa GET local falhou no DNS | Testar HTTP a partir de ambiente com DNS/rede, confirmar exposições do painel, e documentar status antes de fechar A01 |
 
 ## Encerramento diário (preencher ao final)
 
