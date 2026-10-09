@@ -261,6 +261,15 @@
 - [ ] Caso o novo deployment falhe, inspecionar logs e decidir rollback com referência `a66986a6-ff30-42ec-b0af-05aae60e0a9e`; não executar rollback sem constatar falha.
 - [ ] Não fazer merge PR #95 nem deploy em produção antes de concluir homologação.
 
+## Autenticação, sessão, setor e estabilidade — 09/10/2026
+
+- [x] Confirmar CI do commit `8bcb724e2be92d6199f080d4c14c1ace72e7014a`: os dois jobs `success`, inclusive `Citizen session revocation security`, `Sector scope access control`, `Team management access control`, `Account recovery security contract` e `Go-live readiness smoke tests`. Testes de contrato/runtime **sintéticos**, não testes com sessão real no Railway.
+- [x] Executar GET-only em homologação: sessão anônima HTTP 401; sessão com cookie inválido HTTP 401; equipe, demandas e auditoria administrativas com cookie inválido HTTP 403. Todos **negam acesso**: [GitHub Actions #37957043741](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37957043741) `success`; sem logins, contas, senhas ou escrita.
+- [x] Revisar logs de startup e solicitações do deployment `b8121296-fff0-4e9a-9099-b7c5dbd173d7`: 1/1 réplica online, sem notificações ativas, 2 respostas 200 e 3 respostas 401 no primeiro smoke, ausência de 5xx na amostra; logs consultados sem erros de inicialização.
+- [ ] Comprovar autenticação/logout com **contas sintéticas criadas e aprovadas especificamente para homologação**, RBAC autenticado cruzado de dois setores, alterações de status e auditoria em banco de testes: **não executado** nesta etapa; nenhuma conta ou demanda real foi manipulada.
+- [ ] Estender janela observada para verificar o agendador e o erro legado `intelligence_refresh_runs`; os logs imediatos não comprovam comportamento de longa duração.
+- [ ] Não interpretar aprovação de 401/403 como comprovação de isolamento autenticado completo; produção e merge da `main` permanecem fora de escopo.
+
 ## Encerramento diário (preencher ao final)
 
 - **Atividades concluídas e comprovadas:** GET anônimo das rotas administrativas (401), `/health` (200), `/ready` (200), diagnóstico de privilégios e identificação das dependências vulneráveis; atividades A00/A01/A02 continuam em andamento.
