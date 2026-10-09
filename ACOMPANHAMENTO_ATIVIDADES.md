@@ -283,6 +283,17 @@
 
 **Decisão:** diagnóstico concluído, preparação de fixtures pendente. Nenhuma conta, setor, demanda ou dado real foi alterado nesta etapa.
 
+## QA de setores — diagnóstico de integridade anterior à gravação (09/10/2026)
+
+- [x] Histórico Supabase de homologação inclui migração de setores `20260924175047` (originada de `20260922190000_setores_papeis_equipe.sql`), mas `private.setores`, `private.setor_categorias` e `private.admins` ainda reportam **0 linhas** no inventário.
+- [x] Logs de inicialização da aplicação homologação `b8121296` reportam “Administrador privado Postgres atualizado com sucesso” / “Bootstrap admin: conta privada configurada e validada”. **Divergência de estado a investigar**: não provar que é o mesmo banco só pela URL de configuração.
+- [x] Abrir [PR #97](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/pull/97) com diagnóstico **somente SELECT** e validação estrita dos IDs Railway/Supabase. Script `scripts/qa-staging-db-readonly.mjs` obtém apenas contagens agregadas sem identificadores, nomes, registros ou credenciais.
+- [ ] Executar com `railway run` na homologação autenticada, comparar contagens observadas com inventário do projeto Supabase e esclarecer divergência **antes de qualquer INSERT**.
+- [ ] Somente após isso, preparar fixtures temporárias de dois setores, dois usuários e duas demandas e limpeza transacional/explicitamente limitada aos IDs de teste, com trilha de auditoria sem PII.
+- [ ] Testar autenticação real, isolamento por setor e limpeza; produção NÃO pode receber fixture.
+
+**Decisão:** embora exista autorização para prosseguir, criação de contas sintéticas foi adiada por risco de a instância efetiva divergir do inventário de homologação. Nenhum INSERT executado.
+
 ## Encerramento diário (preencher ao final)
 
 - **Atividades concluídas e comprovadas:** GET anônimo das rotas administrativas (401), `/health` (200), `/ready` (200), diagnóstico de privilégios e identificação das dependências vulneráveis; atividades A00/A01/A02 continuam em andamento.
