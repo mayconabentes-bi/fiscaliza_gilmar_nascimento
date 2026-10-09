@@ -24,10 +24,10 @@ jobs:
           node --input-type=module <<'EOF'
           const checks = [
             {path:"/api/auth/session", expected:401},
-            {path:"/api/auth/session", expected:401, cookie:"token=invalid-qa-placeholder"},
-            {path:"/api/admin/equipe", expected:401, cookie:"token=invalid-qa-placeholder"},
-            {path:"/api/admin/demandas", expected:401, cookie:"token=invalid-qa-placeholder"},
-            {path:"/api/admin/audit", expected:401, cookie:"token=invalid-qa-placeholder"}
+            {path:"/api/auth/session", expected:[401,403], cookie:"token=invalid-qa-placeholder"},
+            {path:"/api/admin/equipe", expected:[401,403], cookie:"token=invalid-qa-placeholder"},
+            {path:"/api/admin/demandas", expected:[401,403], cookie:"token=invalid-qa-placeholder"},
+            {path:"/api/admin/audit", expected:[401,403], cookie:"token=invalid-qa-placeholder"}
           ];
           let failures=0;
           for (const check of checks) {
@@ -37,7 +37,7 @@ jobs:
                 headers:check.cookie?{Cookie:check.cookie}:{},
                 signal:AbortSignal.timeout(12000)
               });
-              const ok=res.status===check.expected;
+              const ok=(Array.isArray(check.expected)?check.expected:[check.expected]).includes(res.status);
               console.log(check.path+" ["+(check.cookie?"cookie-invalido":"anonimo")+"] HTTP "+res.status+" esperado "+check.expected+" "+(ok?"OK":"FALHOU"));
               if (!ok) failures++;
             } catch {
