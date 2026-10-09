@@ -255,7 +255,9 @@
 - [x] Revalidar patch Railway `b6ab2b96-4f4c-4dbd-a2cb-f5b8370bc987`: um serviço de homologação, commit fixo `8bcb724e2be92d6199f080d4c14c1ace72e7014a`, sem alterações de variáveis, outros recursos ou exclusões; patch não destrutivo.
 - [x] Executar `accept-deploy` exclusivamente para ambiente `32940765-7ef3-41c1-a017-48ad13120d65`; Railway confirmou `committed=true`, `deploymentStatus=triggered`.
 - [x] Confirmar novo deployment `b8121296-fff0-4e9a-9099-b7c5dbd173d7` no serviço homologação, commit `8bcb724`; status inicial `BUILDING`.
-- [ ] Confirmar status final `SUCCESS` do novo deployment e verificar logs, health, ready, 401 nas rotas protegidas e ausência de regressões, inclusive erro legado `intelligence_refresh_runs`.
+- [x] Confirmar novo deployment `b8121296-fff0-4e9a-9099-b7c5dbd173d7` em `SUCCESS` e 1/1 réplica online; [GET smoke #37956034570](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37956034570): `/health` e `/ready` HTTP 200; três rotas administrativas HTTP 401. Logs iniciais sem erros, porém janela curta — não garante ausência futura do erro legado `intelligence_refresh_runs`.
+- [x] Conferir métricas imediatas de homologação: 5 requisições, 2 respostas 2xx, 3 respostas 4xx esperadas, 0 respostas 5xx; sem falhas reportadas no startup (09/10/2026).
+- [ ] Avaliar regressões funcionais autenticadas (contas sintéticas, sessão, RBAC por setor) e janela maior para scheduler; CI geral do PR #96 ainda depende do PR #95 na `main`. **Não promover produção sem esses gates.**
 - [ ] Caso o novo deployment falhe, inspecionar logs e decidir rollback com referência `a66986a6-ff30-42ec-b0af-05aae60e0a9e`; não executar rollback sem constatar falha.
 - [ ] Não fazer merge PR #95 nem deploy em produção antes de concluir homologação.
 
