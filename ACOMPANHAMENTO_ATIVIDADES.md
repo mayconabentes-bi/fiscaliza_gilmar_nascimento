@@ -203,9 +203,11 @@
 ## Verificação de redes Railway — 09/10/2026
 
 - [x] Coletar somente metadados de DNS/fluxo de rede no Railway, sem valores de variáveis. Produção resolveu `jnlfmiwczpglojqytrbw.supabase.co` e `aws-0-us-west-2.pooler.supabase.com`, compatível com Supabase de produção. Homologação apresentou egress TCP na porta `6543`, compatível com pooler PostgreSQL, porém **sem amostras DNS disponíveis nesta consulta**.
-- [ ] **Pendente crítico:** comprovar identificador efetivo da instância e destino do Storage da homologação. **Porta 6543 ou host compartilhado do pooler não distinguem projetos**; projetos diferentes podem usar o mesmo hostname.
+- [x] Comprovar via `railway run` que **a configuração** da homologação indica projeto Supabase `zqxouixpokuprqqscnwf` tanto em `DATABASE_URL` quanto em `SUPABASE_URL` (9 checks `OK`, operador, 09/10/2026). Host/tenant textual não prova conexão viva.
+- [ ] **Pendente crítico:** comprovar acesso real ao bucket de homologação, com credencial válida e configuração privada. Nenhum teste de escrita permitido.
 - [ ] Confirmar o projeto PostgreSQL em execução por prova controlada, somente leitura, idealmente impressão digital HMAC/identificador do tenant da conexão, **sem registrar DSN, senha, chave de serviço, credenciais nem dados de usuários**. Comparar com IDs esperados `zqxouixpokuprqqscnwf` (homologação) e `jnlfmiwczpglojqytrbw` (produção).
-- [ ] Confirmar separadamente `SUPABASE_URL` e `SUPABASE_EVIDENCE_BUCKET` da homologação por diagnóstico seguro no próprio serviço. Não executar teste de escrita nem alterar a source antes de comprovar ambos.
+- [x] Validar identificador de `SUPABASE_URL` na homologação via `railway run`: `SUPABASE_API_PROJETO=OK` (09/10/2026).
+- [ ] Confirmar acesso real a `SUPABASE_EVIDENCE_BUCKET` com consulta **somente metadados**, sem listar arquivos; `STORAGE_BUCKET_CONFIGURADO=OK` não comprova que o bucket exista ou seja privado. Não executar escrita nem trocar source antes da verificação.
 
 **Interpretação:** produções DNS observados e conexão TCP da homologação não constituem comprovação do isolamento completo. **NO-GO** para trocar a branch e rodar testes de escrita.
 
@@ -223,11 +225,19 @@
 - [x] Revisar e reforçar o verificador: validar hostname oficial do Postgres, IDs do projeto/ambiente/serviço Railway, bloquear host desconhecido e conflito entre usuário/host; nunca retornar credenciais.
 - [x] Criar 10 testes sintéticos sem banco nem rede: [workflow #37951925339](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37951925339) finalizado `success` (**10 pass, 0 fail**). Commit do workflow `850bab2`, em [PR #96](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/pull/96).
 - [ ] CI geral do PR #96 ainda não foi confirmado com conclusão `success`; instâncias anteriores falharam em `npm audit` por dependências antigas da `main` (tratadas separadamente no PR #95). Não associar essas falhas ao teste sintético.
-- [ ] Executar verificador com variáveis **reais** da homologação em contexto autenticado Railway: atualmente só há leitura dos nomes pela conexão OAuth, e o CLI `railway` não está disponível no executor atual. **Não aprovar isolamento por teste fictício**.
+- [x] Operador executou `railway run` com variáveis **reais da homologação** em PowerShell: 9 verificações `OK`, `PREFLIGHT_CONFIG=OK_PARCIAL`, `IDENTIDADE_REAL_STORAGE=NAO_COMPROVADA`, `LIBERACAO_IMPLANTACAO=NAO_AUTORIZADA` (09/10/2026). Validação textual de configuração apenas; não constitui teste de conexão real nem de acesso ao bucket.
 - [ ] Verificar bucket Storage por ferramenta/procedimento autorizado, sem divulgar segredo nem listar arquivos privados.
 - [ ] Somente após prova do isolamento, reavaliar implantação de PR #95 em homologação; nenhuma source alterada.
 
 **Procedimento recomendado para operador autorizado:** em checkout exato do PR #96, com Railway CLI autenticada e serviço/ambiente explicitamente selecionados, executar `railway run --project acd59c0a-4723-4162-9bfc-33bab1f096b0 --environment 32940765-7ef3-41c1-a017-48ad13120d65 --service 98959349-60d9-4363-b7c3-e20e04e93a71 node scripts/verify-staging-destinations.mjs`. Verificar sintaxe das flags com `railway run --help` no CLI instalado. Relatar somente as linhas de status, nunca as variáveis. `railway run` executa localmente com variáveis do Railway, não dentro do container; sua prova é parcial e requer a verificação do destino real do Storage e da conexão no runtime.
+
+## Pré-validação real de configurações — retorno do operador (09/10/2026)
+
+- [x] Operador autenticado no Railway executou o **verificador do PR #96** localmente com as variáveis do serviço de homologação. Saída exata de status: `RAILWAY_PROJETO=OK`, `RAILWAY_AMBIENTE=OK`, `RAILWAY_AMBIENTE_ID=OK`, `RAILWAY_SERVICO_ID=OK`, `SUPABASE_API_PROJETO=OK`, `POSTGRES_PROJETO=OK`, `BANCO_API_CONSISTENTES=OK`, `STORAGE_BUCKET_CONFIGURADO=OK`, `STORAGE_CHAVE_CONFIGURADA=OK`.
+- [x] Resultado consolidado: `PREFLIGHT_CONFIG=OK_PARCIAL`. Os identificadores configurados são coerentes com a homologação, não há evidência de apontamento textual à produção.
+- [ ] Confirmar existência, acesso autorizado e caráter privado do bucket por **leitura pontual dos metadados** no endpoint oficial da instância de homologação, usando a credencial do ambiente, sem enumerar objetos, expor variáveis ou modificar dados; a Supabase documenta `getBucket()` para essa operação.
+- [ ] Confirmar quando necessário o sucesso da conexão PostgreSQL em execução por uma verificação isolada, apenas leitura, depois da comprovação de identidade, sem dados pessoais.
+- [ ] A saída do próprio script mantém `IDENTIDADE_REAL_STORAGE=NAO_COMPROVADA` e `LIBERACAO_IMPLANTACAO=NAO_AUTORIZADA`; PR #95 ainda **não** deve ser publicado em homologação/produção.
 
 ## Encerramento diário (preencher ao final)
 
