@@ -36,3 +36,12 @@
 - [ ] Testar listagem e acesso cruzado, expiração e remoção segura das fixtures. Nunca reutilizar administradores existentes nem alterar senhas preexistentes.
 
 **Conclusão:** auditoria pré-fixture favorável, porém gravação/limpeza **ainda não executada**. Produção fora de escopo.
+
+
+## Executor integrado com guardas sintéticas — 09/10/2026
+
+- [x] Criado `scripts/qa-staging-sector-e2e.mjs` com modo padrão read-only, e comando separado `--execute` para QA autenticada. Inclui validação do ambiente Railway e tenant Supabase, senhas efêmeras locais, transação de criação, testes de login e RBAC, e cleanup seletivo com recuperação `--cleanup=<lote>`.
+- [x] Criados testes `tests/qa-staging-e2e-guards.test.mjs`, rodados sem variáveis Railway ou conexão de banco: [GitHub Actions #37978850149](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37978850149) `success`.
+- [x] Confirmada homologação em Railway `SUCCESS`, 1/1 réplica online; produção não foi acionada.
+- [ ] Executor ainda não rodou com `--execute`; logo não foram criados/limpos registros de teste nem verificados login e RBAC autenticados reais.
+- [ ] A execução local necessita o CLI do Railway autenticado e variáveis de homologação. **Antes da execução, revisar o plano de cleanup em caso de falha, e não compartilhar senhas ou URLs de conexão.**
