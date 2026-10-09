@@ -1,0 +1,64 @@
+name: Backup PostgreSQL encrypted - guard tests
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "scripts/backup_postgres_encrypted.py"
+      - "scripts/backup_preflight_windows.ps1"
+      - "tests/test_backup_postgres_encrypted.py"
+      - ".github/workflows/backup-postgres-guards.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-guards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Static syntax check
+        run: python -m py_compile scripts/backup_postgres_encrypted.py tests/test_backup_postgres_encrypted.py
+      - name: Synthetic tests - no DB, no secrets
+        run: python -m unittest discover -s tests -p test_backup_postgres_encrypted.py -v
+
+  windows-preflight:
+    name: Windows PowerShell diagnostic, no credentials
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test PowerShell diagnostics without backup access
+        shell: pwsh
+        run: |
+          $result = @(powershell.exe -NoProfile -NonInteractive -File ".\\scripts\\backup_preflight_windows.ps1")
+          if ($LASTEXITCODE -ne 0) { throw "Falha no script PowerShell" }
+          $report = $result -join "`n"
+          if ($report -notmatch 'BACKUP_PREFLIGHT=(OK|PENDENTE)') { throw "Status de preflight ausente" }
+          if ($report -notmatch 'BACKUP_DADOS_COPIADOS=NAO') { throw "Protecao contra gravacao ausente" }
+          if ($report -notmatch 'BACKUP_PRODUCAO_ACESSADA=NAO') { throw "Protecao contra rede ausente" }
+          Write-Output 'BACKUP_PREFLIGHT_WINDOWS_CI=OK'
+      - name: Detect non-runnable age binaries (simulated app control failure)
+        shell: pwsh
+        run: |
+          $fake = Join-Path $env:RUNNER_TEMP 'qa-unusable-age'
+          New-Item -ItemType Directory -Path $fake -Force | Out-Null
+          Set-Content -Path (Join-Path $fake 'age.exe') -Value 'invalid executable - offline test'
+          Set-Content -Path (Join-Path $fake 'age-keygen.exe') -Value 'invalid executable - offline test'
+          $env:PATH = "$fake;$env:PATH"
+          $result = @(powershell.exe -NoProfile -NonInteractive -File ".\scripts\backup_preflight_windows.ps1")
+          if ($LASTEXITCODE -ne 0) { throw 'Preflight encerrou inesperadamente' }
+          $report = $result -join "`n"
+          if ($report -notmatch 'BACKUP_AGE=EXECUCAO_BLOQUEADA_OU_FALHOU' -and $report -notmatch 'BACKUP_AGE=EXECUCAO_FALHOU') {
+            throw 'Executavel nao operacional foi aceito'
+          }
+          if ($report -notmatch 'BACKUP_PREFLIGHT=PENDENTE') {
+            throw 'Preflight liberado apesar de ferramentas bloqueadas'
+          }
+          Write-Output 'BACKUP_AGE_NAO_EXECUTAVEL_BLOQUEADO=OK'
