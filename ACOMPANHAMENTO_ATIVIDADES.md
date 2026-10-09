@@ -189,6 +189,17 @@
 
 | 09/10/2026 | A00 — conclusão do CI e inventário de bancos | PR #95: CI com dois jobs `success`, Deep QA `success`, Visual QA `success`. Supabase apresenta projetos separados, homologação 2 cidadãos/0 demandas e produção 21 cidadãos/71 demandas. **Vinculação do Railway às instâncias Supabase ainda não comprovada** porque valores das variáveis são redigidos. Não houve deploy nem merge. | [CI #37948199475](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37948199475); [Visual QA #37948199334](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37948199334); inventário Supabase 09/10/2026 | Provar isolamento de conexão de banco/Storage e homologar PR #95 |
 
+## Verificação adicional de homologação — 09/10/2026
+
+- [x] Consultar estado final do PR #95: CI e Full QA `success`, PR ainda aberto e não mesclado.
+- [x] Inspecionar a configuração ativa do Railway homologação: segue `fix/citizen-login-contract-diagnostics-20260924`, deployment `a66986a6-ff30-42ec-b0af-05aae60e0a9e` com status `SUCCESS`.
+- [x] Detectar nos logs disponíveis erros de scheduler: `SqliteError: no such table: intelligence_refresh_runs` em `intelligence/refresh`. Não é possível atribuir esse erro ao PR #95, que ainda não está publicado no ambiente. Verificar janela temporal/recorrência e funcionamento após futura atualização.
+- [ ] Confirmar destino **efetivo** do `DATABASE_URL` e do `SUPABASE_URL`/bucket da homologação por verificação segura sem divulgar credenciais; nomes de variáveis e projetos Supabase separados não provam esse vínculo.
+- [ ] Implantar PR #95 na homologação **apenas** depois de comprovar isolamento, realizar smoke tests sintéticos e conferir logs.
+- [ ] Não realizar merge ou deploy de produção até aprovação específica dos gates de homologação e rollback.
+
+**Decisão:** NO-GO temporário para trocar a source da homologação enquanto a ligação a banco e Storage isolados não estiver demonstrada.
+
 ## Encerramento diário (preencher ao final)
 
 - **Atividades concluídas e comprovadas:** GET anônimo das rotas administrativas (401), `/health` (200), `/ready` (200), diagnóstico de privilégios e identificação das dependências vulneráveis; atividades A00/A01/A02 continuam em andamento.
