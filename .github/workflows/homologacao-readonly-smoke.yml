@@ -1,0 +1,49 @@
+name: Homologacao GET smoke readonly
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/homologacao-readonly-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Health e RBAC anonimo sem alteracao de dados
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: GET-only smoke para homologacao
+        env:
+          TARGET: https://fiscalize-homologacao-homologacao.up.railway.app
+        run: |
+          node --input-type=module <<'EOF'
+          const checks = [
+            ["/health", 200],
+            ["/ready", 200],
+            ["/api/admin/equipe", 401],
+            ["/api/admin/demandas", 401],
+            ["/api/admin/audit", 401],
+          ];
+          let failed = false;
+          for (const [path, expected] of checks) {
+            try {
+              const res = await fetch(process.env.TARGET + path, {
+                method: "GET", redirect: "manual",
+                signal: AbortSignal.timeout(12000)
+              });
+              const status = res.status;
+              const ok = status === expected;
+              console.log(path + " = HTTP " + status + " (esperado " + expected + ") " + (ok ? "OK" : "FALHOU"));
+              if (!ok) failed = true;
+            } catch {
+              console.log(path + " = ERRO DE REDE (esperado " + expected + ")");
+              failed = true;
+            }
+          }
+          if (failed) process.exitCode = 1;
+          EOF
