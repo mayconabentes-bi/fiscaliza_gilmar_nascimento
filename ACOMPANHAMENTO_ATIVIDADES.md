@@ -31,8 +31,9 @@
 
 - [x] Identificar os alertas que fazem o CI falhar: `proxy-addr` 2.0.7 (CRITICAL, corrigido em 2.0.8) e `source-map-js` 1.2.1 (HIGH, corrigido em 1.2.2), em 09/10/2026. Evidência: [CI](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37946385763) e [issue #94](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/issues/94).
 - [x] Confirmar no lockfile as origens: `express` → `proxy-addr`; `postcss`/`@tailwindcss/node` → `source-map-js`.
-- [ ] Abrir PR separado com atualização mínima do lockfile, sem `--force` nem remoção da auditoria.
-- [ ] Validar `npm ci`, build, lint, contratos de segurança e `npm run audit:high` em CI.
+- [x] Abrir [PR #95](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/pull/95), branch separada da `main`, alterando **somente** `package-lock.json` nas entradas de `proxy-addr` 2.0.8 e `source-map-js` 1.2.2; diff de 6 linhas adicionadas e 6 removidas (09/10/2026).
+- [x] Verificar `npm ci`, TypeScript, build e `npm run audit:high` em ambos os jobs do [CI #37948199475](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37948199475) — etapas aprovadas; [Visual QA #37948199334](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37948199334) SUCCESS.
+- [ ] Confirmar **resultado final** do segundo job de CI (Deep QA de fontes públicas ainda em execução na última consulta), e revisar evidências de todos os contratos de segurança.
 - [ ] Homologar, revisar impacto do rate limiting e definir rollback antes de qualquer promoção a produção.
 
 **Critério de conclusão:** CI integralmente verde com versões corrigidas, homologação verificada e aprovação para publicar; a vulnerabilidade reportada no pacote não prova, por si só, exploração no projeto.  
@@ -158,6 +159,8 @@
 | 09/10/2026 | A00 — novo bloqueador do CI | Dois jobs falham em `npm run audit:high`: `proxy-addr` 2.0.7 (CRITICAL) e `source-map-js` 1.2.1 (HIGH). Dependências transitivas confirmadas no `package-lock.json`. Atualização não aplicada. | [CI #37946385763](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37946385763); [issue #94](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/issues/94) | Atualização mínima e validação completa em PR separado |
 
 > Adicionar uma linha a cada etapa comprovada. Se uma tentativa falhar, registrar como **falhou/pendente**, sem marcar o checkbox.
+
+| 09/10/2026 | A00 — correção preparada em PR isolado | [PR #95](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/pull/95) troca `proxy-addr` 2.0.7→2.0.8 e `source-map-js` 1.2.1→1.2.2 apenas no lockfile (6+ / 6−). `npm ci`, build, TypeScript e os dois gates `npm audit` aprovados; Visual QA SUCCESS. **CI segundo job ainda verificando Deep QA na última consulta.** Nenhum merge/deploy. | [CI #37948199475](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37948199475); [Visual QA #37948199334](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37948199334); [issue #94](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/issues/94) | Concluir CI integral, homologação e decisão de liberação com rollback |
 
 ## Encerramento diário (preencher ao final)
 
