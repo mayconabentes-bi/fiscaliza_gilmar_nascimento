@@ -99,3 +99,18 @@
 - [ ] PRs #96/#97 de ferramentas de QA permanecem drafts e não precisam ser mesclados junto com a correção de dependências.
 
 **Decisão do pré-merge:** NO-GO para merge imediato porque pode provocar publicação automática em produção e o backup PostgreSQL real não foi demonstrado.
+
+
+## Gate de backup e controle de autodeploy de produção — 09/10/2026
+
+- [x] Supabase produção `jnlfmiwczpglojqytrbw`: projeto `ACTIVE_HEALTHY`, região `us-west-2`, Postgres 17. Conexão Supabase disponível **não expõe inventário de backups, plano contratado, PITR ou restauração validada**. Não inferir existência ou idade de backup a partir da saúde do projeto.
+- [x] Procedimento oficial Supabase: confirmar no Dashboard `Database > Backups` backup mais recente, data/hora, janela disponível, política de retenção e se PITR está disponível/ativo. Fonte: `https://supabase.com/docs/guides/platform/backups`. Não acionar Restore na produção para teste.
+- [x] Supabase informa que backups PostgreSQL **não incluem os objetos binários no Storage**, apenas os metadados. A recuperação operacional do FISCALIZE requer também política de cópias privadas das evidências/fotos; preservar e validar separadamente.
+- [x] Railway produção `f8736bdd-496d-4c6f-8736-d4b421b45406` ligado a `main` com `checkSuites=false`, atual `e51ef50d...`; autodeploy é comportamento padrão em serviços conectados ao GitHub. Documentação oficial: `https://docs.railway.com/deployments/github-autodeploys`.
+- [x] Caminho seguro documentado no Railway: em Service Settings, clicar **Disable** em automatic deployments, confirmar visualmente estado desabilitado e manter serviço online; depois do merge autorizado, executar **Deploy Latest Commit** pela Command Palette do Railway para publicar em horário controlado. `Wait for CI` isoladamente não evita publicação automática, somente espera conclusão dos workflows.
+- [ ] Ausente controle autenticado disponível no conector para ler/alterar especificamente a chave **Disable automatic deployments**; requer confirmação explícita no painel Railway antes de mesclar. Não desconectar repositório nem mudar branch como contorno, pois afetaria gatilhos e permissões.
+- [ ] Confirmar backup real disponível e procedimento seguro de restauração **isolada**, sem revelar credenciais nem efetuar restore de produção; registrar horário, escopo de dados, janela e operador responsável.
+- [ ] Confirmar política de backup de evidências Supabase Storage, separada dos metadados do banco.
+- [ ] Após cumprir gates acima, revisar proteção de `main` e obter autorização explícita para merge do PR #95 e deploy manual; rodar CI, monitorar saúde e garantir rollback.
+
+**Conclusão:** pré-flight permanece `NO-GO` para merge neste momento. Nenhuma configuração de produção foi alterada.
