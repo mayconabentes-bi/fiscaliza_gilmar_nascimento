@@ -26,6 +26,14 @@ powershell.exe -NoProfile -NonInteractive -File ".\scripts\backup_preflight_wind
 
 A segunda chamada só verifica a existência do destino e pelo menos 1 GiB livre, **não** confirma que o volume é externo, criptografado ou possui permissões restritas. O operador deve comprovar esses controles separadamente. Compartilhar com a equipe apenas linhas `BACKUP_*`, nunca variáveis `PG_*` ou chaves.
 
+## Ferramenta instalada mas bloqueada pelo Windows
+
+O Windows pode localizar `age.exe` e `age-keygen.exe` pelo PATH, mas impedir a execução devido a App Control / Smart App Control / AppLocker. O diagnóstico **exige executar `--version`** e deve retornar `EXECUCAO_BLOQUEADA_OU_FALHOU` ou `EXECUCAO_FALHOU` quando não puder abrir o executável. Não prosseguir com backup enquanto não estiver `BACKUP_AGE=OK` **e** `BACKUP_AGE_KEYGEN=OK`.
+
+Consultar *Visualizador de Eventos > Logs de Aplicativos e Serviços > Microsoft > Windows > CodeIntegrity > Operational* (bloqueios de executáveis ID 3077) ou *AppLocker > EXE and DLL* (ID 8004). Solicitar ao administrador autorizado análise e, quando justificável, política de permissão para o binário oficial, após verificar origem e assinatura/hash. **Não** desabilitar proteção, alterar política, mover o executável para contornar regras ou renomear o arquivo.
+
+Referência: https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/operations/event-id-explanations
+
 ## Preparar no Windows (PowerShell)
 
 1. Instalar PostgreSQL **client 17** (`pg_dump --version`), Python 3 e ferramenta `age` (`age --version`). Utilizar binários oficiais; não instalar por scripts de terceiros não auditados.
