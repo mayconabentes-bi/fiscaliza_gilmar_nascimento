@@ -1,0 +1,40 @@
+# Backup externo de PostgreSQL — FISCALIZE
+
+## Estado
+
+Procedimento **preparado, não executado em produção**. O backup SQLite que já existe é exclusivo de desenvolvimento e **não protege** o banco Supabase Postgres. O Supabase Free não oferece os backups automáticos de projeto exibidos no Dashboard.
+
+Este novo fluxo faz `pg_dump` somente de leitura dos schemas `public` e `private` do projeto de produção `jnlfmiwczpglojqytrbw`, transmitindo diretamente para criptografia **age**. Nunca grava dump descriptografado em disco. O backup contém dados sensíveis: guardar fora da pasta do repositório em mídia de acesso restrito e manter a chave privada age separada. Não envia conteúdo para GitHub, CI ou serviços terceiros.
+
+## Preparar no Windows (PowerShell)
+
+1. Instalar PostgreSQL **client 17** (`pg_dump --version`), Python 3 e ferramenta `age` (`age --version`). Utilizar binários oficiais; não instalar por scripts de terceiros não auditados.
+2. Criar uma pasta privada de backup em disco externo ou outro destino fora do repositório, com permissões restritas ao operador (ex.: `E:\FiscalizeBackups\Postgres`).
+3. Gerar **offline** um par de chaves age (`age-keygen -o <ARQUIVO_PRIVADO>`); manter a chave privada em mídia segura diferente do backup. Usar apenas a **chave pública** age1... como `AGE_RECIPIENT`.
+4. Obter do Supabase Dashboard da produção o **Session Pooler** na porta **5432** (não usar Transaction Pooler 6543). Guardar a URL/credenciais como variável de ambiente local `PG_BACKUP_URL` sem copiar para chat, GitHub, comando shell com o segredo em texto ou log. `PG_BACKUP_URL` deve corresponder ao projeto `jnlfmiwczpglojqytrbw`. Forçar TLS; para validação de certificado configure `PGSSLROOTCERT` com certificado CA confiável.
+5. Definir `AGE_RECIPIENT` para a chave pública e `BACKUP_OUTPUT_DIR` para pasta externa. Exemplo com **valores fictícios**, não copiar credenciais:
+   ```powershell
+   $env:BACKUP_OUTPUT_DIR = 'E:\FiscalizeBackups\Postgres'
+   $env:AGE_RECIPIENT = '<CHAVE_PUBLICA_AGE>'
+   # Configure PG_BACKUP_URL localmente, sem imprimir seu conteúdo.
+   python scripts/backup_postgres_encrypted.py
+   ```
+   O comando anterior realiza apenas preflight. Retorno esperado: `BACKUP_GUARD=OK` e `BACKUP_MODE=DRY_RUN_NO_DATABASE_ACCESS`.
+6. Somente quando a identidade de produção, ferramentas e mídia segura estiverem confirmadas, executar `python scripts/backup_postgres_encrypted.py --execute`. O comando lê PostgreSQL produção, criptografa em trânsito local e gera o arquivo `.dump.age` e manifesto `.manifest.json` com SHA256 do *arquivo criptografado*. Ele **não restaura** nem altera linhas. Não enviar backup ou manifesto para GitHub.
+7. Conferir manifesto, tamanho e hash do arquivo cifrado. Fazer teste de descriptografia e `pg_restore` **em PostgreSQL 17 local/isolado e vazio**, com banco sem acesso à produção. O backup ainda não será considerado recuperável antes desse teste; `pg_restore --list` sozinho não comprova restauração.
+8. Configurar rotação e alerta de falhas **apenas após a primeira restauração validada**. Não apagar cópias antigas sem política formal aprovada, nem deixar cópias cifradas apenas no mesmo disco do computador.
+
+## Limites e cuidados
+
+- Cópia focada nos schemas **public/private**; objetos/roles gerenciados do Supabase e instâncias de Auth precisam ser verificados separadamente. O processo não cobre todos os componentes para reconstruir um projeto Supabase inteiro.
+- **Supabase Storage**: os arquivos binários de evidências/fotos não estão incluídos no `pg_dump`. É necessária cópia segura e restaurável dos objetos privados e verificação de integridade separada.
+- Backup criptografado exige duas coisas: **artefato e chave privada de descriptografia**. Se qualquer um for perdido, a recuperação pode falhar.
+- A operação `pg_dump` consome recursos e pode produzir pico de carga; evitar horários críticos e monitorar.
+- Confirmar restauração isolada, permissões, RLS, índices, integridade e contagens antes de declarar GO para produção.
+- Não é recomendável automatizar no GitHub Actions com credenciais pessoais de banco enquanto o armazenamento seguro dos backups não estiver formalmente preparado.
+
+## Critério GO/NO-GO
+
+Até existir cópia cifrada externa com manifesto verificado, chave privada recuperável, restauração isolada testada e estratégia das evidências Storage, **NO-GO para merge que provoque deploy automático**.
+
+Referência: https://supabase.com/docs/guides/platform/migrating-to-supabase/postgres (pg_dump/restore com Session Pooler) e https://docs.railway.com/deployments/github-autodeploys (desativar deploy automático antes do merge).
