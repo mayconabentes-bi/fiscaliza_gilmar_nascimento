@@ -72,3 +72,14 @@
 - [ ] Verificar discrepância: `environment_status` da produção informou 1 `EnvironmentPatch` staged, enquanto `get_staged_changes` informou `null`; consultar novamente antes de qualquer alteração e jamais aplicar patch de conteúdo não verificado.
 - [ ] Registrar decisão de política de retenção do evento de auditoria associado a uma demanda já removida (registro pseudonimizado, integridade referencial e exigências LGPD), sem apagar rastros.
 - [ ] Para lançar a correção em produção: revisão de diff, aprovar merge PR #95, revalidar CI da main, confirmar staged pendente, backup e plano de rollback, então solicitar autorização específica de deploy e realizar smoke pós-deploy.
+
+
+## Encerramento da auditoria: staged e trilha de auditoria — 09/10/2026
+
+- [x] Railway produção verificado por `get_staged_changes`, `describe_environment` e `describe_service`: **staged = null**, zero alterações de recursos ou serviço; serviço `live`, deployment `ac88cb02-d036-4305-929d-c95592fe046f` preservado.
+- [x] `environment_status` ainda expõe `EnvironmentPatch` antigo, id `3d662b61-c97b-4cb5-bb98-dda29d205bea`, iniciado em 05/10/2026, marcado `staged`, porém com `changes=[]`. Interpretar como **divergência residual de status**, não como autorização de aplicar patch. Revalidar antes de deployment. Não houve deploy.
+- [x] Auditoria somente leitura no Supabase homologação: 6 eventos, sendo 2 `EQUIPE_CRIADA`, 1 `EQUIPE_ATUALIZADA`, 1 `STATUS_ATUALIZADO`, 2 `SOLICITACAO_EXCLUSAO`. Eventos possuem responsável e metadata preenchidos. Não foram consultados nomes, e-mails, senhas ou payloads completos.
+- [x] O único evento `STATUS_ATUALIZADO` aponta UUID de demanda não mais existente; coerente com limpeza da fixture, mas não associa conclusivamente ao lote sem rastrear UUID antes da exclusão. A tabela usa `entidade_id` texto sem FK e permite manutenção da trilha.
+- [x] **Decisão conservadora de retenção:** preservar os 6 eventos; não apagar, editar nem anonimizar por suposição. Aplicar futura política formal de retenção e minimização LGPD antes de eventuais exclusões. Revisar se `usuario_responsavel_id` de conta sintética removida e metadata com dados pessoais requerem tratamento; não expor dados pessoais na revisão pública.
+- [ ] Falta aprovação funcional/documental da política de retenção pelo responsável pelo tratamento/DPO; não tratar como aprovação jurídica definitiva.
+- [ ] Falta aprovação específica para merge do PR #95, revisão do CI pós-merge, conferência de backup e rollback e publicação controlada em produção.
