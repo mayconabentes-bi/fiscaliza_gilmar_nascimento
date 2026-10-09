@@ -29,7 +29,9 @@
 ### A01 — Auditar segurança do Supabase
 **Estado:** PENDENTE | **Prioridade:** P0
 
-- [ ] Verificar privilégios reais, exposição pela API e grants dos papéis `anon`/`authenticated` para `private.setores` e `private.setor_categorias`.
+- [x] Consultar privilégios SQL e grants efetivos dos papéis `anon`/`authenticated` para `private.setores` e `private.setor_categorias` (09/10/2026: sem USAGE no schema e sem SELECT/INSERT/UPDATE/DELETE nas duas tabelas). **Acesso funcional pela API ainda pendente.**
+- [ ] Confirmar exposição efetiva do schema `private` pela Data API e testar negação HTTP com identidade não autorizada, sem enviar segredos a logs.
+- [x] Comparar estado RLS produção/homologação (09/10/2026: desligado nas duas tabelas em produção; ligado em homologação; sem políticas detectadas na consulta de produção).
 - [ ] Revisar a necessidade e desenho de RLS nessas tabelas; **não habilitar RLS nem criar policies sem ensaio e plano de retorno**.
 - [ ] Testar acesso negado com identidades não autorizadas e isolamento entre setores, sem usar dados pessoais reais.
 - [ ] Registrar achados, decisões e evidências, sem imprimir segredos.
@@ -127,6 +129,7 @@
 | Data (Manaus) | Atividade | Ação/resultado | Evidência | Próximo passo |
 |---|---|---|---|---|
 | 09/10/2026 | Diagnóstico inicial | CI da `main`, deploy correspondente e inventário Supabase verificados; riscos e testes de escala ainda pendentes | CI 37256427911; PR #91; inventário de tabelas | Começar A01 com leitura dos privilégios e desenho de RLS |
+| 09/10/2026 | A01 — levantamento SQL somente leitura | Produção: `private.setores` e `private.setor_categorias` sem RLS, mas `anon`, `authenticated`, `authenticator` e `service_role` não têm USAGE no schema nem privilégios de tabela; homologação tem RLS ligado. Não foi demonstrada exploração nem validada a superfície HTTP/Data API. Advisor: 25 tabelas RLS sem policies (INFO), aviso de senhas comprometidas desativado (WARN). | Consultas de catálogo `pg_class`, `pg_namespace`, `pg_roles`, `has_schema_privilege`, `has_table_privilege`, `pg_policies` e Supabase Security Advisors, executadas sem mutações em 09/10/2026. | Conferir Data API, negação HTTP e fluxo da aplicação antes de propor mudança de RLS |
 
 > Adicionar uma linha a cada etapa comprovada. Se uma tentativa falhar, registrar como **falhou/pendente**, sem marcar o checkbox.
 
