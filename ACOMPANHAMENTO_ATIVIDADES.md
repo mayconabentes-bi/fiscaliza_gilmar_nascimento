@@ -209,6 +209,15 @@
 
 **Interpretação:** produções DNS observados e conexão TCP da homologação não constituem comprovação do isolamento completo. **NO-GO** para trocar a branch e rodar testes de escrita.
 
+## Instrumentação de pré-validação segura — 09/10/2026
+
+- [x] Identificar que o conector Railway por OAuth permite **nomes**, mas não valores de variáveis, impedindo comprovação direta de tenant no contexto do ChatGPT.
+- [x] Confirmar que DNS de produção mostra projeto de produção e que a porta TCP 6543 em homologação **não identifica o tenant** de um pooler compartilhado.
+- [x] Preparar verificador isolado e sem segredos em [PR #96](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/pull/96), `scripts/verify-staging-destinations.mjs`; sem operações de rede, banco ou Storage; resultados somente `OK`, `DIVERGENTE`, `INCONCLUSIVO`.
+- [ ] Revisar CI do PR #96 e executar o verificador **dentro do ambiente de homologação**, com variáveis do Railway; valores de credenciais nunca devem ser compartilhados.
+- [ ] Validar separadamente titularidade/acesso ao bucket de testes; configuração presente não comprova destino do Storage.
+- [ ] Continuar NO-GO para trocar a source da homologação até completar esses controles. A criação do PR #96 **não implantou** o diagnóstico nem executou o verificador.
+
 ## Encerramento diário (preencher ao final)
 
 - **Atividades concluídas e comprovadas:** GET anônimo das rotas administrativas (401), `/health` (200), `/ready` (200), diagnóstico de privilégios e identificação das dependências vulneráveis; atividades A00/A01/A02 continuam em andamento.
