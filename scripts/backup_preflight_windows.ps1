@@ -13,18 +13,23 @@ function Get-ToolStatus {
     $cmd = Get-Command -Name $Name -CommandType Application -ErrorAction SilentlyContinue |
         Select-Object -First 1
     if (-not $cmd) { return 'AUSENTE' }
-    if (-not $MinVersion) { return 'OK' }
-
+    # Get-Command confirma somente existencia. Executar --version verifica se
+    # a politica de Controle de Aplicativos do Windows permite a ferramenta.
+    # Nenhuma chave, arquivo de dados ou rede e acessada aqui.
     try {
         $versionText = (& $cmd.Source --version 2>$null | Out-String).Trim()
-        if ($LASTEXITCODE -ne 0) { return 'VERSAO_INCONCLUSIVA' }
-        if ($versionText -notmatch '(\d+)(?:\.\d+)?') { return 'VERSAO_INCONCLUSIVA' }
-        $major = [int]$Matches[1]
-        if ($major -lt [int]$MinVersion) { return 'VERSAO_INCOMPATIVEL' }
+        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($versionText)) {
+            return 'EXECUCAO_FALHOU'
+        }
+        if ($MinVersion) {
+            if ($versionText -notmatch '(\d+)(?:\.\d+)?') { return 'VERSAO_INCONCLUSIVA' }
+            $major = [int]$Matches[1]
+            if ($major -lt [int]$MinVersion) { return 'VERSAO_INCOMPATIVEL' }
+        }
         return 'OK'
     }
     catch {
-        return 'VERSAO_INCONCLUSIVA'
+        return 'EXECUCAO_BLOQUEADA_OU_FALHOU'
     }
 }
 
