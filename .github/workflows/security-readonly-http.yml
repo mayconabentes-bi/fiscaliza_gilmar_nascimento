@@ -1,0 +1,57 @@
+name: Auditoria HTTP somente leitura (FISCALIZE)
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/security-readonly-http.yml"
+      - "ACOMPANHAMENTO_ATIVIDADES.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-readonly-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  public-http-smoke:
+    name: Rotas publicas e isolamento admin sem autenticacao
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: GET health, ready e negativas administrativas (sem credenciais)
+        shell: bash
+        env:
+          BASE_URL: https://fiscalizagilmarnascimento-production.up.railway.app
+        run: |
+          set -euo pipefail
+          printf '## Smoke HTTP publico (somente GET; sem cookies, tokens ou corpos)\n' >> "$GITHUB_STEP_SUMMARY"
+          http_get() {
+            local path="$1"
+            local allow="$2"
+            local status
+            status=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+              --max-time 15 --connect-timeout 8 --retry 0 \
+              --proto '=https' --tlsv1.2 \
+              --header 'Cache-Control: no-cache' \
+              "$BASE_URL$path") || {
+                echo "Falha de rede em $path" >&2
+                echo "- \`$path\`: falha de rede" >> "$GITHUB_STEP_SUMMARY"
+                exit 1
+              }
+            printf '%s %s\n' "$path" "$status"
+            echo "- \`$path\`: HTTP $status" >> "$GITHUB_STEP_SUMMARY"
+            if [[ ",$allow," != *",$status,"* ]]; then
+              echo "Resposta inesperada em $path: $status (esperado: $allow)" >&2
+              exit 1
+            fi
+          }
+          http_get "/health" "200"
+          http_get "/ready" "200"
+          http_get "/api/admin/equipe" "401,403"
+          http_get "/api/admin/demandas" "401,403"
+          http_get "/api/admin/audit" "401,403"
+          echo "Este teste nao valida a Data API do Supabase, usuarios autenticados nem carga." >> "$GITHUB_STEP_SUMMARY"
