@@ -6,6 +6,26 @@ Procedimento **preparado, não executado em produção**. O backup SQLite que j�
 
 Este novo fluxo faz `pg_dump` somente de leitura dos schemas `public` e `private` do projeto de produção `jnlfmiwczpglojqytrbw`, transmitindo diretamente para criptografia **age**. Nunca grava dump descriptografado em disco. O backup contém dados sensíveis: guardar fora da pasta do repositório em mídia de acesso restrito e manter a chave privada age separada. Não envia conteúdo para GitHub, CI ou serviços terceiros.
 
+## Diagnóstico Windows — antes de configurar credenciais
+
+O script `scripts/backup_preflight_windows.ps1` foi criado para execução no computador do operador. Ele é estritamente local, **não lê** `PG_BACKUP_URL`, `AGE_RECIPIENT`, chaves privadas ou senhas, e **não** instala software, cria arquivos, consulta banco ou executa backup. Os testes funcionais incluem execução sem segredos no runner Windows da CI.
+
+No PowerShell na raiz do repositório, baixe o arquivo da branch revisada e execute:
+
+```powershell
+# Baixe a versão fixada por commit; atualize o SHA conforme o PR #98.
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/c24f8a6f55eaeb6e8debae0cc4113f962fa2697c/scripts/backup_preflight_windows.ps1" -OutFile ".\scripts\backup_preflight_windows.ps1"
+powershell.exe -NoProfile -NonInteractive -File ".\scripts\backup_preflight_windows.ps1"
+```
+
+O primeiro diagnóstico apresenta `BACKUP_PYTHON`, `BACKUP_PG_DUMP_17`, `BACKUP_AGE`, `BACKUP_AGE_KEYGEN` e `BACKUP_DESTINO`. Se o destino ainda não estiver definido, `BACKUP_DESTINO=NAO_CONFIGURADO` e `BACKUP_PREFLIGHT=PENDENTE` são resultados normais. **Não escolha pasta dentro do GitHub/repositório**; quando existir uma pasta protegida fora dele, utilize:
+
+```powershell
+powershell.exe -NoProfile -NonInteractive -File ".\scripts\backup_preflight_windows.ps1" -BackupDir "E:\FiscalizeBackups\Postgres"
+```
+
+A segunda chamada só verifica a existência do destino e pelo menos 1 GiB livre, **não** confirma que o volume é externo, criptografado ou possui permissões restritas. O operador deve comprovar esses controles separadamente. Compartilhar com a equipe apenas linhas `BACKUP_*`, nunca variáveis `PG_*` ou chaves.
+
 ## Preparar no Windows (PowerShell)
 
 1. Instalar PostgreSQL **client 17** (`pg_dump --version`), Python 3 e ferramenta `age` (`age --version`). Utilizar binários oficiais; não instalar por scripts de terceiros não auditados.
