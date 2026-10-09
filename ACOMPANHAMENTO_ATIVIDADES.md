@@ -30,7 +30,9 @@
 **Estado:** PENDENTE | **Prioridade:** P0
 
 - [x] Consultar privilégios SQL e grants efetivos dos papéis `anon`/`authenticated` para `private.setores` e `private.setor_categorias` (09/10/2026: sem USAGE no schema e sem SELECT/INSERT/UPDATE/DELETE nas duas tabelas). **Acesso funcional pela API ainda pendente.**
-- [ ] Confirmar exposição efetiva do schema `private` pela Data API e testar negação HTTP com identidade não autorizada, sem enviar segredos a logs.
+- [x] Analisar exposição por privilégios do catálogo PostgreSQL: `anon` e `authenticated` não possuem `SELECT` em nenhuma das tabelas do schema `private` consultadas; nenhuma função de setor com `SECURITY DEFINER` e `EXECUTE` público foi encontrada no inventário filtrado (09/10/2026).
+- [x] Revisar proteção das rotas no código `main`: middleware `requireInternalAccess` obrigatório sob `/api/admin`, revalidação da conta ativa no Postgres e lista fechada para perfis setoriais; listagem de equipe fora do escopo de assessor.
+- [ ] Confirmar configuração efetiva dos schemas expostos na Data API e testar negação **HTTP** com identidade não autorizada, sem segredos nem dados reais; sem prova HTTP, não marcar como concluído.
 - [x] Comparar estado RLS produção/homologação (09/10/2026: desligado nas duas tabelas em produção; ligado em homologação; sem políticas detectadas na consulta de produção).
 - [ ] Revisar a necessidade e desenho de RLS nessas tabelas; **não habilitar RLS nem criar policies sem ensaio e plano de retorno**.
 - [ ] Testar acesso negado com identidades não autorizadas e isolamento entre setores, sem usar dados pessoais reais.
@@ -129,6 +131,7 @@
 | Data (Manaus) | Atividade | Ação/resultado | Evidência | Próximo passo |
 |---|---|---|---|---|
 | 09/10/2026 | Diagnóstico inicial | CI da `main`, deploy correspondente e inventário Supabase verificados; riscos e testes de escala ainda pendentes | CI 37256427911; PR #91; inventário de tabelas | Começar A01 com leitura dos privilégios e desenho de RLS |
+| 09/10/2026 | A01 — auditoria adicional sem mutações | Os papéis públicos não possuem `SELECT` nas tabelas do schema `private` consultadas; código exige autenticação e autorização backend para `/api/admin` e delimita rotas de setor. Teste HTTP não executado/concluído por impossibilidade de alcançar o endereço da aplicação nesta sessão (falha DNS no ambiente de execução); configuração da Data API não confirmada. | Catálogo de `pg_class`, `pg_proc`, `has_table_privilege` e arquivos `app.ts`, `internalAccess.ts`, `teamManagementRoutes.ts`, `adminAccessPolicy.ts` | Realizar teste HTTP sem credenciais e verificar schemas expostos; manter A01 aberta |
 | 09/10/2026 | A01 — levantamento SQL somente leitura | Produção: `private.setores` e `private.setor_categorias` sem RLS, mas `anon`, `authenticated`, `authenticator` e `service_role` não têm USAGE no schema nem privilégios de tabela; homologação tem RLS ligado. Não foi demonstrada exploração nem validada a superfície HTTP/Data API. Advisor: 25 tabelas RLS sem policies (INFO), aviso de senhas comprometidas desativado (WARN). | Consultas de catálogo `pg_class`, `pg_namespace`, `pg_roles`, `has_schema_privilege`, `has_table_privilege`, `pg_policies` e Supabase Security Advisors, executadas sem mutações em 09/10/2026. | Conferir Data API, negação HTTP e fluxo da aplicação antes de propor mudança de RLS |
 
 > Adicionar uma linha a cada etapa comprovada. Se uma tentativa falhar, registrar como **falhou/pendente**, sem marcar o checkbox.
