@@ -200,6 +200,15 @@
 
 **Decisão:** NO-GO temporário para trocar a source da homologação enquanto a ligação a banco e Storage isolados não estiver demonstrada.
 
+## Verificação de redes Railway — 09/10/2026
+
+- [x] Coletar somente metadados de DNS/fluxo de rede no Railway, sem valores de variáveis. Produção resolveu `jnlfmiwczpglojqytrbw.supabase.co` e `aws-0-us-west-2.pooler.supabase.com`, compatível com Supabase de produção. Homologação apresentou egress TCP na porta `6543`, compatível com pooler PostgreSQL, porém **sem amostras DNS disponíveis nesta consulta**.
+- [ ] **Pendente crítico:** comprovar identificador efetivo da instância e destino do Storage da homologação. **Porta 6543 ou host compartilhado do pooler não distinguem projetos**; projetos diferentes podem usar o mesmo hostname.
+- [ ] Confirmar o projeto PostgreSQL em execução por prova controlada, somente leitura, idealmente impressão digital HMAC/identificador do tenant da conexão, **sem registrar DSN, senha, chave de serviço, credenciais nem dados de usuários**. Comparar com IDs esperados `zqxouixpokuprqqscnwf` (homologação) e `jnlfmiwczpglojqytrbw` (produção).
+- [ ] Confirmar separadamente `SUPABASE_URL` e `SUPABASE_EVIDENCE_BUCKET` da homologação por diagnóstico seguro no próprio serviço. Não executar teste de escrita nem alterar a source antes de comprovar ambos.
+
+**Interpretação:** produções DNS observados e conexão TCP da homologação não constituem comprovação do isolamento completo. **NO-GO** para trocar a branch e rodar testes de escrita.
+
 ## Encerramento diário (preencher ao final)
 
 - **Atividades concluídas e comprovadas:** GET anônimo das rotas administrativas (401), `/health` (200), `/ready` (200), diagnóstico de privilégios e identificação das dependências vulneráveis; atividades A00/A01/A02 continuam em andamento.
