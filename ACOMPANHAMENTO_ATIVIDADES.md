@@ -33,7 +33,7 @@
 - [x] Confirmar no lockfile as origens: `express` → `proxy-addr`; `postcss`/`@tailwindcss/node` → `source-map-js`.
 - [x] Abrir [PR #95](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/pull/95), branch separada da `main`, alterando **somente** `package-lock.json` nas entradas de `proxy-addr` 2.0.8 e `source-map-js` 1.2.2; diff de 6 linhas adicionadas e 6 removidas (09/10/2026).
 - [x] Verificar `npm ci`, TypeScript, build e `npm run audit:high` em ambos os jobs do [CI #37948199475](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37948199475) — etapas aprovadas; [Visual QA #37948199334](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37948199334) SUCCESS.
-- [ ] Confirmar **resultado final** do segundo job de CI (Deep QA de fontes públicas ainda em execução na última consulta), e revisar evidências de todos os contratos de segurança.
+- [x] Confirmar resultado final dos dois jobs do [CI #37948199475](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37948199475): ambos `success`, incluindo Deep QA; [Visual QA #37948199334](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37948199334) também `success` (09/10/2026).
 - [ ] Homologar, revisar impacto do rate limiting e definir rollback antes de qualquer promoção a produção.
 
 **Critério de conclusão:** CI integralmente verde com versões corrigidas, homologação verificada e aprovação para publicar; a vulnerabilidade reportada no pacote não prova, por si só, exploração no projeto.  
@@ -168,8 +168,9 @@
 - [x] PR #95 permanece aberto, sem merge; head `8bcb724e2be92d6199f080d4c14c1ace72e7014a`, base `main` em `e51ef50d86b80b03c786ae3193a8a802ff9e5cfb`.
 - [x] Job P0 do [CI #37948199475](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37948199475): **success**.
 - [x] `npm run audit:high` aprovado nos dois jobs; [Visual QA #37948199334](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37948199334): **success**.
-- [ ] Conclusão global do CI/Deep QA: o passo **Deep QA with real public data** ainda constava em execução na última consulta de 09/10/2026.
+- [x] Conclusão global do CI/Deep QA: dois jobs `success` em 09/10/2026, incluindo `Deep QA with real public data` e auditoria de vulnerabilidades.
 - [x] Conferir Railway: homologação e produção usam serviços, ambientes e URLs separados; produção segue commit `e51ef50` e homologação segue `88c2cf42`, da branch `fix/citizen-login-contract-diagnostics-20260924`.
+- [x] Consultar inventário de projetos Supabase distintos em 09/10/2026: homologação com 2 cidadãos e 0 demandas; produção com 21 cidadãos e 71 demandas. Isso **não comprova** que o Railway utiliza a instância correta.
 - [ ] **Confirmar por prova segura** que `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` e `SUPABASE_EVIDENCE_BUCKET` da homologação se referem **exclusivamente** a recursos de homologação; os conectores atuais revelam apenas nomes de variáveis, nunca valores. **Não mudar a source da homologação nem executar testes de escrita enquanto não comprovado**.
 
 ### Critérios de homologação
@@ -185,6 +186,8 @@
 - Se um deployment de produção posterior for revertido, também coordenar com GitHub para que a branch `main` não publique novamente automaticamente a versão defeituosa. **Não restaurar banco em produção sem diagnóstico, backup íntegro e autorização específica.**
 - O rollback de código não desfaz alterações de schema, dados ou Storage (não previstos neste PR). Revalidar os identificadores e elegibilidade de rollback imediatamente antes de qualquer ação.
 - **Estado de liberação:** NÃO AUTORIZADO; sem deploy, merge ou mutação de banco nesta etapa.
+
+| 09/10/2026 | A00 — conclusão do CI e inventário de bancos | PR #95: CI com dois jobs `success`, Deep QA `success`, Visual QA `success`. Supabase apresenta projetos separados, homologação 2 cidadãos/0 demandas e produção 21 cidadãos/71 demandas. **Vinculação do Railway às instâncias Supabase ainda não comprovada** porque valores das variáveis são redigidos. Não houve deploy nem merge. | [CI #37948199475](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37948199475); [Visual QA #37948199334](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37948199334); inventário Supabase 09/10/2026 | Provar isolamento de conexão de banco/Storage e homologar PR #95 |
 
 ## Encerramento diário (preencher ao final)
 
