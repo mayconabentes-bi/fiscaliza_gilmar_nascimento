@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "scripts/backup_postgres_encrypted.py"
+      - "scripts/backup_preflight_windows.ps1"
       - "tests/test_backup_postgres_encrypted.py"
       - ".github/workflows/backup-postgres-guards.yml"
   workflow_dispatch:
@@ -26,3 +27,20 @@ jobs:
         run: python -m py_compile scripts/backup_postgres_encrypted.py tests/test_backup_postgres_encrypted.py
       - name: Synthetic tests - no DB, no secrets
         run: python -m unittest discover -s tests -p test_backup_postgres_encrypted.py -v
+
+  windows-preflight:
+    name: Windows PowerShell diagnostic, no credentials
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test PowerShell diagnostics without backup access
+        shell: pwsh
+        run: |
+          $result = @(powershell.exe -NoProfile -NonInteractive -File ".\\scripts\\backup_preflight_windows.ps1")
+          if ($LASTEXITCODE -ne 0) { throw "Falha no script PowerShell" }
+          $report = $result -join "`n"
+          if ($report -notmatch 'BACKUP_PREFLIGHT=(OK|PENDENTE)') { throw "Status de preflight ausente" }
+          if ($report -notmatch 'BACKUP_DADOS_COPIADOS=NAO') { throw "Protecao contra gravacao ausente" }
+          if ($report -notmatch 'BACKUP_PRODUCAO_ACESSADA=NAO') { throw "Protecao contra rede ausente" }
+          Write-Output 'BACKUP_PREFLIGHT_WINDOWS_CI=OK'
