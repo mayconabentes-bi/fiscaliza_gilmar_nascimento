@@ -1,0 +1,50 @@
+name: Homologacao session e RBAC sem credenciais
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/homologacao-session-readonly.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  session-smoke:
+    name: Sessao anonima e cookie invalido somente GET
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Consultar apenas endpoints sem contas
+        env:
+          TARGET: https://fiscalize-homologacao-homologacao.up.railway.app
+        run: |
+          node --input-type=module <<'EOF'
+          const checks = [
+            {path:"/api/auth/session", expected:401},
+            {path:"/api/auth/session", expected:401, cookie:"token=invalid-qa-placeholder"},
+            {path:"/api/admin/equipe", expected:401, cookie:"token=invalid-qa-placeholder"},
+            {path:"/api/admin/demandas", expected:401, cookie:"token=invalid-qa-placeholder"},
+            {path:"/api/admin/audit", expected:401, cookie:"token=invalid-qa-placeholder"}
+          ];
+          let failures=0;
+          for (const check of checks) {
+            try {
+              const res=await fetch(process.env.TARGET+check.path, {
+                method:"GET", redirect:"manual",
+                headers:check.cookie?{Cookie:check.cookie}:{},
+                signal:AbortSignal.timeout(12000)
+              });
+              const ok=res.status===check.expected;
+              console.log(check.path+" ["+(check.cookie?"cookie-invalido":"anonimo")+"] HTTP "+res.status+" esperado "+check.expected+" "+(ok?"OK":"FALHOU"));
+              if (!ok) failures++;
+            } catch {
+              console.log(check.path+" ERRO DE REDE");
+              failures++;
+            }
+          }
+          console.log("RESULTADO="+(failures?"FALHA":"SUCCESS"));
+          if (failures) process.exitCode=1;
+          EOF
