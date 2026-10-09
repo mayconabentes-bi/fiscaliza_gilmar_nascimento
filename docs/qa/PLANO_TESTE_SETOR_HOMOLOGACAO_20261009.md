@@ -23,3 +23,16 @@
 - Revisão de restrições, triggers e dependências de limpeza ainda pendente.
 - Autorização geral do usuário para prosseguir já concedida; nenhuma escrita deve ocorrer se o identificador do destino falhar, ou se limpeza reversível não estiver comprovada.
 - PR #95 já implantado apenas em homologação; produção e `main` permanecem inalteradas.
+
+## Auditoria de dependências, gatilhos e papéis — 09/10/2026
+
+- [x] Consultas SQL de metadados, **somente leitura**, executadas diretamente no projeto de homologação `zqxouixpokuprqqscnwf`.
+- [x] Inventário agregado de perfis: 3 administradores internos; 1 ADMIN/SUPER_ADMIN, 2 ATENDENTE, 0 COORDENADOR. Não consultar credenciais nem perfis nominais.
+- [x] SAUDE e INFRAESTRUTURA_URBANA possuem setor ativo com uma categoria cada. SAUDE já tem um atendente vinculado; INFRAESTRUTURA_URBANA não tem atendentes vinculados.
+- [x] Sem triggers **personalizados** nas tabelas-alvo consultadas. Isso não elimina gatilhos internos de FK, nem obrigações de auditoria.
+- [x] Referências relevantes: `private.field_registration_tickets.assessor_id -> private.admins.id` sem cascade; `private.admins.setor_id -> private.setores.id`; `public.demanda_evidencias.demanda_id -> public.demandas.id ON DELETE CASCADE`; `public.historico_status_demandas.demanda_id -> public.demandas.id ON DELETE CASCADE`.
+- [ ] Antes de inserir contas, definir execução isolada com segredos somente na memória local, identificadores de lote e teardown independente, protegendo tickets, evidências e auditoria. Não apagar demandas existentes nem assumir que correspondem a testes.
+- [ ] Criar as duas contas efêmeras e demandas sintéticas com identificadores exclusivos somente após revisar script de provisionamento, limpeza e políticas da API.
+- [ ] Testar listagem e acesso cruzado, expiração e remoção segura das fixtures. Nunca reutilizar administradores existentes nem alterar senhas preexistentes.
+
+**Conclusão:** auditoria pré-fixture favorável, porém gravação/limpeza **ainda não executada**. Produção fora de escopo.
