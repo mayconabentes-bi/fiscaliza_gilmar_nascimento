@@ -44,3 +44,21 @@ jobs:
           if ($report -notmatch 'BACKUP_DADOS_COPIADOS=NAO') { throw "Protecao contra gravacao ausente" }
           if ($report -notmatch 'BACKUP_PRODUCAO_ACESSADA=NAO') { throw "Protecao contra rede ausente" }
           Write-Output 'BACKUP_PREFLIGHT_WINDOWS_CI=OK'
+      - name: Detect non-runnable age binaries (simulated app control failure)
+        shell: pwsh
+        run: |
+          $fake = Join-Path $env:RUNNER_TEMP 'qa-unusable-age'
+          New-Item -ItemType Directory -Path $fake -Force | Out-Null
+          Set-Content -Path (Join-Path $fake 'age.exe') -Value 'invalid executable - offline test'
+          Set-Content -Path (Join-Path $fake 'age-keygen.exe') -Value 'invalid executable - offline test'
+          $env:PATH = "$fake;$env:PATH"
+          $result = @(powershell.exe -NoProfile -NonInteractive -File ".\scripts\backup_preflight_windows.ps1")
+          if ($LASTEXITCODE -ne 0) { throw 'Preflight encerrou inesperadamente' }
+          $report = $result -join "`n"
+          if ($report -notmatch 'BACKUP_AGE=EXECUCAO_BLOQUEADA_OU_FALHOU' -and $report -notmatch 'BACKUP_AGE=EXECUCAO_FALHOU') {
+            throw 'Executavel nao operacional foi aceito'
+          }
+          if ($report -notmatch 'BACKUP_PREFLIGHT=PENDENTE') {
+            throw 'Preflight liberado apesar de ferramentas bloqueadas'
+          }
+          Write-Output 'BACKUP_AGE_NAO_EXECUTAVEL_BLOQUEADO=OK'
