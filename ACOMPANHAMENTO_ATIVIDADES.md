@@ -162,6 +162,30 @@
 
 | 09/10/2026 | A00 — correção preparada em PR isolado | [PR #95](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/pull/95) troca `proxy-addr` 2.0.7→2.0.8 e `source-map-js` 1.2.1→1.2.2 apenas no lockfile (6+ / 6−). `npm ci`, build, TypeScript e os dois gates `npm audit` aprovados; Visual QA SUCCESS. **CI segundo job ainda verificando Deep QA na última consulta.** Nenhum merge/deploy. | [CI #37948199475](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37948199475); [Visual QA #37948199334](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37948199334); [issue #94](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/issues/94) | Concluir CI integral, homologação e decisão de liberação com rollback |
 
+## Plano de validação e rollback do PR #95 (09/10/2026)
+
+### Situação confirmada
+- [x] PR #95 permanece aberto, sem merge; head `8bcb724e2be92d6199f080d4c14c1ace72e7014a`, base `main` em `e51ef50d86b80b03c786ae3193a8a802ff9e5cfb`.
+- [x] Job P0 do [CI #37948199475](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37948199475): **success**.
+- [x] `npm run audit:high` aprovado nos dois jobs; [Visual QA #37948199334](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37948199334): **success**.
+- [ ] Conclusão global do CI/Deep QA: o passo **Deep QA with real public data** ainda constava em execução na última consulta de 09/10/2026.
+- [x] Conferir Railway: homologação e produção usam serviços, ambientes e URLs separados; produção segue commit `e51ef50` e homologação segue `88c2cf42`, da branch `fix/citizen-login-contract-diagnostics-20260924`.
+- [ ] **Confirmar por prova segura** que `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` e `SUPABASE_EVIDENCE_BUCKET` da homologação se referem **exclusivamente** a recursos de homologação; os conectores atuais revelam apenas nomes de variáveis, nunca valores. **Não mudar a source da homologação nem executar testes de escrita enquanto não comprovado**.
+
+### Critérios de homologação
+- [ ] Fixar o serviço de homologação **somente** no commit testado do PR #95, mantendo histórico da source anterior e anotando o novo deployment ID.
+- [ ] Com dados sintéticos e sem gravação na produção, conferir `/health`, `/ready`, login e sessão, logout, cadastro em IP compartilhado, 401 nas rotas protegidas e controles de setor.
+- [ ] Conferir logs sem segredos, resposta HTTP 5xx, `npm audit`, integridade de dados e eventuais falhas de inicialização.
+- [ ] Não fazer merge se CI/Deep QA falhar ou se não for possível confirmar isolamento e rollback.
+
+### Rollback documentado (não executado)
+- **Produção antes do PR:** Railway serviço `fiscaliza_gilmar_nascimento`, environment `production`, deployment `ac88cb02-d036-4305-929d-c95592fe046f`, commit `e51ef50`, status `SUCCESS`, `canRollback=true` na consulta de 09/10/2026.
+- **Homologação antes da mudança:** serviço `fiscalize-homologacao`, environment `homologacao`, deployment `a66986a6-ff30-42ec-b0af-05aae60e0a9e`, commit `88c2cf42`, status `SUCCESS`, `canRollback=true`.
+- Se a validação falhar, **interromper a promoção**, restaurar a source/commit anterior **do mesmo ambiente**, usando redeploy do deployment de referência se ainda disponível e compatível, e conferir health/ready, sessões, logs e dependências.
+- Se um deployment de produção posterior for revertido, também coordenar com GitHub para que a branch `main` não publique novamente automaticamente a versão defeituosa. **Não restaurar banco em produção sem diagnóstico, backup íntegro e autorização específica.**
+- O rollback de código não desfaz alterações de schema, dados ou Storage (não previstos neste PR). Revalidar os identificadores e elegibilidade de rollback imediatamente antes de qualquer ação.
+- **Estado de liberação:** NÃO AUTORIZADO; sem deploy, merge ou mutação de banco nesta etapa.
+
 ## Encerramento diário (preencher ao final)
 
 - **Atividades concluídas e comprovadas:** GET anônimo das rotas administrativas (401), `/health` (200), `/ready` (200), diagnóstico de privilégios e identificação das dependências vulneráveis; atividades A00/A01/A02 continuam em andamento.
