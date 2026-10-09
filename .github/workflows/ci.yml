@@ -34,30 +34,6 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Auditoria HTTP anonima (temporaria, somente GET)
-        shell: bash
-        env:
-          BASE_URL: https://fiscalizagilmarnascimento-production.up.railway.app
-        run: |
-          set -euo pipefail
-          failed=0
-          echo "## Auditoria HTTP sem autenticacao" >> "$GITHUB_STEP_SUMMARY"
-          check() {
-            local path="$1" allowed="$2" actual
-            actual=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --max-time 15 --connect-timeout 8 --retry 0 --proto '=https' --tlsv1.2 --header 'Accept: application/json' "$BASE_URL$path") || actual="network-error"
-            echo "$path: HTTP $actual (esperado: $allowed)"
-            echo "- \`$path\`: $actual (esperado $allowed)" >> "$GITHUB_STEP_SUMMARY"
-            case ",$allowed," in
-              *",$actual,"*) ;;
-              *) failed=1 ;;
-            esac
-          }
-          check "/health" "200"
-          check "/ready" "200"
-          check "/api/admin/equipe" "401,403"
-          check "/api/admin/demandas" "401,403"
-          check "/api/admin/audit" "401,403"
-          exit "$failed"
       - name: TypeScript validation
         run: npm run lint
       - name: Production build
