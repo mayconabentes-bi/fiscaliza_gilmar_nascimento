@@ -139,6 +139,8 @@
 
 | 09/10/2026 | A01 — tentativa de verificação HTTP | Railway confirmou domínio produtivo `fiscalizagilmarnascimento-production.up.railway.app`; Supabase confirmou URL e existência de chave pública (valor não registrado). Requisições GET sem autenticação para `/health`, `/api/admin/equipe` e REST `private.setores` **não chegaram aos serviços** por erro de resolução DNS no executor. Sem status HTTP: teste INCONCLUSIVO, não equivale a falha do sistema. `pg_roles.rolconfig` do `authenticator` não mostra override `pgrst.db_schemas`; publicação real de schemas ainda não confirmada. | Railway list-domains; Supabase get-project-url/get-publishable-keys sem revelar chaves; consultas somente leitura; tentativa GET local falhou no DNS | Testar HTTP a partir de ambiente com DNS/rede, confirmar exposições do painel, e documentar status antes de fechar A01 |
 
+| 09/10/2026 | A01/A02 — conferência observacional Railway | Produção continua SUCCESS no commit `e51ef50`. Em 72h: 20 requisições consideradas nas métricas do serviço, nenhuma 5xx e uma 4xx. Logs consultados: 0 ocorrências do erro SQLite e 3 respostas HTTP 401 de rotas variadas; não constituem teste direcionado de `/api/admin/equipe`. Contagem de `/health` e `/ready` nos filtros consultados: zero, portanto sua resposta atual não foi validada. Tentativas GET externas no executor falharam por DNS. **A01 e A02 permanecem abertas.** | Railway `list_deployments`, `http_error_rate`, `http_requests` e `get_logs` em 09/10/2026 | Validar HTTP diretamente em ambiente com DNS; só fechar após verificar resultados específicos e Data API |
+
 ## Encerramento diário (preencher ao final)
 
 - **Atividades concluídas e comprovadas:** ainda não preenchido.
