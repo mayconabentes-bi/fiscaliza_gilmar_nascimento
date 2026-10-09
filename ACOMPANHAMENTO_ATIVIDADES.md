@@ -218,6 +218,17 @@
 - [ ] Validar separadamente titularidade/acesso ao bucket de testes; configuração presente não comprova destino do Storage.
 - [ ] Continuar NO-GO para trocar a source da homologação até completar esses controles. A criação do PR #96 **não implantou** o diagnóstico nem executou o verificador.
 
+## PR #96 — validação técnica de cenários sintéticos (09/10/2026)
+
+- [x] Revisar e reforçar o verificador: validar hostname oficial do Postgres, IDs do projeto/ambiente/serviço Railway, bloquear host desconhecido e conflito entre usuário/host; nunca retornar credenciais.
+- [x] Criar 10 testes sintéticos sem banco nem rede: [workflow #37951925339](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37951925339) finalizado `success` (**10 pass, 0 fail**). Commit do workflow `850bab2`, em [PR #96](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/pull/96).
+- [ ] CI geral do PR #96 ainda não foi confirmado com conclusão `success`; instâncias anteriores falharam em `npm audit` por dependências antigas da `main` (tratadas separadamente no PR #95). Não associar essas falhas ao teste sintético.
+- [ ] Executar verificador com variáveis **reais** da homologação em contexto autenticado Railway: atualmente só há leitura dos nomes pela conexão OAuth, e o CLI `railway` não está disponível no executor atual. **Não aprovar isolamento por teste fictício**.
+- [ ] Verificar bucket Storage por ferramenta/procedimento autorizado, sem divulgar segredo nem listar arquivos privados.
+- [ ] Somente após prova do isolamento, reavaliar implantação de PR #95 em homologação; nenhuma source alterada.
+
+**Procedimento recomendado para operador autorizado:** em checkout exato do PR #96, com Railway CLI autenticada e serviço/ambiente explicitamente selecionados, executar `railway run --project acd59c0a-4723-4162-9bfc-33bab1f096b0 --environment 32940765-7ef3-41c1-a017-48ad13120d65 --service 98959349-60d9-4363-b7c3-e20e04e93a71 node scripts/verify-staging-destinations.mjs`. Verificar sintaxe das flags com `railway run --help` no CLI instalado. Relatar somente as linhas de status, nunca as variáveis. `railway run` executa localmente com variáveis do Railway, não dentro do container; sua prova é parcial e requer a verificação do destino real do Storage e da conexão no runtime.
+
 ## Encerramento diário (preencher ao final)
 
 - **Atividades concluídas e comprovadas:** GET anônimo das rotas administrativas (401), `/health` (200), `/ready` (200), diagnóstico de privilégios e identificação das dependências vulneráveis; atividades A00/A01/A02 continuam em andamento.
