@@ -10,6 +10,8 @@
 import postgres from "postgres";
 import bcrypt from "bcryptjs";
 import { randomBytes, randomUUID } from "node:crypto";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 const PROJECT="acd59c0a-4723-4162-9bfc-33bab1f096b0";
 const ENV="32940765-7ef3-41c1-a017-48ad13120d65";
@@ -44,10 +46,7 @@ export function labels(run) {
     descriptions:["QA FISCALIZE "+run+" SAUDE","QA FISCALIZE "+run+" INFRA"],
   };
 }
-if(import.meta.url===new URL("file://"+process.argv[1]?.replace(/\\/g,"/")).href && false) {
-  // Dummy branch to keep imports inert; main guard below uses direct Node argument.
-}
-const isMain=process.argv[1] && (await import("node:url")).pathToFileURL((await import("node:path")).resolve(process.argv[1])).href===import.meta.url;
+const isMain=process.argv[1] && pathToFileURL(resolve(process.argv[1])).href===import.meta.url;
 if(isMain)await main();
 async function main() {
   if(!checkTarget(process.env)){
@@ -145,8 +144,10 @@ async function main() {
     if(absent.status!==401)throw Error("LOGOUT_SESSION_FALHA");
     console.log("QA_LOGOUT=OK");
     console.log("QA_TESTES=SUCCESS");
-  }catch{
+  }catch(error){
     failure=true;
+    const allowedCodes=new Set(["BASELINE_INVALIDA","SETORES_INVALIDOS","COLISAO_FIXTURE","LOGIN_FALHA","SESSION_FALHA","ESCOPO_LISTAGEM","ESCOPO_CATEGORIA","EQUIPE_EXPOSTA","ALTERACAO_CRUZADA","VERSAO_INVALIDA","ALTERACAO_PROPRIA_FALHA","REVOGACAO_FALHA","LOGOUT_COOKIE_FALHA","LOGOUT_SESSION_FALHA","INTERRUPTED"]);
+    console.log("QA_FALHA_ETAPA="+(allowedCodes.has(error?.message)?error.message:"INCONCLUSIVO"));
     console.log("QA_TESTES=FALHA_OU_INCONCLUSIVO");
   }finally{
     if(execute && attempted){
