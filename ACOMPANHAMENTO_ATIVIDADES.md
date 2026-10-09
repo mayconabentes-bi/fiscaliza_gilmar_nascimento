@@ -249,6 +249,16 @@
 - [ ] **Aplicar staged em homologação somente após aprovação explícita do deploy**, validar nova versão, saúde, logs, rotas protegidas, dados sintéticos e rollback.
 - [ ] Não executar merge para `main` nem deploy de produção nesta etapa.
 
+## Deploy PR #95 autorizado — 09/10/2026
+
+- [x] Usuário autorizou explicitamente aplicação **somente em homologação**.
+- [x] Revalidar patch Railway `b6ab2b96-4f4c-4dbd-a2cb-f5b8370bc987`: um serviço de homologação, commit fixo `8bcb724e2be92d6199f080d4c14c1ace72e7014a`, sem alterações de variáveis, outros recursos ou exclusões; patch não destrutivo.
+- [x] Executar `accept-deploy` exclusivamente para ambiente `32940765-7ef3-41c1-a017-48ad13120d65`; Railway confirmou `committed=true`, `deploymentStatus=triggered`.
+- [x] Confirmar novo deployment `b8121296-fff0-4e9a-9099-b7c5dbd173d7` no serviço homologação, commit `8bcb724`; status inicial `BUILDING`.
+- [ ] Confirmar status final `SUCCESS` do novo deployment e verificar logs, health, ready, 401 nas rotas protegidas e ausência de regressões, inclusive erro legado `intelligence_refresh_runs`.
+- [ ] Caso o novo deployment falhe, inspecionar logs e decidir rollback com referência `a66986a6-ff30-42ec-b0af-05aae60e0a9e`; não executar rollback sem constatar falha.
+- [ ] Não fazer merge PR #95 nem deploy em produção antes de concluir homologação.
+
 ## Encerramento diário (preencher ao final)
 
 - **Atividades concluídas e comprovadas:** GET anônimo das rotas administrativas (401), `/health` (200), `/ready` (200), diagnóstico de privilégios e identificação das dependências vulneráveis; atividades A00/A01/A02 continuam em andamento.
