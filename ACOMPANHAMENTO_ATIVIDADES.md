@@ -270,6 +270,19 @@
 - [ ] Estender janela observada para verificar o agendador e o erro legado `intelligence_refresh_runs`; os logs imediatos não comprovam comportamento de longa duração.
 - [ ] Não interpretar aprovação de 401/403 como comprovação de isolamento autenticado completo; produção e merge da `main` permanecem fora de escopo.
 
+## Preparação de contas sintéticas por setor — 09/10/2026
+
+- [x] Conferir esquema existente de criação de membros, autenticação com `bcrypt`, política de acesso por setor, filtragem de demandas e migração `20260922190000_setores_papeis_equipe.sql`.
+- [x] Consultar **metadados de contagem, sem acessar dados pessoais** em dois projetos Supabase: homologação `private.admins=0`, `private.setores=0`, `private.setor_categorias=0`, `public.demandas=0`; produção `private.admins=11`, `private.setores=9`, `public.demandas=71`.
+- [ ] Preparar estrutura mínima de dois setores de testes no **banco de homologação apenas**, respeitando as migrações versionadas. Não copiar setores, assessores, cidadãos ou demandas da produção.
+- [ ] Criar duas contas sintéticas rastreáveis, cada uma vinculada a categoria distinta, sem compartilhar senhas em chat, logs ou CI; usar hash bcrypt, expiração/limpeza e contas sem privilégios globais.
+- [ ] Criar no máximo duas demandas fictícias separadas para testar filtros e negação de acesso cruzado; revisar efeitos de auditoria, gatilhos e política de exclusão antes de qualquer operação.
+- [ ] Exercitar sessões autenticadas e comprovar que assessor A não lê nem altera registros de B e vice-versa, incluindo gestão de equipe bloqueada, expiração/remoção dos tokens após desativação; coletar somente resultados HTTP e contagens.
+- [ ] Executar limpeza segura de toda a massa de QA e verificar contagens de registros de testes = 0, preservando dados preexistentes.
+- [ ] Permanecer **NO-GO para produção** até testes integrados autenticados, observação do scheduler e revisão do rollback.
+
+**Decisão:** diagnóstico concluído, preparação de fixtures pendente. Nenhuma conta, setor, demanda ou dado real foi alterado nesta etapa.
+
 ## Encerramento diário (preencher ao final)
 
 - **Atividades concluídas e comprovadas:** GET anônimo das rotas administrativas (401), `/health` (200), `/ready` (200), diagnóstico de privilégios e identificação das dependências vulneráveis; atividades A00/A01/A02 continuam em andamento.
