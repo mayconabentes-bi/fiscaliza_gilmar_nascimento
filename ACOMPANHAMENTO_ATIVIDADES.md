@@ -26,6 +26,19 @@
 
 ## P0 — Segurança e continuidade (executar primeiro)
 
+### A00 — Corrigir dependências vulneráveis identificadas no CI
+**Estado:** PENDENTE | **Prioridade:** P0 — NOVO BLOQUEADOR
+
+- [x] Identificar os alertas que fazem o CI falhar: `proxy-addr` 2.0.7 (CRITICAL, corrigido em 2.0.8) e `source-map-js` 1.2.1 (HIGH, corrigido em 1.2.2), em 09/10/2026. Evidência: [CI](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37946385763) e [issue #94](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/issues/94).
+- [x] Confirmar no lockfile as origens: `express` → `proxy-addr`; `postcss`/`@tailwindcss/node` → `source-map-js`.
+- [ ] Abrir PR separado com atualização mínima do lockfile, sem `--force` nem remoção da auditoria.
+- [ ] Validar `npm ci`, build, lint, contratos de segurança e `npm run audit:high` em CI.
+- [ ] Homologar, revisar impacto do rate limiting e definir rollback antes de qualquer promoção a produção.
+
+**Critério de conclusão:** CI integralmente verde com versões corrigidas, homologação verificada e aprovação para publicar; a vulnerabilidade reportada no pacote não prova, por si só, exploração no projeto.  
+**Aprendizado:** dependências indiretas também afetam a segurança; a correção precisa ser pequena, reproduzível e testada.
+
+
 ### A01 — Auditar segurança do Supabase
 **Estado:** PENDENTE | **Prioridade:** P0
 
@@ -33,7 +46,8 @@
 - [x] Analisar exposição por privilégios do catálogo PostgreSQL: `anon` e `authenticated` não possuem `SELECT` em nenhuma das tabelas do schema `private` consultadas; nenhuma função de setor com `SECURITY DEFINER` e `EXECUTE` público foi encontrada no inventário filtrado (09/10/2026).
 - [x] Revisar proteção das rotas no código `main`: middleware `requireInternalAccess` obrigatório sob `/api/admin`, revalidação da conta ativa no Postgres e lista fechada para perfis setoriais; listagem de equipe fora do escopo de assessor.
 - [x] Verificar catálogo `pg_roles.rolconfig` do `authenticator`: sem override local de `pgrst.db_schemas` em 09/10/2026. **Isto não revela a lista efetiva dos schemas publicados pelo painel.**
-- [ ] Confirmar configuração efetiva dos schemas expostos na Data API e testar negação **HTTP** com identidade não autorizada, sem segredos nem dados reais; sem prova HTTP, não marcar como concluído.
+- [x] Executar GET sem autenticação em produção para `/api/admin/equipe`, `/api/admin/demandas`, `/api/admin/audit`: todos responderam HTTP 401 (09/10/2026). Evidência: [workflow HTTP somente leitura](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37946872319).
+- [ ] Confirmar a lista efetiva dos schemas expostos na Data API Supabase e a resposta HTTP para `private.setores` com **chave pública apropriada**, sem divulgar credenciais nem consultar dados pessoais.
 - [x] Comparar estado RLS produção/homologação (09/10/2026: desligado nas duas tabelas em produção; ligado em homologação; sem políticas detectadas na consulta de produção).
 - [ ] Revisar a necessidade e desenho de RLS nessas tabelas; **não habilitar RLS nem criar policies sem ensaio e plano de retorno**.
 - [ ] Testar acesso negado com identidades não autorizadas e isolamento entre setores, sem usar dados pessoais reais.
@@ -46,7 +60,8 @@
 ### A02 — Verificar saúde da produção Railway
 **Estado:** PENDENTE | **Prioridade:** P0
 
-- [ ] Testar resposta de `/health` e `/ready`, incluindo dependências e possível estado degradado.
+- [x] Testar status HTTP de `/health` e `/ready` na produção via runner GitHub: ambos HTTP 200 em 09/10/2026. Evidência: [workflow HTTP](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37946872319).
+- [ ] Verificar corpo de `/ready` e eventual estado degradado do Supabase Storage, sem registrar dados sensíveis.
 - [ ] Analisar logs recentes após o deploy atual e confirmar ausência de falhas recorrentes do scheduler SQLite legado.
 - [ ] Verificar erros HTTP 5xx, tempo de resposta e disponibilidade sem executar carga em produção.
 - [ ] Registrar commit implantado, diagnóstico e procedimento de rollback.
@@ -135,16 +150,19 @@
 | 09/10/2026 | A01 — auditoria adicional sem mutações | Os papéis públicos não possuem `SELECT` nas tabelas do schema `private` consultadas; código exige autenticação e autorização backend para `/api/admin` e delimita rotas de setor. Teste HTTP não executado/concluído por impossibilidade de alcançar o endereço da aplicação nesta sessão (falha DNS no ambiente de execução); configuração da Data API não confirmada. | Catálogo de `pg_class`, `pg_proc`, `has_table_privilege` e arquivos `app.ts`, `internalAccess.ts`, `teamManagementRoutes.ts`, `adminAccessPolicy.ts` | Realizar teste HTTP sem credenciais e verificar schemas expostos; manter A01 aberta |
 | 09/10/2026 | A01 — levantamento SQL somente leitura | Produção: `private.setores` e `private.setor_categorias` sem RLS, mas `anon`, `authenticated`, `authenticator` e `service_role` não têm USAGE no schema nem privilégios de tabela; homologação tem RLS ligado. Não foi demonstrada exploração nem validada a superfície HTTP/Data API. Advisor: 25 tabelas RLS sem policies (INFO), aviso de senhas comprometidas desativado (WARN). | Consultas de catálogo `pg_class`, `pg_namespace`, `pg_roles`, `has_schema_privilege`, `has_table_privilege`, `pg_policies` e Supabase Security Advisors, executadas sem mutações em 09/10/2026. | Conferir Data API, negação HTTP e fluxo da aplicação antes de propor mudança de RLS |
 
-> Adicionar uma linha a cada etapa comprovada. Se uma tentativa falhar, registrar como **falhou/pendente**, sem marcar o checkbox.
-
 | 09/10/2026 | A01 — tentativa de verificação HTTP | Railway confirmou domínio produtivo `fiscalizagilmarnascimento-production.up.railway.app`; Supabase confirmou URL e existência de chave pública (valor não registrado). Requisições GET sem autenticação para `/health`, `/api/admin/equipe` e REST `private.setores` **não chegaram aos serviços** por erro de resolução DNS no executor. Sem status HTTP: teste INCONCLUSIVO, não equivale a falha do sistema. `pg_roles.rolconfig` do `authenticator` não mostra override `pgrst.db_schemas`; publicação real de schemas ainda não confirmada. | Railway list-domains; Supabase get-project-url/get-publishable-keys sem revelar chaves; consultas somente leitura; tentativa GET local falhou no DNS | Testar HTTP a partir de ambiente com DNS/rede, confirmar exposições do painel, e documentar status antes de fechar A01 |
 
 | 09/10/2026 | A01/A02 — conferência observacional Railway | Produção continua SUCCESS no commit `e51ef50`. Em 72h: 20 requisições consideradas nas métricas do serviço, nenhuma 5xx e uma 4xx. Logs consultados: 0 ocorrências do erro SQLite e 3 respostas HTTP 401 de rotas variadas; não constituem teste direcionado de `/api/admin/equipe`. Contagem de `/health` e `/ready` nos filtros consultados: zero, portanto sua resposta atual não foi validada. Tentativas GET externas no executor falharam por DNS. **A01 e A02 permanecem abertas.** | Railway `list_deployments`, `http_error_rate`, `http_requests` e `get_logs` em 09/10/2026 | Validar HTTP diretamente em ambiente com DNS; só fechar após verificar resultados específicos e Data API |
 
+| 09/10/2026 | A01/A02 — GET real em produção | `/health` = 200; `/ready` = 200; `/api/admin/equipe`, `/api/admin/demandas`, `/api/admin/audit` = 401 sem cookies/autenticação. Workflow separado com somente GET e sem resposta corporal; **não comprova acesso entre assessores nem schema `private` Supabase**. Passo temporário do CI removido após confirmação. | [GitHub Actions #37946872319](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37946872319) | Verificar Data API e escopo RBAC autenticado com identidades sintéticas na homologação |
+| 09/10/2026 | A00 — novo bloqueador do CI | Dois jobs falham em `npm run audit:high`: `proxy-addr` 2.0.7 (CRITICAL) e `source-map-js` 1.2.1 (HIGH). Dependências transitivas confirmadas no `package-lock.json`. Atualização não aplicada. | [CI #37946385763](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/actions/runs/37946385763); [issue #94](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/issues/94) | Atualização mínima e validação completa em PR separado |
+
+> Adicionar uma linha a cada etapa comprovada. Se uma tentativa falhar, registrar como **falhou/pendente**, sem marcar o checkbox.
+
 ## Encerramento diário (preencher ao final)
 
-- **Atividades concluídas e comprovadas:** ainda não preenchido.
-- **Pendências e bloqueadores:** A01–A08.
+- **Atividades concluídas e comprovadas:** GET anônimo das rotas administrativas (401), `/health` (200), `/ready` (200), diagnóstico de privilégios e identificação das dependências vulneráveis; atividades A00/A01/A02 continuam em andamento.
+- **Pendências e bloqueadores:** A00 (segurança de dependências), A01 (Data API/RBAC), A02 (readiness detalhado/rollback), A03–A08.
 - **Incidentes ou impactos em produção:** nenhum causado por este documento.
-- **Primeira atividade da próxima sessão:** A01 — auditar permissões e RLS do Supabase.
+- **Primeira atividade da próxima sessão:** A00 — preparar correção mínima de dependências em PR isolado; em paralelo, concluir validação Data API/RBAC de A01.
 - **Liberação para 300 cidadãos / 50 assessores:** NÃO AUTORIZADA; depende de evidências de segurança, carga, backup e validação operacional.
