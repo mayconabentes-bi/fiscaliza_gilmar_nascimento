@@ -239,6 +239,16 @@
 - [ ] Confirmar quando necessário o sucesso da conexão PostgreSQL em execução por uma verificação isolada, apenas leitura, depois da comprovação de identidade, sem dados pessoais.
 - [ ] A saída do próprio script mantém `IDENTIDADE_REAL_STORAGE=NAO_COMPROVADA` e `LIBERACAO_IMPLANTACAO=NAO_AUTORIZADA`; PR #95 ainda **não** deve ser publicado em homologação/produção.
 
+## Storage validado e deploy de homologação preparado — 09/10/2026
+
+- [x] Verificação real por operador autenticado: `STORAGE_ACESSO=OK`, `STORAGE_BUCKET_IDENTIDADE=OK`, `STORAGE_BUCKET_PRIVADO=OK`, `STORAGE_PREFLIGHT=OK`; somente leitura pontual de metadados, sem listagem de objetos ou escrita.
+- [x] Verificação textual anterior: nove verificações Railway/URL Postgres/Supabase `OK`, indicando destino de homologação (`PREFLIGHT_CONFIG=OK_PARCIAL`). Não comprova query ao banco em execução.
+- [x] Inspecionar e preparar **apenas em staged** a origem do serviço Railway de homologação: [PR #95](https://github.com/mayconabentes-bi/fiscaliza_gilmar_nascimento/pull/95), branch `security/p0-deps-proxy-addr-source-map-20261009`, commit fixo `8bcb724e2be92d6199f080d4c14c1ace72e7014a`.
+- [x] Revisar patch Railway `b6ab2b96-4f4c-4dbd-a2cb-f5b8370bc987`: 4 entradas de source para **um único serviço de homologação**, sem variáveis compartilhadas, sem recursos removidos, `destructive=false`, `status=STAGED`. Produção não participa.
+- [x] Preservar referência da versão live anterior de homologação: deployment `a66986a6-ff30-42ec-b0af-05aae60e0a9e`, commit `88c2cf42`, `SUCCESS`. O staged **não faz deploy**, e permanece pendente até liberação explícita.
+- [ ] **Aplicar staged em homologação somente após aprovação explícita do deploy**, validar nova versão, saúde, logs, rotas protegidas, dados sintéticos e rollback.
+- [ ] Não executar merge para `main` nem deploy de produção nesta etapa.
+
 ## Encerramento diário (preencher ao final)
 
 - **Atividades concluídas e comprovadas:** GET anônimo das rotas administrativas (401), `/health` (200), `/ready` (200), diagnóstico de privilégios e identificação das dependências vulneráveis; atividades A00/A01/A02 continuam em andamento.
