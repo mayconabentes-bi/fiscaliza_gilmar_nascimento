@@ -45,3 +45,14 @@
 - [x] Confirmada homologação em Railway `SUCCESS`, 1/1 réplica online; produção não foi acionada.
 - [ ] Executor ainda não rodou com `--execute`; logo não foram criados/limpos registros de teste nem verificados login e RBAC autenticados reais.
 - [ ] A execução local necessita o CLI do Railway autenticado e variáveis de homologação. **Antes da execução, revisar o plano de cleanup em caso de falha, e não compartilhar senhas ou URLs de conexão.**
+
+
+## Resultado E2E real e limpeza confirmada — 09/10/2026
+
+- [x] Operador autenticado executou `railway run ... node scripts/qa-staging-sector-e2e.mjs --execute` exclusivamente na homologação. Lote sintético `86c29a4b1f2ba5bb`.
+- [x] Resultado do executor: `QA_GUARDA=OK`, `QA_BASELINE=OK`, `QA_FIXTURES=CRIADAS`, `QA_LOGIN_SESSOES=OK`, `QA_ISOLAMENTO_LISTAGEM=OK`, `QA_BLOQUEIO_EQUIPE=OK`, `QA_ALTERACAO_CRUZADA=NEGADA`, `QA_ALTERACAO_PROPRIA=OK`, `QA_REVOGACAO=OK`, `QA_LOGOUT=OK`, `QA_TESTES=SUCCESS`, `QA_LIMPEZA=OK`, `QA_PRODUCAO=NAO_ACESSADA`.
+- [x] Consulta direta de verificação no Supabase homologação confirmou baseline restaurada: **3 admins, 9 setores, 9 categorias e 2 demandas**. Remanescentes do lote: **0 administradores e 0 demandas**; nenhuma demanda preexistente alterada pelo executor conforme escopo e contagens. Histórico vinculado ao lote em demandas existentes: 0.
+- [x] Railway homologação: deployment `b8121296-fff0-4e9a-9099-b7c5dbd173d7` `SUCCESS`, 1/1 réplica online, zero avisos/críticos. Runtime especificamente desse deployment com 0 ocorrências de `intelligence_refresh_runs`/`SQLITE_ERROR` nos 26 registros retornados; logs agregados do serviço contêm erros do deployment anterior e não devem ser confundidos com o novo.
+- [x] Produção permanece com deployment anterior `ac88cb02-d036-4305-929d-c95592fe046f` `SUCCESS`; nenhum deploy ou merge de `main` efetuado pela validação.
+- [ ] **Pendente de auditoria:** confirmar por lote/UUID a contagem e retenção adequada de eventos em `public.logs_auditoria` e que não contém dados sensíveis; preservá-los conforme LGPD. Zero auditoria por protocolo não é prova de ausência de eventos, pois `entidade_id` de status usa UUID.
+- [ ] Antes de promover PR #95 a `main` e produção: checar CI atual, divergências de branches/PRs, plano de rollback e eventuais alterações pendentes no Railway de produção (uma operação pendente foi reportada; investigar separadamente, sem aplicar).
