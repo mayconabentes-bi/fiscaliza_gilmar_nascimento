@@ -8,9 +8,17 @@ let healthCheckInFlight: Promise<SqlClient> | null = null;
 
 const HEALTH_TTL_MS = 5_000;
 
+function databaseConnectionString() {
+  // A integração Supabase/Vercel mantém POSTGRES_URL sincronizada com o
+  // connection pooler adequado ao runtime serverless. DATABASE_URL permanece
+  // como fallback para Railway e ambientes legados.
+  const connectionString = process.env.POSTGRES_URL?.trim() || process.env.DATABASE_URL?.trim();
+  if (!connectionString) throw new Error("Conexão PostgreSQL não configurada");
+  return connectionString;
+}
+
 function createPostgresClient() {
-  const connectionString = process.env.DATABASE_URL?.trim();
-  if (!connectionString) throw new Error("DATABASE_URL não configurada");
+  const connectionString = databaseConnectionString();
 
   return postgres(connectionString, {
     // O projeto usa o Transaction Pooler do Supabase (porta 6543). Mantemos
