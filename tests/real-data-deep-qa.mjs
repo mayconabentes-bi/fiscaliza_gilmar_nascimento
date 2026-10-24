@@ -138,7 +138,10 @@ async function verifyPncp() {
 async function verifyCnes() {
   const catalog = await retry(() => expansion.loadCnesDataSusCatalog());
   report("CNES catalog", catalog);
-  if (isTransientExternalFailure(catalog)) {
+  const cnesTransportFailure = catalog?.availability === "unavailable"
+    && ["fetch failed", "operation was aborted", "timeout", "timed out", "econnreset", "temporarily unavailable"]
+      .some((pattern) => String(catalog?.error || "").toLowerCase().includes(pattern));
+  if (isTransientExternalFailure(catalog) || cnesTransportFailure) {
     const warning = `CNES temporariamente indisponível; QA de conteúdo real adiado: ${catalog.error || "sem detalhe"}`;
     warnings.push(warning);
     console.warn(`QA DEGRADED: CNES: ${warning}`);
