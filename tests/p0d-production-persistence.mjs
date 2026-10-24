@@ -17,6 +17,7 @@ const backup = read('src/modules/infraestrutura-operacional/infrastructure/backu
 const migration = read('supabase/migrations/20260915040000_p0d_production_persistence.sql');
 const dockerfile = read('Dockerfile');
 const server = read('server.ts');
+const vercelApi = read('api/[...path].ts');
 
 assert(app.includes('setupCitizenAuthPostgres') && app.includes('setupCitizenDemandPostgres'), 'Produção deve registrar fluxos cidadãos Postgres.');
 assert(app.includes('setupCitizenCompliancePostgres') && app.includes('setupPrivateAdminPostgresRoutes'), 'Produção deve registrar compliance e triagem Postgres.');
@@ -43,9 +44,10 @@ assert(mobile.includes('process.env.NODE_ENV !== "production"') && mobile.includ
 assert(backup.includes("process.env.NODE_ENV === 'production'") && backup.includes('Backup SQLite é exclusivo'), 'Backup SQLite deve recusar execução em produção.');
 assert(migration.includes('private.admins') && migration.includes('public.logs_auditoria'), 'Migration deve cobrir administração e auditoria.');
 assert(migration.includes('enable row level security') && migration.includes('revoke all'), 'Migration deve bloquear acesso direto anônimo/autenticado.');
-assert(!fs.existsSync('vercel.json') && !fs.existsSync('api/index.ts'), 'Produção roda no Railway via Dockerfile; artefatos serverless da Vercel não devem voltar.');
+assert(vercelApi.includes('createApp') && vercelApi.includes('assertProductionReadiness'), 'Vercel deve reutilizar o mesmo Express e o mesmo gate de readiness da produção.');
+assert(!fs.existsSync('vercel.json') && !fs.existsSync('api/index.ts'), 'A ponte Vercel deve permanecer mínima, sem duplicar roteamento ou criar uma segunda implementação da API.');
 assert(dockerfile.includes('NODE_ENV=production') && dockerfile.includes('CMD ["npm", "start"]'), 'Dockerfile deve subir o servidor Node em modo produção.');
 assert(server.includes('assertProductionReadiness') && server.includes('process.env.PORT') && server.includes('"0.0.0.0"'), 'Servidor deve validar readiness, usar PORT do Railway e escutar em 0.0.0.0.');
-assert(ready.includes('RAILWAY_PUBLIC_DOMAIN') && !ready.includes('VERCEL_URL'), 'Origens confiáveis devem incluir o domínio público do Railway e não depender de variáveis da Vercel.');
+assert(ready.includes('RAILWAY_PUBLIC_DOMAIN'), 'Fallback Railway deve continuar reconhecendo o domínio público do serviço durante a migração.');
 
 console.log('p0d-production-persistence: ok');
