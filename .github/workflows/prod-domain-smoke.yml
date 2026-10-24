@@ -1,0 +1,42 @@
+name: Production Domain Smoke
+
+on:
+  push:
+    branches:
+      - qa/prod-domain-smoke-20261024
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check homepage
+        run: |
+          curl --fail --silent --show-error --retry 5 --retry-delay 3 --retry-all-errors \
+            https://fiscalizecidade.com.br/ -o /tmp/home.html
+          grep -q 'FISCALIZE' /tmp/home.html
+      - name: Check public API config
+        run: |
+          curl --fail --silent --show-error --retry 5 --retry-delay 3 --retry-all-errors \
+            https://fiscalizecidade.com.br/api/public-config -o /tmp/public-config.json
+          node -e '
+            const fs=require("fs");
+            const d=JSON.parse(fs.readFileSync("/tmp/public-config.json","utf8"));
+            if (typeof d.publicDemandIntake !== "boolean") throw new Error("publicDemandIntake missing");
+            if (!d.privacyNoticeVersion) throw new Error("privacyNoticeVersion missing");
+            console.log(JSON.stringify({publicDemandIntake:d.publicDemandIntake,photoEvidence:d.photoEvidence,privacyNoticeVersion:d.privacyNoticeVersion}));
+          '
+      - name: Check readiness
+        run: |
+          curl --fail --silent --show-error --retry 5 --retry-delay 3 --retry-all-errors \
+            https://fiscalizecidade.com.br/ready -o /tmp/ready.json
+          node -e '
+            const fs=require("fs");
+            const d=JSON.parse(fs.readFileSync("/tmp/ready.json","utf8"));
+            if (d.status !== "ready") throw new Error("service not ready: "+JSON.stringify(d));
+            if (d.database !== "postgres") throw new Error("database is not postgres: "+JSON.stringify(d));
+            console.log(JSON.stringify({status:d.status,database:d.database,evidenceStorage:d.evidenceStorage,publicDemandIntake:d.publicDemandIntake}));
+          '
