@@ -10,6 +10,19 @@ const profile = read("src/pages/PerfilCidadao.tsx");
 const postgres = read("src/server/citizenDemandPostgres.ts");
 const local = read("src/server/routes.ts");
 const demandForm = read("src/pages/NovaDemanda.tsx");
+const registration = read("src/pages/RegisterCidadao.tsx");
+const citizenAuth = read("src/server/citizenAuthPostgres.ts");
+
+// Contrato de ponta a ponta: um teste HTTP que omite type recebe 403,
+// mesmo com e-mail e senha corretos. Impedir falso diagnóstico 401.
+expect(registration.includes('fetch("/api/auth/register/cidadao"'), "Cadastro público deve chamar o endpoint cidadão.");
+expect(registration.includes("body: JSON.stringify(formData)"), "Cadastro deve enviar os dados do formulário, incluindo password.");
+expect(login.includes('type === "admin" ? "/api/auth/admin/login" : "/api/auth/login"'), "Login Pessoa deve chamar endpoint cidadão, não o administrativo.");
+expect(login.includes('{ email: normalizedEmail, password, type: "cidadao" }'), "Login Pessoa deve enviar type cidadão exigido pelo backend.");
+expect(citizenAuth.includes('req.body?.type !== "cidadao"'), "Backend exige type cidadão no login; smoke HTTP deve enviá-lo.");
+expect(citizenAuth.includes('await bcrypt.hash(password, 12)') && citizenAuth.includes('await bcrypt.compare(password, String(user.password_hash))'), "Cadastro e login devem usar bcrypt para a senha.");
+expect(citizenAuth.includes('normalizedEmail = cleanEmail(req.body?.email)') && citizenAuth.includes('lower(email) = lower('), "Cadastro/login devem normalizar e buscar e-mail sem diferença de caixa.");
+
 
 expect(login.includes('navigate(type === "admin" ? "/dashboard" : "/meus-registros")'), "Login cidadão deve abrir Meus registros.");
 expect(login.includes('const initialType = searchParams.get("admin") === "1" ? "admin" : "cidadao"'), "Login deve manter cidadão como modo padrão e aceitar admin explícito.");
