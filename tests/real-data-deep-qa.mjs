@@ -138,6 +138,12 @@ async function verifyPncp() {
 async function verifyCnes() {
   const catalog = await retry(() => expansion.loadCnesDataSusCatalog());
   report("CNES catalog", catalog);
+  if (isTransientExternalFailure(catalog)) {
+    const warning = `CNES temporariamente indisponível; QA de conteúdo real adiado: ${catalog.error || "sem detalhe"}`;
+    warnings.push(warning);
+    console.warn(`QA DEGRADED: CNES: ${warning}`);
+    return;
+  }
   ok(["available", "degraded"].includes(catalog.availability), `CNES catálogo não acessível sem credencial: ${catalog.error || "sem detalhe"}`);
   ok(catalog.data.length > 0, "CNES catálogo retornou zero estabelecimentos de Manaus");
 
