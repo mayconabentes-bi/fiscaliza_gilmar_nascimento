@@ -1,0 +1,31 @@
+name: Audit Fix Preview
+
+on:
+  push:
+    branches:
+      - fix/vercel-fullstack-supabase
+
+permissions:
+  contents: read
+
+jobs:
+  resolve-audit-lock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Resolve compatible audit fixes in lockfile only
+        run: npm audit fix --package-lock-only --ignore-scripts
+      - name: Verify audit threshold
+        run: npm audit --audit-level=high
+      - name: Emit corrected lockfile
+        if: always()
+        run: |
+          echo '___LOCKFILE_BEGIN___'
+          cat package-lock.json
+          echo '___LOCKFILE_END___'
