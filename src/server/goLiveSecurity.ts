@@ -10,12 +10,14 @@ function assertVercelPreviewIsolation() {
   if (process.env.VERCEL_ENV !== "preview") return;
 
   const databaseUrl = String(process.env.DATABASE_URL || "");
+  const postgresUrl = String(process.env.POSTGRES_URL || "");
   const supabaseUrl = String(process.env.SUPABASE_URL || "");
+  const postgresConnection = postgresUrl || databaseUrl;
   const productionReferenced =
-    databaseUrl.includes(PRODUCTION_SUPABASE_PROJECT_REF) ||
+    postgresConnection.includes(PRODUCTION_SUPABASE_PROJECT_REF) ||
     supabaseUrl.includes(PRODUCTION_SUPABASE_PROJECT_REF);
   const homologationConfigured =
-    databaseUrl.includes(HOMOLOGATION_SUPABASE_PROJECT_REF) &&
+    postgresConnection.includes(HOMOLOGATION_SUPABASE_PROJECT_REF) &&
     supabaseUrl.includes(HOMOLOGATION_SUPABASE_PROJECT_REF);
 
   if (productionReferenced || !homologationConfigured) {
@@ -28,7 +30,6 @@ export function validateProductionEnvironment() {
 
   const required = [
     "JWT_SECRET",
-    "DATABASE_URL",
     "APP_ORIGIN",
     "DPO_CONTACT_EMAIL",
     "LGPD_CONSENT_VERSION",
@@ -38,6 +39,9 @@ export function validateProductionEnvironment() {
   ];
 
   const missing = required.filter((key) => !process.env[key]?.trim());
+  if (!process.env.POSTGRES_URL?.trim() && !process.env.DATABASE_URL?.trim()) {
+    missing.push("POSTGRES_URL|DATABASE_URL");
+  }
   if (missing.length) throw new Error(`Configuração obrigatória ausente: ${missing.join(", ")}`);
   if ((process.env.JWT_SECRET || "").length < 32) throw new Error("JWT_SECRET deve ter pelo menos 32 caracteres.");
   validateStorageServiceKey(String(process.env.SUPABASE_SERVICE_ROLE_KEY || ""));
