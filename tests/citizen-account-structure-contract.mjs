@@ -11,6 +11,7 @@ const terms = read("src/pages/Termos.tsx");
 const db = read("src/server/db.ts");
 const cep = read("src/server/cepLookup.ts");
 const migration = read("supabase/migrations/20260922185900_citizen_profile_cleanup.sql");
+const termsMigration = read("supabase/migrations/20261025114500_citizen_terms_acceptance_audit.sql");
 
 expect(!auth.includes("AGE_18_PLUS"), "Backend de cadastro não deve referenciar AGE_18_PLUS.");
 expect(auth.includes("type AgeBand"), "Backend deve usar o tipo AgeBand real.");
@@ -43,5 +44,9 @@ expect(register.includes("Nesta fase:") && register.includes("Manaus"), "Cadastr
 expect(register.includes("Use pelo menos 8 caracteres."), "Cadastro deve explicar o requisito mínimo de senha.");
 expect(!register.includes("cep: formData") && !register.includes("cep: cep"), "CEP não deve ser enviado no payload de criação de conta.");
 expect(cep.includes("VIACEP_API_BASE") && cep.includes("AbortController"), "Backend de CEP deve manter timeout e provedor configurável.");
+expect(auth.includes("termos_uso_aceito") && auth.includes("data_aceite_termos") && auth.includes("versao_termos"), "Backend de cadastro deve persistir aceite auditável dos Termos.");
+expect(auth.includes('"2026-10-CIDADAO"'), "Versão dos Termos persistida deve acompanhar a versão pública atual.");
+expect(termsMigration.includes("termos_uso_aceito boolean not null default false"), "Migration deve adicionar flag de aceite dos Termos.");
+expect(termsMigration.includes("data_aceite_termos timestamptz") && termsMigration.includes("versao_termos text"), "Migration deve registrar data e versão dos Termos.");
 
 console.log("Citizen account structure contract OK: age bands, CEP minimization and legacy score cleanup.");
