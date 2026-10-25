@@ -128,8 +128,8 @@ test('registro mantém fluxo guiado, privacidade e revisão no mobile', async ({
     await expect(page.locator('[data-register-step="2"]')).toBeVisible();
     await page.getByLabel('Seu nome').fill('Pessoa QA Visual');
     await page.getByLabel('O que aconteceu?').fill('Ocorrência de teste visual para validar o fluxo guiado no celular.');
-    await expect(page.getByText(/adicionar evidências/i)).toBeVisible();
-    await expect(page.getByRole('button', { name: /adicionar contato para retorno/i })).toBeVisible();
+    await expect(page.getByText(/fotos do problema/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /adicionar contato \(opcional\)/i })).toBeVisible();
     await page.locator('input[name="gallery_photos"]').setInputFiles({
       name: 'evidencia-visual.png',
       mimeType: 'image/png',
@@ -144,12 +144,12 @@ test('registro mantém fluxo guiado, privacidade e revisão no mobile', async ({
     await expect(page.locator('[data-register-review]')).toBeVisible();
     await expect(page.getByText(/revise antes de enviar/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /enviar e gerar protocolo/i })).toBeVisible();
-    await expect(page.getByText(/não substitui canais oficiais/i)).toBeVisible();
+    await expect(page.getByText(/não substitui os canais oficiais/i)).toBeVisible();
     await capture(page, 'registro-etapa-3', testInfo.project.name);
   } else {
     await expect(page.getByRole('progressbar', { name: /progresso do registro/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /enviar e gerar protocolo/i })).toBeVisible();
-    await expect(page.getByText(/não substitui canais oficiais/i)).toBeVisible();
+    await expect(page.getByText(/não substitui os canais oficiais/i)).toBeVisible();
     await capture(page, 'registro-publico', testInfo.project.name);
   }
 });

@@ -92,8 +92,8 @@ export default function NovaDemanda({ user }: { user?: any }) {
     if (!form.faixa_etaria) { setError("Informe sua faixa etária para continuar."); focusField("faixa_etaria"); return false; }
     if (form.faixa_etaria === "UNDER_16") { setError("O envio autônomo de demandas no FISCALIZE está disponível a partir de 16 anos."); focusField("faixa_etaria"); return false; }
     if (form.cep && form.cep.replace(/\D/g, "").length !== 8) { setError("Revise o CEP do local do problema."); focusField("cep"); return false; }
-    if (!form.logradouro.trim()) { setError("Informe o logradouro ou via da ocorrência."); focusField("logradouro"); return false; }
-    if (!form.bairro.trim()) { setError("Informe o bairro ou localidade da ocorrência."); focusField("bairro"); return false; }
+    if (!form.logradouro.trim()) { setError("Informe o logradouro ou via do problema."); focusField("logradouro"); return false; }
+    if (!form.bairro.trim()) { setError("Informe o bairro ou localidade do problema."); focusField("bairro"); return false; }
     return true;
   };
 
@@ -332,8 +332,8 @@ export default function NovaDemanda({ user }: { user?: any }) {
     if (!form.faixa_etaria) { setMobileStep(1); setError("Informe sua faixa etária para continuar."); focusField("faixa_etaria"); setLoading(false); return; }
     if (form.faixa_etaria === "UNDER_16") { setMobileStep(1); setError("O envio autônomo de demandas no FISCALIZE está disponível a partir de 16 anos."); focusField("faixa_etaria"); setLoading(false); return; }
     if (form.cep && form.cep.replace(/\D/g, "").length !== 8) { setMobileStep(1); setError("Revise o CEP do local do problema."); focusField("cep"); setLoading(false); return; }
-    if (!form.logradouro.trim()) { setMobileStep(1); setError("Informe o logradouro ou via da ocorrência."); focusField("logradouro"); setLoading(false); return; }
-    if (!form.bairro.trim()) { setMobileStep(1); setError("Informe o bairro ou localidade da ocorrência."); focusField("bairro"); setLoading(false); return; }
+    if (!form.logradouro.trim()) { setMobileStep(1); setError("Informe o logradouro ou via do problema."); focusField("logradouro"); setLoading(false); return; }
+    if (!form.bairro.trim()) { setMobileStep(1); setError("Informe o bairro ou localidade do problema."); focusField("bairro"); setLoading(false); return; }
     if (!form.nome_solicitante.trim()) { setMobileStep(2); setError("Informe seu nome para continuar."); focusField("nome_solicitante"); setLoading(false); return; }
     if (!form.categoria) { setMobileStep(2); setError("Selecione a área do problema."); focusField("categoria"); setLoading(false); return; }
     if (!form.tipo_problema) { setMobileStep(2); setError("Selecione o tipo do problema."); focusField("tipo_problema"); setLoading(false); return; }
@@ -380,7 +380,7 @@ export default function NovaDemanda({ user }: { user?: any }) {
   }
 
   if (publicIntake === null && configError) {
-    return <div className="mx-auto max-w-xl py-8 sm:py-14"><div className="surface-card p-6 sm:p-8"><span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-amber-800">Não foi possível confirmar o serviço</span><h1 className="mt-5 text-3xl font-extrabold tracking-[-0.04em] text-[#172033]">Tente novamente antes de preencher o formulário.</h1><p className="mt-3 text-sm leading-relaxed text-[#657089]">{configError} Isso não significa que os registros estejam fechados.</p><div className="mt-6 grid gap-3 sm:grid-cols-2"><button onClick={() => void loadPublicConfig()} className="primary-button w-full"><RefreshCw className="h-4 w-4" /> Tentar novamente</button><Link to="/protocolo" className="secondary-button w-full">Acompanhar protocolo</Link></div></div></div>;
+    return <div className="mx-auto max-w-xl py-8 sm:py-14"><div className="surface-card p-6 sm:p-8"><span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-amber-800">Não foi possível confirmar o serviço</span><h1 className="mt-5 text-3xl font-extrabold tracking-[-0.04em] text-[#172033]">Tente novamente antes de preencher o formulário.</h1><p className="mt-3 text-sm leading-relaxed text-[#657089]">{configError} Isso não significa que os registros estejam fechados.</p><div className="mt-6 grid gap-3 sm:grid-cols-2"><button onClick={() => void loadPublicConfig()} className="primary-button w-full"><RefreshCw className="h-4 w-4" /> Tentar novamente</button><Link to="/protocolo" className="secondary-button w-full">Consultar protocolo</Link></div></div></div>;
   }
 
   if (publicIntake === false) {
@@ -399,11 +399,11 @@ export default function NovaDemanda({ user }: { user?: any }) {
           <span className="text-xs font-extrabold text-[#657089] sm:hidden">Etapa {mobileStep} de 3</span>
         </div>
         <h1 className="mt-4 text-3xl font-extrabold tracking-[-0.045em] text-[#172033] sm:mt-5 sm:text-4xl">
-          <span className="sm:hidden">Registrar ocorrência</span>
-          <span className="hidden sm:inline">Registre uma situação do seu bairro.</span>
+          <span className="sm:hidden">Registrar problema</span>
+          <span className="hidden sm:inline">Registre um problema em Manaus.</span>
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-[#657089] sm:mt-3 sm:max-w-2xl sm:text-base">
-          <span className="sm:hidden">{mobileStep === 1 ? "Informe sua faixa etária e localize o ponto da ocorrência." : mobileStep === 2 ? "Descreva o problema e, se quiser, adicione evidências." : "Revise as informações e confirme o aviso de privacidade antes de enviar."}</span>
+          <span className="sm:hidden">{mobileStep === 1 ? "Primeiro, informe sua faixa etária e onde está o problema." : mobileStep === 2 ? "Explique o problema e adicione fotos se quiser." : "Revise as informações e confirme a privacidade antes de enviar."}</span>
           <span className="hidden sm:inline">Informe o local e descreva o que aconteceu. O FISCALIZE organiza o relato e gera um protocolo para você acompanhar depois.</span>
         </p>
 
@@ -487,13 +487,13 @@ export default function NovaDemanda({ user }: { user?: any }) {
               <option value="AGE_45_59">45 a 59 anos</option>
               <option value="AGE_60_PLUS">60 anos ou mais</option>
             </select>
-            <span className="mt-1.5 block text-xs leading-relaxed text-slate-500">Pedimos apenas a faixa etária para aplicar as proteções adequadas. O envio autônomo de demandas começa aos 16 anos.</span>
+            <span className="mt-1.5 block text-xs leading-relaxed text-slate-500">Usamos apenas a faixa etária para aplicar as proteções adequadas. O envio autônomo começa aos 16 anos.</span>
           </label>
           {form.faixa_etaria === "UNDER_16" && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-amber-900">Você pode consultar o conteúdo público do FISCALIZE, mas o envio autônomo de demandas está disponível a partir de 16 anos.</div>}
           {form.faixa_etaria === "AGE_16_17" && <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 text-sm leading-relaxed text-indigo-900"><strong>Proteção reforçada:</strong> seu registro terá tratamento mais restrito. Evite informar escola, endereço residencial, dados de saúde, documentos ou outras informações pessoais que não sejam necessárias.</div>}
 
           <section className="rounded-2xl border border-[#d7e0f2] bg-[#f7f9fd] p-4 sm:p-5">
-            <div className="flex items-start gap-3"><MapPin className="mt-0.5 h-5 w-5 shrink-0 text-[#1f2e6e]" /><div><h2 className="font-extrabold text-[#172033]">Local da ocorrência</h2><p className="mt-1 text-xs leading-relaxed text-slate-500">Informe o endereço do problema, não seu endereço residencial. O CEP é opcional e pode preencher parte da localização automaticamente.</p></div></div>
+            <div className="flex items-start gap-3"><MapPin className="mt-0.5 h-5 w-5 shrink-0 text-[#1f2e6e]" /><div><h2 className="font-extrabold text-[#172033]">Onde está o problema?</h2><p className="mt-1 text-xs leading-relaxed text-slate-500">Informe o local do problema, não seu endereço residencial. O CEP é opcional e pode preencher parte do endereço automaticamente.</p></div></div>
             <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end sm:gap-4">
               <label className="block"><span className="text-sm font-bold text-[#172033]">CEP do local <span className="font-normal text-slate-500">(opcional)</span></span><input name="cep" inputMode="numeric" autoComplete="postal-code" value={form.cep} onChange={handleCepChange} onBlur={() => { if (form.cep.replace(/\D/g, "").length === 8 && !cepResolved) void lookupCep(); }} className="field text-base" placeholder="69000-000" /></label>
               <button type="button" onClick={() => void lookupCep()} disabled={cepBusy || !form.cep} className="secondary-button min-h-12 px-5 disabled:opacity-50">{cepBusy ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}{cepBusy ? "Consultando" : "Buscar CEP"}</button>
@@ -520,7 +520,7 @@ export default function NovaDemanda({ user }: { user?: any }) {
         </section>
 
         <section data-register-step="2" className={`${mobileStep === 2 ? "block" : "hidden"} space-y-5 sm:block`}>
-          <label className="block"><span className="text-sm font-bold text-[#172033]">Seu nome</span><input name="nome_solicitante" value={form.nome_solicitante} onChange={handleChange} autoComplete="name" required className="field text-base" placeholder="Digite seu nome" /></label>
+          <label className="block"><span className="text-sm font-bold text-[#172033]">Seu nome</span><input name="nome_solicitante" value={form.nome_solicitante} onChange={handleChange} autoComplete="name" required className="field text-base" placeholder="Digite seu nome" /><span className="mt-1.5 block text-xs leading-5 text-slate-500">Seu nome identifica o registro e não aparece na consulta pública por protocolo.</span></label>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block">
@@ -542,16 +542,16 @@ export default function NovaDemanda({ user }: { user?: any }) {
 
           <div>
             <div className="flex items-center justify-between gap-3">
-              <span className="text-sm font-bold text-[#172033]">Adicionar evidências <span className="font-normal text-slate-500">(opcional)</span></span>
+              <span className="text-sm font-bold text-[#172033]">Fotos do problema <span className="font-normal text-slate-500">(opcional)</span></span>
               <span className="text-xs font-bold text-[#657089]">{photos.length} de {MAX_PHOTOS}</span>
             </div>
             <div className="mt-2 grid grid-cols-2 gap-2">
               <div className={`relative flex min-h-14 items-center justify-center gap-2 overflow-hidden rounded-2xl border border-dashed border-[#c4cfe3] bg-[#f7f9fd] px-3 py-3 text-sm font-bold text-slate-700 transition hover:border-[#7d8fc1] hover:bg-[#eef2fb] ${photoDisabled ? "opacity-50" : ""}`}>
-                <Camera className="h-4.5 w-4.5 text-[#1f2e6e]" /><span>Câmera</span>
+                <Camera className="h-4.5 w-4.5 text-[#1f2e6e]" /><span>Tirar foto</span>
                 <input name="camera_photo" type="file" accept="image/*" capture="environment" aria-label="Tirar foto com a câmera" onClick={(event) => { event.currentTarget.value = ""; }} onChange={handleCameraPhoto} disabled={photoDisabled} className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed" />
               </div>
               <div className={`relative flex min-h-14 items-center justify-center gap-2 overflow-hidden rounded-2xl border border-dashed border-[#c4cfe3] bg-[#f7f9fd] px-3 py-3 text-sm font-bold text-slate-700 transition hover:border-[#7d8fc1] hover:bg-[#eef2fb] ${photoDisabled ? "opacity-50" : ""}`}>
-                <Images className="h-4.5 w-4.5 text-[#1f2e6e]" /><span>Galeria</span>
+                <Images className="h-4.5 w-4.5 text-[#1f2e6e]" /><span>Escolher fotos</span>
                 <input name="gallery_photos" type="file" accept="image/*" multiple aria-label="Escolher fotos da galeria" onClick={(event) => { event.currentTarget.value = ""; }} onChange={handleGalleryPhotos} disabled={photoDisabled} className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed" />
               </div>
             </div>
@@ -563,10 +563,10 @@ export default function NovaDemanda({ user }: { user?: any }) {
                 <div className="px-3 py-2"><p className="text-[11px] font-bold text-[#34425b]">Foto {index + 1}</p><p className="text-[10px] text-[#7b8599]">{Math.round(photo.bytes / 1024)} KB</p></div>
               </div>)}
             </div>}
-            <p className="mt-2 text-xs leading-relaxed text-slate-500"><strong>Privacidade das fotos:</strong> até 7 imagens em armazenamento privado para análise administrativa. Elas não aparecem na consulta pública por protocolo. Evite fotografar pessoas, documentos ou placas quando isso não for necessário.</p>
+            <p className="mt-2 text-xs leading-relaxed text-slate-500"><strong>Suas fotos ficam privadas:</strong> você pode enviar até 7 imagens. Elas são usadas na análise do registro e não aparecem na consulta pública por protocolo. Evite fotografar pessoas, documentos ou placas quando isso não for necessário.</p>
           </div>
 
-          {!showContact && !form.contato && <button type="button" onClick={() => setShowContact(true)} className="min-h-11 text-sm font-extrabold text-[#1f2e6e] sm:hidden">+ Adicionar contato para retorno</button>}
+          {!showContact && !form.contato && <button type="button" onClick={() => setShowContact(true)} className="min-h-11 text-sm font-extrabold text-[#1f2e6e] sm:hidden">+ Adicionar contato (opcional)</button>}
           <label className={`${showContact || form.contato ? "block" : "hidden"} sm:block`}><span className="text-sm font-bold text-[#172033]">Contato <span className="font-normal text-slate-500">(opcional)</span></span><input name="contato" value={form.contato} onChange={handleChange} autoComplete="tel" placeholder="Telefone ou e-mail, se quiser receber retorno" className="field text-base" /><span className="mt-1.5 block text-xs leading-5 text-slate-500">O protocolo é gerado mesmo sem contato.</span></label>
 
           <div className="grid grid-cols-2 gap-2 sm:hidden">
@@ -602,7 +602,7 @@ export default function NovaDemanda({ user }: { user?: any }) {
           </div>
 
           <div className="rounded-2xl border border-[#d7e0f2] bg-[#eef2fb] p-4 sm:p-5">
-            <div className="flex gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#1f2e6e]" /><div className="space-y-3"><p className="text-xs leading-relaxed text-[#526078] sm:text-sm">A localização detalhada é usada para identificar o ponto da ocorrência e permanece restrita ao fluxo administrativo. Evite informar endereço residencial se ele não for o local do problema.</p><label className="flex cursor-pointer items-start gap-3 text-sm text-[#33466f]"><input type="checkbox" name="aviso_privacidade_aceito" checked={form.aviso_privacidade_aceito} onChange={handleChange} className="mt-0.5 h-5 w-5 shrink-0 rounded border-[#7d8fc1]" required /><span>Entendi que meus dados serão tratados no FISCALIZE para registrar e acompanhar este caso. Gilmar Nascimento é o controlador dos dados das demandas. <Link to="/privacidade" className="font-extrabold underline">Ver privacidade</Link>.</span></label></div></div>
+            <div className="flex gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#1f2e6e]" /><div className="space-y-3"><p className="text-xs leading-relaxed text-[#526078] sm:text-sm">A localização detalhada é usada para identificar o ponto da ocorrência e permanece restrita ao fluxo administrativo. Evite informar endereço residencial se ele não for o local do problema.</p><label className="flex cursor-pointer items-start gap-3 text-sm text-[#33466f]"><input type="checkbox" name="aviso_privacidade_aceito" checked={form.aviso_privacidade_aceito} onChange={handleChange} className="mt-0.5 h-5 w-5 shrink-0 rounded border-[#7d8fc1]" required /><span>Estou ciente de que meus dados serão tratados pelo FISCALIZE para registrar e acompanhar este caso, conforme a <Link to="/privacidade" className="font-extrabold underline">Política de Privacidade</Link>.</span></label></div></div>
           </div>
           {reviewComplete && <p aria-live="polite" className="flex items-center justify-center gap-1.5 text-xs font-semibold text-[#1f2e6e]"><Check className="h-3.5 w-3.5" /> Etapas preenchidas. Envie quando estiver pronto.</p>}
 
@@ -610,7 +610,7 @@ export default function NovaDemanda({ user }: { user?: any }) {
             <button type="button" onClick={() => goToStep(2)} className="secondary-button min-h-14 w-full text-base sm:hidden">Voltar e editar</button>
             <button disabled={loading || photoBusy || form.faixa_etaria === "UNDER_16"} className="primary-button min-h-14 w-full text-base disabled:cursor-not-allowed disabled:opacity-50">{loading ? "Enviando..." : "Enviar e gerar protocolo"}<ArrowRight className="h-5 w-5" /></button>
           </div>
-          <p className="text-center text-xs leading-relaxed text-slate-500">O FISCALIZE registra, organiza e acompanha demandas por protocolo. A plataforma não substitui canais oficiais nem garante, por si só, a solução de um problema.</p>
+          <p className="text-center text-xs leading-relaxed text-slate-500">O protocolo do FISCALIZE serve para acompanhar este registro. Ele não substitui os canais oficiais dos órgãos públicos nem garante, por si só, a solução do problema.</p>
         </section>
       </form>
     </div>
