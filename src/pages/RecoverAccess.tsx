@@ -4,7 +4,7 @@ import { Eye, EyeOff, KeyRound, Mail, ShieldCheck } from "lucide-react";
 
 type RecoveryConfig = { enabled: boolean; supportEmail: string | null };
 
-export default function RecoverAccess() {
+export default function RecoverAccess({ onSessionReset }: { onSessionReset?: () => void }) {
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const recoveryState = location.state as { email?: string; fromProfile?: boolean } | null;
@@ -63,6 +63,7 @@ export default function RecoverAccess() {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Não foi possível redefinir a senha.");
       localStorage.removeItem("user");
+      onSessionReset?.();
       setResetDone(true);
       setMessage(data.message || "Senha alterada com sucesso.");
       window.history.replaceState(null, "", "/recuperar-acesso");
