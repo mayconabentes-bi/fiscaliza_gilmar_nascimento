@@ -60,9 +60,10 @@ function storageConfig() {
 }
 
 function storageAuthHeaders(serviceRoleKey: string) {
-  const headers: Record<string, string> = { apikey: serviceRoleKey };
-  if (!serviceRoleKey.startsWith("sb_secret_")) headers.Authorization = `Bearer ${serviceRoleKey}`;
-  return headers;
+  return {
+    apikey: serviceRoleKey,
+    Authorization: `Bearer ${serviceRoleKey}`,
+  };
 }
 
 export async function checkEvidenceBucketPrivate() {

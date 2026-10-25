@@ -3,12 +3,33 @@ import { checkPostgresConnection } from "./postgres.js";
 import { checkEvidenceBucketPrivate, EvidenceStorageUnavailableError, validateStorageServiceKey } from "./evidenceStorage.js";
 import { getDb } from "./db.js";
 
+const PRODUCTION_SUPABASE_PROJECT_REF = "jnlfmiwczpglojqytrbw";
+const HOMOLOGATION_SUPABASE_PROJECT_REF = "zqxouixpokuprqqscnwf";
+
+function assertVercelPreviewIsolation() {
+  if (process.env.VERCEL_ENV !== "preview") return;
+
+  const databaseUrl = String(process.env.DATABASE_URL || "");
+  const postgresUrl = String(process.env.POSTGRES_URL || "");
+  const supabaseUrl = String(process.env.SUPABASE_URL || "");
+  const postgresConnection = postgresUrl || databaseUrl;
+  const productionReferenced =
+    postgresConnection.includes(PRODUCTION_SUPABASE_PROJECT_REF) ||
+    supabaseUrl.includes(PRODUCTION_SUPABASE_PROJECT_REF);
+  const homologationConfigured =
+    postgresConnection.includes(HOMOLOGATION_SUPABASE_PROJECT_REF) &&
+    supabaseUrl.includes(HOMOLOGATION_SUPABASE_PROJECT_REF);
+
+  if (productionReferenced || !homologationConfigured) {
+    throw new Error("Preview Vercel deve usar exclusivamente o Supabase de homologação.");
+  }
+}
+
 export function validateProductionEnvironment() {
   if (process.env.NODE_ENV !== "production") return;
 
   const required = [
     "JWT_SECRET",
-    "DATABASE_URL",
     "APP_ORIGIN",
     "DPO_CONTACT_EMAIL",
     "LGPD_CONSENT_VERSION",
@@ -18,9 +39,13 @@ export function validateProductionEnvironment() {
   ];
 
   const missing = required.filter((key) => !process.env[key]?.trim());
+  if (!process.env.POSTGRES_URL?.trim() && !process.env.DATABASE_URL?.trim()) {
+    missing.push("POSTGRES_URL|DATABASE_URL");
+  }
   if (missing.length) throw new Error(`Configuração obrigatória ausente: ${missing.join(", ")}`);
   if ((process.env.JWT_SECRET || "").length < 32) throw new Error("JWT_SECRET deve ter pelo menos 32 caracteres.");
   validateStorageServiceKey(String(process.env.SUPABASE_SERVICE_ROLE_KEY || ""));
+  assertVercelPreviewIsolation();
 }
 
 export async function assertProductionReadiness() {
@@ -45,10 +70,10 @@ export function allowedOrigins() {
     const origin = value.trim();
     if (origin) origins.add(origin);
   }
-  // Railway injeta o domínio público gerado do serviço (sem protocolo).
-  // Domínios personalizados continuam sendo declarados em APP_ORIGIN.
-  const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN?.trim();
-  if (railwayDomain) origins.add(`https://${railwayDomain}`);
+  // Vercel fornece o hostname do deployment atual (sem protocolo).
+  // Isso permite que Previews usem as APIs protegidas sem ampliar APP_ORIGIN.
+  const vercelDomain = process.env.VERCEL_URL?.trim();
+  if (vercelDomain) origins.add(`https://${vercelDomain}`);
   return [...origins];
 }
 
