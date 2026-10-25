@@ -78,6 +78,10 @@ export default function ConsultaProtocolo() {
     setResultado(null);
     try {
       const response = await fetch(`/api/demandas/protocolo/${encodeURIComponent(normalized)}`, { cache: "no-store" });
+      const contentType = response.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        throw new Error("Não foi possível consultar agora. Tente novamente.");
+      }
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Protocolo não encontrado.");
       setResultado(data);
