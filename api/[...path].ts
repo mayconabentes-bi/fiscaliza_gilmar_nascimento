@@ -1,5 +1,6 @@
 import { createApp } from "../src/server/app.js";
 import { assertProductionReadiness } from "../src/server/goLiveSecurity.js";
+import { ensurePreviewAdmin } from "../src/server/previewAdminBootstrap.js";
 
 const app = createApp();
 let readinessPromise: Promise<void> | null = null;
@@ -18,6 +19,7 @@ async function ensureReady() {
 export default async function handler(req: any, res: any) {
   try {
     await ensureReady();
+    await ensurePreviewAdmin();
     return app(req, res);
   } catch (error) {
     console.error("Vercel API readiness failure:", error);
