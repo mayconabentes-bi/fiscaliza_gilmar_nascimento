@@ -9,6 +9,7 @@ import { setupCitizenAuthPostgres } from "./citizenAuthPostgres.js";
 import { setupCitizenDemandPostgres } from "./citizenDemandPostgres.js";
 import { setupCitizenCompliancePostgres } from "./citizenCompliancePostgres.js";
 import { setupPrivateAdminPostgresRoutes } from "./privateAdminPostgresRoutes.js";
+import { setupCivicForwardingRoutes } from "./civicForwardingRoutes.js";
 import { setupTeamManagementRoutes } from "./teamManagementRoutes.js";
 import { setupProductionFastAdminRoutes } from "./productionFastAdminRoutes.js";
 import { setupProductionRadarRoutes } from "./productionRadarRoutes.js";
@@ -113,6 +114,7 @@ export function createApp() {
     // legadas mais pesadas quando executados em produção.
     setupProductionFastAdminRoutes(app);
     setupPrivateAdminPostgresRoutes(app);
+    setupCivicForwardingRoutes(app);
     setupTeamManagementRoutes(app);
     setupProductionRadarRoutes(app);
     setupProductionStrategyRoutes(app);
