@@ -19,6 +19,13 @@ assert.match(app, /\/api\/auth\/recovery\/reset", limiter\(/, "recovery reset mu
 assert.match(login, /\/recuperar-acesso\?modo=senha/, "login must link directly to password recovery");
 assert.match(login, /\/recuperar-acesso\?modo=email/, "login must link directly to assisted email recovery");
 assert.match(recover, /searchParams\.get\("modo"\) === "email"/, "recovery page must honor the requested recovery mode");
+assert.match(recover, /recoveryState = location\.state/, "recovery page must accept private navigation state from the authenticated profile");
+assert.match(recover, /useState\(\(\) => recoveryState\?\.email \|\| ""\)/, "profile recovery must prefill email without using the URL");
+assert.match(recover, /localStorage\.removeItem\("user"\)/, "password reset must clear stale visual citizen state");
+assert.match(recover, /href="\/login\?senha=alterada"/, "password reset must force a fresh login page after invalidating sessions");
+assert.match(recover, /Por segurança, as sessões anteriores deixam de ser válidas/, "password reset must explain session invalidation");
+assert.match(recover, /Mostrar nova senha/);
+assert.match(recover, /Mostrar confirmação da senha/);
 assert.match(recover, /Não lembro o e-mail/, "forgotten-email recovery path must be visible");
 assert.match(recover, /não revela automaticamente um e-mail/, "email recovery must avoid unsafe account lookup");
 assert.match(readiness, /passwordRecovery/, "readiness must expose recovery feature state");
