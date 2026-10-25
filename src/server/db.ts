@@ -36,6 +36,9 @@ export function setupDatabase() {
       consentimento_lgpd INTEGER DEFAULT 0,
       data_consentimento DATETIME,
       versao_consentimento TEXT,
+      termos_uso_aceito INTEGER DEFAULT 0,
+      data_aceite_termos DATETIME,
+      versao_termos TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       password_hash TEXT NOT NULL
     );
@@ -225,6 +228,9 @@ export function setupDatabase() {
   `);
 
   try { db.exec(`ALTER TABLE usuarios ADD COLUMN versao_consentimento TEXT;`); } catch (_) {}
+  try { db.exec(`ALTER TABLE usuarios ADD COLUMN termos_uso_aceito INTEGER DEFAULT 0;`); } catch (_) {}
+  try { db.exec(`ALTER TABLE usuarios ADD COLUMN data_aceite_termos DATETIME;`); } catch (_) {}
+  try { db.exec(`ALTER TABLE usuarios ADD COLUMN versao_termos TEXT;`); } catch (_) {}
   try { db.exec(`ALTER TABLE demandas ADD COLUMN aviso_privacidade_versao TEXT;`); } catch (_) {}
   try { db.exec(`ALTER TABLE demandas ADD COLUMN aviso_privacidade_aceito_em DATETIME;`); } catch (_) {}
   try { db.exec(`ALTER TABLE demandas ADD COLUMN tipo_problema TEXT;`); } catch (_) {}
