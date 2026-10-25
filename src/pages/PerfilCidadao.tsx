@@ -46,6 +46,11 @@ export default function PerfilCidadao({ user }: { user: any }) {
           10000,
         );
         const data = await response.json().catch(() => ({}));
+        if (response.status === 401 || response.status === 403) {
+          localStorage.removeItem("user");
+          window.location.replace("/login?sessao=expirada");
+          return;
+        }
         if (!response.ok) throw new Error(data.error || "Não foi possível carregar seus registros.");
         if (!active) return;
         const list = Array.isArray(data.registros) ? data.registros : [];
@@ -112,7 +117,7 @@ export default function PerfilCidadao({ user }: { user: any }) {
         ) : (
           <div className="mt-4 divide-y divide-[#edf0f6]">
             {registros.map((registro) => (
-              <Link key={registro.protocolo} to={`/protocolo?codigo=${encodeURIComponent(registro.protocolo)}`} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+              <Link key={registro.protocolo} to={`/protocolo?codigo=${encodeURIComponent(registro.protocolo)}`} state={{ fromAccount: true }} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-extrabold text-[#172033]">{demandProblemLabel(registro.categoria, registro.tipo_problema)}</p>
                   <p className="mt-1 text-xs text-[#657089]">{demandCategoryLabel(registro.categoria)} · {statusLabels[registro.status] || registro.status}</p>
@@ -126,7 +131,7 @@ export default function PerfilCidadao({ user }: { user: any }) {
       </section>
 
       <section className="mt-5 grid gap-3">
-        <Link to="/recuperar-acesso" className="surface-card flex min-h-16 items-center gap-3 p-4">
+        <Link to="/recuperar-acesso?modo=senha" state={{ email: user?.email || "", fromProfile: true }} className="surface-card flex min-h-16 items-center gap-3 p-4">
           <span className="icon-tile"><KeyRound className="h-4 w-4" /></span>
           <span><strong className="block text-sm text-[#172033]">Senha e acesso</strong><span className="mt-1 block text-xs text-[#657089]">Use a recuperação de acesso para redefinir sua senha.</span></span>
         </Link>
