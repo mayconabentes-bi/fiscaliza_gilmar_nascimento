@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Info, X } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function LGPDConsent() {
@@ -8,7 +7,7 @@ export default function LGPDConsent() {
   useEffect(() => {
     const seen = localStorage.getItem("pulso_privacy_notice_seen");
     if (!seen) {
-      const timer = setTimeout(() => setIsVisible(true), 1800);
+      const timer = setTimeout(() => setIsVisible(true), 2500);
       return () => clearTimeout(timer);
     }
   }, []);
@@ -21,19 +20,14 @@ export default function LGPDConsent() {
   if (!isVisible) return null;
 
   return (
-    <div data-privacy-notice className="fixed bottom-[calc(76px+env(safe-area-inset-bottom))] left-3 right-3 z-50 lg:bottom-5 lg:left-auto lg:right-5 lg:w-[430px]">
-      <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xl">
+    <div data-privacy-notice className="fixed bottom-[calc(76px+env(safe-area-inset-bottom))] left-2 right-2 z-50 lg:bottom-5 lg:left-auto lg:right-5 lg:w-[420px]">
+      <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-xl">
         <div className="flex items-start gap-3">
-          <div className="mt-0.5 rounded-lg bg-emerald-50 p-2 text-emerald-700"><Info className="h-4 w-4" /></div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold text-slate-900">Sobre sua privacidade</p>
-            <p className="mt-1 text-xs leading-relaxed text-slate-600">Usamos recursos necessários para o site funcionar. Se você registrar um problema, explicamos ali como os dados serão usados.</p>
-            <div className="mt-2 flex items-center gap-4 text-xs font-bold">
-              <button onClick={acknowledge} className="min-h-9 text-emerald-700">Entendi</button>
-              <Link to="/privacidade" onClick={() => setIsVisible(false)} className="min-h-9 inline-flex items-center text-slate-600 underline">Ver detalhes</Link>
-            </div>
+            <p className="mt-1 text-[11px] leading-4 text-slate-600">Usamos recursos necessários para o site funcionar. <Link to="/privacidade" onClick={acknowledge} className="font-bold text-[#1f2e6e] underline">Ver privacidade</Link>.</p>
           </div>
-          <button onClick={() => setIsVisible(false)} aria-label="Fechar aviso" className="min-h-9 min-w-9 inline-flex items-center justify-center text-slate-400"><X className="h-4 w-4" /></button>
+          <button onClick={acknowledge} className="min-h-10 shrink-0 rounded-lg px-3 text-xs font-extrabold text-[#1f2e6e]">Entendi</button>
         </div>
       </div>
     </div>

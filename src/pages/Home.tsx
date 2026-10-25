@@ -5,9 +5,9 @@ import { getPulsoAttribution, trackPulsoEvent, withPulsoAttribution } from "../l
 import { FiscalizeBrandMark } from "../components/FiscalizeBrand";
 
 const etapas = [
-  { icon: MessageSquareText, titulo: "Registre", texto: "Informe o local e descreva a situação com o contexto necessário." },
-  { icon: FileCheck2, titulo: "Receba o protocolo", texto: "O código identifica seu registro e permite consultar o andamento." },
-  { icon: Route, titulo: "Acompanhe", texto: "Veja mudanças de status e o histórico público do caso quando quiser." },
+  { icon: MessageSquareText, titulo: "Registre", texto: "Informe onde está o problema e o que aconteceu." },
+  { icon: FileCheck2, titulo: "Receba o protocolo", texto: "Seu registro recebe um código para acompanhamento." },
+  { icon: Route, titulo: "Acompanhe", texto: "Consulte o status e o histórico sempre que quiser." },
 ];
 
 const fluxo = [
@@ -38,20 +38,20 @@ export default function Home() {
             <span className="hidden items-center rounded-full bg-[#fff0e5] px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#b84405] sm:inline-flex">Você cuidando da cidade</span>
           </div>
 
-          <h1 className="mt-4 text-[2.25rem] font-extrabold leading-[1.01] tracking-[-0.055em] text-[#172033] sm:mt-5 sm:text-6xl lg:text-[4.65rem]">Registre o problema. Guarde o protocolo. Acompanhe o caso.</h1>
+          <h1 className="mt-4 text-[2.25rem] font-extrabold leading-[1.01] tracking-[-0.055em] text-[#172033] sm:mt-5 sm:text-6xl lg:text-[4.65rem]">Viu um problema na cidade? Registre e acompanhe.</h1>
 
-          <p className="mt-4 text-[15px] leading-6 text-[#657089] sm:hidden">Um fluxo simples para registrar uma situação em Manaus e acompanhar as atualizações pelo protocolo.</p>
-          <p className="mt-6 hidden max-w-2xl text-base leading-8 text-[#657089] sm:block sm:text-lg">O FISCALIZE organiza relatos de Manaus em um fluxo simples e verificável: você informa o local, descreve a situação e acompanha as atualizações pelo protocolo.</p>
+          <p className="mt-4 text-[15px] leading-6 text-[#657089] sm:hidden">Informe o local, descreva o problema e receba um protocolo para acompanhar o registro.</p>
+          <p className="mt-6 hidden max-w-2xl text-base leading-8 text-[#657089] sm:block sm:text-lg">O FISCALIZE ajuda você a registrar problemas urbanos em Manaus: informe o local, descreva o problema e receba um protocolo para acompanhar o registro.</p>
 
           <div className="mt-6 flex flex-col gap-2.5 sm:mt-8 sm:flex-row sm:gap-3">
-            <Link to={demandUrl} onClick={() => trackPulsoEvent('cta_registrar', attribution)} className="primary-button min-h-14 w-full px-6 text-base sm:w-auto">Registrar ocorrência <ArrowRight className="h-4.5 w-4.5" /></Link>
-            <Link to={protocolUrl} className="secondary-button min-h-14 w-full px-6 text-base sm:w-auto"><Radar className="h-4.5 w-4.5" /> Acompanhar protocolo</Link>
+            <Link to={demandUrl} onClick={() => trackPulsoEvent('cta_registrar', attribution)} className="primary-button min-h-14 w-full px-6 text-base sm:w-auto">Registrar problema <ArrowRight className="h-4.5 w-4.5" /></Link>
+            <Link to={protocolUrl} className="secondary-button min-h-14 w-full px-6 text-base sm:w-auto"><Radar className="h-4.5 w-4.5" /> Consultar protocolo</Link>
           </div>
 
           <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2.5 text-xs font-semibold text-[#657089] sm:mt-7 sm:gap-x-6 sm:gap-y-3 sm:text-sm">
             <span className="hidden items-center gap-2 sm:flex"><Check className="h-4 w-4 text-[#1f2e6e]" /> Feito para celular</span>
             <span className="flex items-center gap-2"><Check className="h-4 w-4 text-[#1f2e6e]" /> Protocolo imediato</span>
-            <span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#1f2e6e]" /> Sem perfilamento político</span>
+            <span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#1f2e6e]" /> Seus dados protegidos</span>
           </div>
         </div>
 
@@ -85,7 +85,7 @@ export default function Home() {
       <section className="border-y border-[#dde4ef] py-8 sm:py-16" data-home-mobile-flow>
         <div className="sm:hidden">
           <span className="section-kicker">Como funciona</span>
-          <h2 className="mt-3 text-2xl font-extrabold tracking-[-0.04em] text-[#172033]">Do relato ao acompanhamento.</h2>
+          <h2 className="mt-3 text-2xl font-extrabold tracking-[-0.04em] text-[#172033]">Registre em três passos.</h2>
 
           <div className="mt-5 overflow-hidden rounded-2xl border border-[#dde4ef] bg-white">
             {etapas.map(({ icon: Icon, titulo, texto }, index) => (
@@ -102,7 +102,7 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="mt-4 rounded-xl bg-[#eef2fb] px-4 py-3 text-xs leading-5 text-[#526078]">O protocolo do FISCALIZE é interno. Ele não substitui os canais oficiais dos órgãos públicos e não representa garantia automática de solução.</div>
+          <div className="mt-4 rounded-xl bg-[#eef2fb] px-4 py-3 text-xs leading-5 text-[#526078]">O protocolo é do FISCALIZE e não substitui os canais oficiais dos órgãos públicos.</div>
         </div>
 
         <div className="hidden gap-8 sm:grid lg:grid-cols-[0.75fr_1.25fr] lg:items-start">
@@ -116,18 +116,14 @@ export default function Home() {
       <section className="py-8 sm:py-16" data-home-trust>
         <div className="surface-card overflow-hidden sm:hidden">
           <div className="px-4 py-4">
-            <span className="section-kicker">Confiança e privacidade</span>
-            <p className="mt-2 text-sm leading-6 text-[#657089]">Acompanhe o histórico sem expor dados pessoais na consulta pública.</p>
+            <span className="section-kicker">Seus dados são protegidos</span>
+            <p className="mt-2 text-sm leading-6 text-[#657089]">Contato, fotos e informações internas não aparecem na consulta pública.</p>
+            <p className="mt-2 text-xs leading-5 text-[#7b8599]">O FISCALIZE não usa seus dados para criar perfil político.</p>
           </div>
-          <Link to={protocolUrl} className="flex min-h-16 items-center justify-between gap-4 border-t border-[#eef2fb] px-4 py-3">
-            <span><span className="block text-sm font-extrabold text-[#172033]">Transparência</span><span className="mt-0.5 block text-xs leading-5 text-[#657089]">Status e histórico pelo protocolo.</span></span>
-            <ArrowRight className="h-4 w-4 shrink-0 text-[#1f2e6e]" />
-          </Link>
-          <Link to="/privacidade" className="flex min-h-16 items-center justify-between gap-4 border-t border-[#eef2fb] px-4 py-3">
-            <span><span className="block text-sm font-extrabold text-[#172033]">Privacidade</span><span className="mt-0.5 block text-xs leading-5 text-[#657089]">Contato, fotos e observações internas não aparecem na consulta pública.</span></span>
-            <ArrowRight className="h-4 w-4 shrink-0 text-[#1f2e6e]" />
-          </Link>
-          <div className="border-t border-[#eef2fb] bg-[#fafbfe] px-4 py-3 text-[11px] leading-5 text-[#7b8599]">O projeto não usa seus dados para criar perfil político.</div>
+          <div className="grid grid-cols-2 border-t border-[#eef2fb]">
+            <Link to="/privacidade" className="flex min-h-12 items-center justify-between gap-2 border-r border-[#eef2fb] px-4 py-3 text-sm font-extrabold text-[#1f2e6e]">Privacidade <ArrowRight className="h-4 w-4 shrink-0" /></Link>
+            <Link to="/transparencia" className="flex min-h-12 items-center justify-between gap-2 px-4 py-3 text-sm font-extrabold text-[#1f2e6e]">Sobre <ArrowRight className="h-4 w-4 shrink-0" /></Link>
+          </div>
         </div>
 
         <div className="hidden gap-5 sm:grid lg:grid-cols-2">
@@ -141,7 +137,6 @@ export default function Home() {
         <Link to={demandUrl} onClick={() => trackPulsoEvent('cta_registrar', attribution)} className="mt-6 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-[#f36a10] px-6 py-4 text-base font-extrabold text-white transition hover:bg-[#b84405] lg:mt-0 lg:w-auto">Começar registro <ArrowRight className="h-4.5 w-4.5" /></Link>
       </section>
 
-      <p className="mt-2 text-center text-[11px] leading-5 text-[#7b8599] sm:hidden">Sem contagem regressiva, pontuação ou penalidade. Registre quando estiver pronto.</p>
     </div>
   );
 }

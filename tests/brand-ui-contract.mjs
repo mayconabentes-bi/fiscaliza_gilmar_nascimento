@@ -37,7 +37,7 @@ expect(login.includes('FiscalizeLockup') && login.includes('bg-[#f36a10]'), 'Log
 expect(html.includes('name="theme-color" content="#1f2e6e"'), 'Theme color do navegador deve acompanhar a identidade.');
 expect(!app.includes('Deputado Estadual') && !login.includes('Deputado Estadual'), 'A interface não deve inserir cargo político como texto de UI.');
 
-expect(home.includes('Você cuidando da cidade') && home.includes('Registrar ocorrência'), 'Home deve preservar a personalização pública e o CTA principal.');
+expect(home.includes('Você cuidando da cidade') && home.includes('Viu um problema na cidade?') && home.includes('Registrar problema') && home.includes('Consultar protocolo'), 'Home deve preservar a identidade pública, clareza mobile-first e os CTAs principais.');
 expect(register.includes('FISCALIZE · Registrar') && register.includes('/api/demandas'), 'Registrar deve preservar identidade pública e endpoint de envio.');
 expect(tracking.includes('FISCALIZE · Acompanhar') && tracking.includes('/api/demandas/protocolo/'), 'Acompanhar deve preservar identidade pública e consulta por protocolo.');
 expect(methodology.includes('FISCALIZE · Como funciona') && methodology.includes('não substitui protocolo'), 'Como funciona deve preservar identidade e limite do protocolo interno.');
