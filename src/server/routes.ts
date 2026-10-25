@@ -198,6 +198,14 @@ export function setupRoutes(app: Express) {
     const claims = citizenClaims(req);
     const db = getDb();
     try {
+      if (claims) {
+        const account = db.prepare("SELECT nome_completo, status FROM usuarios WHERE id = ?").get(claims.id) as any | undefined;
+        if (!account || account.status === "excluido" || account.status === "suspenso") {
+          return res.status(401).json({ error: "Sessão inválida. Entre novamente para vincular o registro à sua conta." });
+        }
+        nome = cleanText(account.nome_completo, 160, true);
+      }
+
       const id = uuidv4();
       let protocolo = demandProtocol();
       for (let attempt = 0; attempt < 5; attempt += 1) {
