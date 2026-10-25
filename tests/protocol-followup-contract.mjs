@@ -22,5 +22,8 @@ expect(protocol.indexOf('data-followup-search') < protocol.indexOf('Consulta pú
 expect(protocol.includes('data-followup-protocol') && protocol.includes('Copiar') && protocol.includes('Compartilhar'), 'Ações opcionais devem permanecer agrupadas ao protocolo.');
 expect(protocol.includes('Tentar novamente') && protocol.includes('Protocolo não encontrado'), 'Erro de consulta deve orientar nova tentativa sem expor dados adicionais.');
 expect(!protocol.includes('trackPulsoEvent') && !protocol.includes('/api/mobile-events'), 'Consulta por protocolo não deve enviar o código ou seu contexto à telemetria.');
+expect(protocol.includes('data-account-followup-context') && protocol.includes('data-account-followup-return'), 'Conta autenticada deve ganhar continuidade contextual sem alterar o endpoint público.');
+expect(protocol.includes('Voltar aos meus registros') && protocol.includes('Registrar outra ocorrência'), 'Após consultar o histórico, cidadão autenticado deve ter próximos passos explícitos.');
+expect(protocol.includes('fromAccount') && protocol.includes('fromSubmission') && protocol.includes('location.state'), 'Origem da navegação deve permanecer em state, sem expor contexto de conta na URL.');
 
 console.log('Protocol follow-up contract OK: status real, próximo passo, privacidade, compartilhamento opcional e ausência de promessa artificial.');
