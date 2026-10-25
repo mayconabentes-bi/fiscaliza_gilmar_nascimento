@@ -8,6 +8,8 @@ const register = fs.readFileSync('src/pages/NovaDemanda.tsx', 'utf8');
 const tracking = fs.readFileSync('src/pages/ConsultaProtocolo.tsx', 'utf8');
 const methodology = fs.readFileSync('src/pages/Metodologia.tsx', 'utf8');
 const about = fs.readFileSync('src/pages/Transparencia.tsx', 'utf8');
+const terms = fs.readFileSync('src/pages/Termos.tsx', 'utf8');
+const privacy = fs.readFileSync('src/pages/Privacidade.tsx', 'utf8');
 const privateDashboard = fs.readFileSync('src/pages/DashboardPrivado.tsx', 'utf8');
 const triage = fs.readFileSync('src/pages/AdminDemandas.tsx', 'utf8');
 const governance = fs.readFileSync('src/pages/AdminDashboard.tsx', 'utf8');
@@ -27,7 +29,8 @@ function expect(condition, message) {
 
 expect(css.includes('--brand-blue: #1f2e6e') && css.includes('--brand-orange: #f36a10'), 'Paleta institucional base deve permanecer definida.');
 expect(brand.includes('FiscalizeBrandMark') && brand.includes('FiscalizeWordmark') && brand.includes('text-[#f36a10]'), 'Componentes da nova marca FISCALIZE devem existir com símbolo e wordmark azul/laranja.');
-expect(!app.includes('gilmar-nascimento-oficial.png') && !login.includes('gilmar-nascimento-oficial.png') && !home.includes('gilmar-nascimento-oficial.png'), 'A identidade visual antiga não deve permanecer nas superfícies públicas.');
+expect(!app.includes('gilmar-nascimento-oficial.png') && !login.includes('gilmar-nascimento-oficial.png') && !home.includes('gilmar-nascimento-oficial.png') && !about.includes('gilmar-nascimento-oficial.png'), 'A identidade visual antiga não deve permanecer nas superfícies públicas.');
+expect(![home, login, about, terms, privacy].some((content) => content.includes('Gilmar Nascimento')), 'Superfícies públicas de lançamento cidadão não devem vincular o FISCALIZE a agente político específico.');
 expect(app.includes('brand-accent-bar') && app.includes('FiscalizeBrandMark') && app.includes('FiscalizeWordmark'), 'Shell público deve aplicar a nova identidade institucional.');
 expect(app.includes('text-[#1f2e6e]') && app.includes('primary-button'), 'Navegação e CTA devem usar a nova hierarquia visual.');
 expect(login.includes('FiscalizeLockup') && login.includes('bg-[#f36a10]'), 'Login deve carregar a nova marca e destaque laranja.');
@@ -38,7 +41,8 @@ expect(home.includes('Você cuidando da cidade') && home.includes('Registrar oco
 expect(register.includes('FISCALIZE · Registrar') && register.includes('/api/demandas'), 'Registrar deve preservar identidade pública e endpoint de envio.');
 expect(tracking.includes('FISCALIZE · Acompanhar') && tracking.includes('/api/demandas/protocolo/'), 'Acompanhar deve preservar identidade pública e consulta por protocolo.');
 expect(methodology.includes('FISCALIZE · Como funciona') && methodology.includes('não substitui protocolo'), 'Como funciona deve preservar identidade e limite do protocolo interno.');
-expect(about.includes('Sobre o FISCALIZE') && about.includes('Participar não significa apoiar'), 'Sobre deve preservar identidade e independência da participação.');
+expect(about.includes('Sobre o FISCALIZE') && about.includes('Participar não significa apoiar') && about.includes('FiscalizeBrandMark'), 'Sobre deve preservar identidade cidadã, independência da participação e marca FISCALIZE.');
+expect(terms.includes('iniciativa cívica independente') && privacy.includes('iniciativa cívica independente'), 'Termos e Privacidade devem declarar o posicionamento cívico independente da versão pública.');
 
 expect(app.includes('private-shell') && app.includes('private-area') && app.includes('private-context-bar') && app.includes('Acesso autenticado'), 'Shell privado deve preservar contexto visual e indicação de acesso autenticado.');
 expect(css.includes('.private-area') && css.includes('data-private-route="/admin/demandas"') && css.includes('data-private-route="/radar-manaus"'), 'Estilos privados devem permanecer escopados por área e rota.');

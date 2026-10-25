@@ -4,16 +4,16 @@ export default function Termos() {
   return (
     <div className="max-w-4xl mx-auto py-10 space-y-6">
       <header className="mb-8">
-        <span className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-700">Termos de uso · versão 2026-09-P0E</span>
+        <span className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-700">Termos de uso · versão 2026-10-CIDADAO</span>
         <h1 className="mt-3 text-4xl font-bold text-slate-950">Regras para usar o FISCALIZE.</h1>
-        <p className="mt-4 text-slate-600">O FISCALIZE foi criado por Maycon A. Bentes, com Co-Fundação/Criação de Thauã Malinowski e apoio de Arthur Azevedo, e é disponibilizado para uso do vereador Gilmar Nascimento. Estes termos explicam a finalidade do serviço, seus limites e as responsabilidades de quem o utiliza.</p>
+        <p className="mt-4 text-slate-600">O FISCALIZE é uma iniciativa cívica independente criada por Maycon A. Bentes, com Co-Fundação/Criação de Thauã Malinowski e apoio de Arthur Azevedo. Estes termos explicam a finalidade do serviço, seus limites e as responsabilidades de quem o utiliza.</p>
       </header>
 
       <section className="rounded-3xl border border-slate-200 bg-white p-7">
         <h2 className="text-xl font-bold flex items-center gap-2"><FileText className="w-5 h-5 text-emerald-700" /> Natureza do serviço</h2>
         <div className="mt-3 space-y-3 text-slate-600 leading-relaxed">
           <p>O FISCALIZE recebe e organiza relatos sobre problemas urbanos e permite acompanhar registros por um código interno.</p>
-          <p>O FISCALIZE não é um canal oficial da Prefeitura de Manaus, da Câmara Municipal de Manaus ou do Governo do Amazonas. O uso pelo vereador Gilmar Nascimento não transforma a plataforma em sistema oficial desses órgãos.</p>
+          <p>O FISCALIZE não é um canal oficial da Prefeitura de Manaus, da Câmara Municipal de Manaus ou do Governo do Amazonas e não atua em nome desses órgãos ou de agentes políticos.</p>
           <p>O protocolo emitido pelo FISCALIZE é interno e não substitui protocolo, denúncia, chamado ou requerimento feito perante órgão público competente.</p>
         </div>
       </section>
@@ -65,7 +65,7 @@ export default function Termos() {
       <section className="rounded-3xl border border-slate-200 bg-white p-7">
         <h2 className="text-xl font-bold">Privacidade e segurança</h2>
         <div className="mt-3 space-y-3 text-slate-600 leading-relaxed">
-          <p>O tratamento de dados pessoais é detalhado na Política de Privacidade. Para os dados das demandas, Gilmar Nascimento atua como controlador. A consulta de CEP no cadastro é usada apenas para auxiliar o preenchimento de município e bairro; o CEP não integra o perfil da conta.</p>
+          <p>O tratamento de dados pessoais é detalhado na Política de Privacidade. Para os dados pessoais tratados nesta versão pública, Maycon A. Bentes atua como controlador, responsável pelas principais decisões sobre finalidade e meios essenciais do tratamento. A consulta de CEP no cadastro é usada apenas para auxiliar o preenchimento de município e bairro; o CEP não integra o perfil da conta.</p>
           <p>O usuário pode consultar os canais e direitos disponíveis naquela página. Medidas técnicas e administrativas são adotadas de forma proporcional aos riscos, sem promessa de segurança absoluta.</p>
         </div>
       </section>

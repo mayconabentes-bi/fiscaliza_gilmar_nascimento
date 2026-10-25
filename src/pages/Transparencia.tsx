@@ -1,10 +1,11 @@
 import { Eye, ShieldCheck, UserRound, Waypoints } from "lucide-react";
+import { FiscalizeBrandMark } from "../components/FiscalizeBrand";
 
 const pilares = [
   {
     icon: UserRound,
     titulo: "Origem e uso",
-    texto: "O FISCALIZE tem como Fundador/Criador Maycon A. Bentes e como Co-Fundador/Criador Thauã Malinowski, com apoio de Arthur Azevedo. A plataforma é disponibilizada para uso do vereador Gilmar Nascimento no registro e acompanhamento de demandas. O FISCALIZE não substitui canais oficiais nem garante, por si só, a solução de um problema."
+    texto: "O FISCALIZE é uma iniciativa cívica independente, criada por Maycon A. Bentes, com Co-Fundação/Criação de Thauã Malinowski e apoio de Arthur Azevedo. A plataforma organiza registros da população e não substitui canais oficiais nem garante, por si só, a solução de um problema."
   },
   {
     icon: Waypoints,
@@ -34,7 +35,7 @@ export default function Transparencia() {
             <h1 className="mt-5 text-3xl font-extrabold tracking-[-0.045em] text-[#172033] sm:text-4xl">Um espaço para registrar, organizar e acompanhar problemas relatados em Manaus.</h1>
             <p className="mt-4 text-sm leading-7 text-[#657089] sm:text-base">Aqui você encontra informações diretas sobre a origem da plataforma, como os registros são tratados e quais são os limites do serviço.</p>
           </div>
-          <div className="flex justify-start lg:justify-end"><span className="brand-signature-mark brand-signature-mark--footer" aria-hidden="true"><img src="/brand/gilmar-nascimento-oficial.png" alt="" /></span></div>
+          <div className="flex justify-start lg:justify-end"><FiscalizeBrandMark className="h-16 w-16 shadow-sm" /></div>
         </div>
       </header>
 
