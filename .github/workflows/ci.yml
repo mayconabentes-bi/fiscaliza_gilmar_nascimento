@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 15
     env:
       DPO_CONTACT_EMAIL: privacidade-ci@fiscalize.local
-      LGPD_CONSENT_VERSION: 2026-09-v2
+      LGPD_CONSENT_VERSION: 2026-10-v1
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -129,7 +129,7 @@ jobs:
     timeout-minutes: 25
     env:
       DPO_CONTACT_EMAIL: privacidade-ci@fiscalize.local
-      LGPD_CONSENT_VERSION: 2026-09-v2
+      LGPD_CONSENT_VERSION: 2026-10-v1
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

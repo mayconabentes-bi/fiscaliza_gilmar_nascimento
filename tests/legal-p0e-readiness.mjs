@@ -64,7 +64,7 @@ expectIncludes(privacy, [
 ], 'Privacidade pública P0-E');
 
 expectIncludes(terms, [
-  'Termos de uso · versão 2026-09-P0E',
+  'Termos de uso · versão 2026-10-CIDADAO',
   'A participação autônoma para criar conta e registrar demandas está disponível a partir de 16 anos',
   'Pessoas com menos de 16 anos podem acessar o conteúdo público',
   'Dados de adolescentes têm proteção reforçada',

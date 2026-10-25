@@ -62,9 +62,9 @@ export default function Privacidade() {
             <h2 className="text-2xl font-bold text-slate-950 mb-5 flex items-center gap-2"><Lock className="w-5 h-5 text-emerald-700" /> Quem trata seus dados</h2>
             <div className="space-y-3 text-slate-600 leading-relaxed">
               <p><strong>Fundador/Criador:</strong> Maycon A. Bentes. <strong>Co-Fundador/Criador:</strong> Thauã Malinowski. <strong>Apoio:</strong> Arthur Azevedo.</p>
-              <p>A plataforma é disponibilizada para uso do vereador Gilmar Nascimento. Para os dados das demandas, <strong>Gilmar Nascimento atua como controlador</strong>, responsável pelas principais decisões sobre as finalidades e os elementos essenciais do tratamento.</p>
-              <p>As funções de fundador, co-fundador e apoio não significam, por si só, que essas pessoas sejam controladores ou operadores dos dados pessoais.</p>
-              <p>O FISCALIZE não é um canal oficial da Prefeitura de Manaus, do Governo do Amazonas ou da Câmara Municipal de Manaus. O uso pelo vereador não transforma a plataforma em sistema oficial desses órgãos.</p>
+              <p>Nesta versão pública, o FISCALIZE funciona como iniciativa cívica independente. Para os dados pessoais tratados pela plataforma, <strong>Maycon A. Bentes atua como controlador</strong>, responsável pelas principais decisões sobre as finalidades e os elementos essenciais do tratamento.</p>
+              <p>As funções de co-fundador/criador e apoio não significam, por si só, que essas pessoas sejam controladores ou operadores dos dados pessoais.</p>
+              <p>O FISCALIZE não é um canal oficial da Prefeitura de Manaus, do Governo do Amazonas ou da Câmara Municipal de Manaus e não atua em nome desses órgãos ou de agentes políticos.</p>
               {privacyContact ? <p><strong>Canal de privacidade:</strong> <a className="font-bold underline" href={`mailto:${privacyContact}`}>{privacyContact}</a>.</p> : <p className="text-amber-800"><strong>Canal de privacidade ainda não configurado.</strong> A abertura pública ampla não deve ocorrer enquanto esse canal não estiver definido no ambiente de produção.</p>}
             </div>
           </section>
