@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { CheckCircle2, Clock, Copy, Info, MapPin, Radar, RefreshCw, Search, Share2, ShieldCheck, Tag, X } from "lucide-react";
 import { demandCategoryLabel, demandProblemLabel } from "../shared/demandTaxonomy";
 
@@ -29,7 +29,12 @@ const formatDateTime = (value: string) => new Date(value).toLocaleString("pt-BR"
 const PROTOCOL_RE = /^AM-\d{8}-[A-F0-9]{6,32}$/;
 const normalizeProtocolInput = (value: string) => value.toUpperCase().replace(/\s+/g, "").slice(0, 44);
 
-export default function ConsultaProtocolo() {
+export default function ConsultaProtocolo({ user }: { user?: any }) {
+  const location = useLocation();
+  const navigationState = location.state as { fromAccount?: boolean; fromSubmission?: boolean } | null;
+  const fromAccount = Boolean(navigationState?.fromAccount);
+  const fromSubmission = Boolean(navigationState?.fromSubmission);
+  const isCitizen = user?.type === "cidadao";
   const [params] = useSearchParams();
   const [codigo, setCodigo] = useState(normalizeProtocolInput(params.get("codigo") || ""));
   const [resultado, setResultado] = useState<any>(null);
@@ -182,6 +187,16 @@ export default function ConsultaProtocolo() {
         <p className="px-4 pb-4 text-xs leading-5 text-[#657089] sm:px-5 sm:pb-5">Você não precisa entrar na conta. Use o código completo recebido após registrar o problema.</p>
       </form>
 
+      {isCitizen && (
+        <div data-account-followup-context className="mt-3 flex items-start justify-between gap-3 rounded-xl border border-[#d7e0f2] bg-white px-3.5 py-3 text-xs leading-5 text-[#526078] sm:mt-4 sm:rounded-2xl sm:p-4 sm:text-sm">
+          <div className="min-w-0">
+            <strong className="block text-[#172033]">{fromSubmission ? "Acompanhamento do registro enviado" : fromAccount ? "Acompanhamento aberto pela sua conta" : "Você está conectado"}</strong>
+            <span>{fromSubmission ? "Consulte o andamento abaixo e depois volte à sua conta para acompanhar os registros vinculados." : fromAccount ? "Depois de consultar o histórico, você pode voltar à lista sem digitar o protocolo novamente." : "Seus registros vinculados ficam reunidos em Meus registros."}</span>
+          </div>
+          <Link to="/meus-registros" className="shrink-0 rounded-lg px-2 py-1.5 font-extrabold text-[#1f2e6e] hover:bg-[#eef2fb]">Meus registros</Link>
+        </div>
+      )}
+
       <div className="mt-3 flex gap-2 rounded-xl border border-[#d7e0f2] bg-[#eef2fb] px-3.5 py-3 text-xs leading-5 text-[#526078] sm:mt-4 sm:gap-3 sm:rounded-2xl sm:p-4 sm:text-sm">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#1f2e6e]" />
         <p><strong>Consulta pública protegida.</strong> Mostramos apenas dados necessários para o acompanhamento. Descrição, contato, fotos, endereço detalhado e observações internas não são exibidos.</p>
@@ -301,6 +316,17 @@ export default function ConsultaProtocolo() {
           </div>
 
           <p className="mt-4 text-center text-xs leading-5 text-[#657089]">Compartilhar é opcional e inclui somente o link de acompanhamento do protocolo.</p>
+
+          {isCitizen && (
+            <section data-account-followup-return className="mt-4 rounded-2xl border border-[#d7e0f2] bg-[#eef2fb] p-4 sm:p-5">
+              <h3 className="text-base font-extrabold text-[#172033]">Continue pela sua conta</h3>
+              <p className="mt-1 text-sm leading-6 text-[#657089]">Volte para ver os registros vinculados à sua conta e abrir outro acompanhamento sem digitar o protocolo.</p>
+              <div className="mt-4 grid gap-2 sm:flex">
+                <Link to="/meus-registros" className="primary-button min-h-12 justify-center px-5 text-sm">Voltar aos meus registros</Link>
+                <Link to="/demandas/nova" className="secondary-button min-h-12 justify-center px-5 text-sm">Registrar outra ocorrência</Link>
+              </div>
+            </section>
+          )}
         </>
       )}
     </div>
