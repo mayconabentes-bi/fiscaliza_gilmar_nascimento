@@ -14,13 +14,13 @@ const statusLabel: Record<string, string> = {
 };
 
 const statusGuidance: Record<string, { title: string; text: string }> = {
-  RECEBIDA: { title: "Registro recebido", text: "Seu registro entrou no sistema. Consulte este protocolo novamente para acompanhar qualquer mudança de status." },
-  EM_TRIAGEM: { title: "Registro em triagem", text: "O registro está em triagem. Novas mudanças aparecem neste histórico quando forem registradas no sistema." },
-  ENCAMINHADA: { title: "Registro encaminhado", text: "O sistema registra que a demanda foi encaminhada. O histórico mostra as mudanças já registradas, sem prometer prazo de conclusão." },
-  EM_ANALISE: { title: "Registro em análise", text: "O registro está em análise. Consulte o protocolo para verificar futuras atualizações lançadas no sistema." },
-  EM_EXECUCAO: { title: "Registro em andamento", text: "O sistema registra o caso como em andamento. O histórico público é a referência para acompanhar novas atualizações." },
-  CONCLUIDA: { title: "Registro marcado como concluído", text: "O status atual do registro é concluído. O histórico preserva as mudanças registradas até este momento." },
-  INDEFERIDA: { title: "Registro encerrado", text: "O status atual do registro é encerrado. O histórico preserva as mudanças registradas no sistema." },
+  RECEBIDA: { title: "Registro recebido", text: "Seu registro foi recebido pelo FISCALIZE. Quando houver uma nova atualização no acompanhamento, ela aparecerá neste histórico." },
+  EM_TRIAGEM: { title: "Em triagem", text: "O FISCALIZE está organizando o registro para acompanhamento. As mudanças ficam registradas no histórico." },
+  ENCAMINHADA: { title: "Encaminhamento registrado", text: "Há um encaminhamento registrado no FISCALIZE. Isso não significa, por si só, protocolo ou aceite por um órgão público." },
+  EM_ANALISE: { title: "Em análise", text: "O registro está em análise dentro do FISCALIZE. Novas atualizações aparecerão aqui." },
+  EM_EXECUCAO: { title: "Em andamento", text: "O acompanhamento está marcado como em andamento no FISCALIZE. Consulte o histórico para ver novas atualizações." },
+  CONCLUIDA: { title: "Marcado como concluído", text: "O acompanhamento no FISCALIZE foi marcado como concluído. Isso não substitui eventual confirmação do órgão responsável." },
+  INDEFERIDA: { title: "Registro encerrado", text: "O acompanhamento no FISCALIZE foi encerrado. O histórico abaixo preserva as mudanças registradas." },
 };
 
 const dateOpts = { timeZone: "America/Manaus", day: "2-digit", month: "2-digit", year: "numeric" } as const;
@@ -137,11 +137,11 @@ export default function ConsultaProtocolo() {
       <section className="sm:grid sm:gap-7 lg:grid-cols-[1fr_0.72fr] lg:items-end">
         <div className="max-w-2xl">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="section-kicker rounded-full border border-[#d7e0f2] bg-white px-3 py-1.5"><Radar className="h-4 w-4" /> FISCALIZE · Acompanhar</span>
-            <span className="hidden rounded-full bg-[#fff0e5] px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#b84405] sm:inline-flex">Seu protocolo, seu histórico</span>
+            <span className="section-kicker rounded-full border border-[#d7e0f2] bg-white px-3 py-1.5"><Radar className="h-4 w-4" /> FISCALIZE · Protocolo</span>
+            <span className="hidden rounded-full bg-[#fff0e5] px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#b84405] sm:inline-flex">Status e histórico</span>
           </div>
-          <h1 className="mt-4 text-3xl font-extrabold tracking-[-0.045em] text-[#172033] sm:mt-5 sm:text-4xl">Acompanhar registro</h1>
-          <p className="mt-2 text-sm leading-6 text-[#657089] sm:mt-3 sm:text-base">Digite o protocolo recebido no envio para consultar o status atual e o histórico registrado.</p>
+          <h1 className="mt-4 text-3xl font-extrabold tracking-[-0.045em] text-[#172033] sm:mt-5 sm:text-4xl">Consultar protocolo</h1>
+          <p className="mt-2 text-sm leading-6 text-[#657089] sm:mt-3 sm:text-base">Digite ou cole o código recebido após o envio para ver a situação atual e o histórico do registro.</p>
         </div>
 
         <div className="hidden grid-cols-3 gap-2 rounded-2xl border border-[#d7e0f2] bg-[#eef2fb] p-4 sm:grid">
@@ -176,14 +176,15 @@ export default function ConsultaProtocolo() {
           </div>
           <button disabled={loading} className="primary-button mt-2.5 min-h-14 w-full justify-center px-6 text-base sm:mt-0 sm:w-auto">
             {loading ? <RefreshCw className="h-5 w-5 animate-spin" /> : <Search className="h-5 w-5" />}
-            {loading ? "Buscando..." : "Ver andamento"}
+            {loading ? "Consultando..." : "Consultar"}
           </button>
         </div>
+        <p className="px-4 pb-4 text-xs leading-5 text-[#657089] sm:px-5 sm:pb-5">Você não precisa entrar na conta. Use o código completo recebido após registrar o problema.</p>
       </form>
 
       <div className="mt-3 flex gap-2 rounded-xl border border-[#d7e0f2] bg-[#eef2fb] px-3.5 py-3 text-xs leading-5 text-[#526078] sm:mt-4 sm:gap-3 sm:rounded-2xl sm:p-4 sm:text-sm">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#1f2e6e]" />
-        <p><strong>Consulta pública protegida.</strong> Descrição, contato, fotos, endereço detalhado e observações internas não são exibidos.</p>
+        <p><strong>Consulta pública protegida.</strong> Mostramos apenas dados necessários para o acompanhamento. Descrição, contato, fotos, endereço detalhado e observações internas não são exibidos.</p>
       </div>
 
       {error && (
@@ -205,7 +206,7 @@ export default function ConsultaProtocolo() {
                   {latestUpdate && <span className="text-xs font-semibold text-[#7c879d]">Última atualização: {formatDateTime(latestUpdate)}</span>}
                 </div>
                 <h2 className="mt-3 text-xl font-extrabold text-[#172033] sm:text-2xl">{guidance.title}</h2>
-                <p className="mt-2 text-sm leading-6 text-[#657089] sm:leading-7">{guidance.text}</p>
+                <p className="mt-2 text-sm leading-6 text-[#657089] sm:leading-7">{guidance.text}</p><p className="mt-3 text-xs leading-5 text-[#7c879d]">O status mostrado pertence ao acompanhamento no FISCALIZE e não representa confirmação automática por órgão público.</p>
               </div>
             </div>
             <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#eef2fb] pt-4">
@@ -270,7 +271,7 @@ export default function ConsultaProtocolo() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-[#f36a10]">Acompanhamento</p>
-                  <h3 className="mt-1 text-lg font-extrabold text-[#172033]">Histórico · {resultado.historico.length} {resultado.historico.length === 1 ? "atualização" : "atualizações"}</h3>
+                  <h3 className="mt-1 text-lg font-extrabold text-[#172033]">Histórico · {resultado.historico.length} {resultado.historico.length === 1 ? "atualização" : "atualizações"}</h3><p className="mt-1 text-xs text-[#7c879d]">Atualização mais recente primeiro.</p>
                 </div>
                 <span className="icon-tile"><Radar className="h-4 w-4" /></span>
               </div>
@@ -288,7 +289,7 @@ export default function ConsultaProtocolo() {
               </div>
 
               <div className="mt-5 hidden space-y-5 sm:block">
-                {resultado.historico.map((item: any, index: number) => (
+                {historyNewestFirst.map((item: any, index: number) => (
                   <div key={`${item.status_novo}-${item.created_at}-desktop-${index}`} className="relative pl-6 before:absolute before:left-[7px] before:top-5 before:h-[calc(100%+0.5rem)] before:w-px before:bg-[#d7e0f2] last:before:hidden">
                     <span className="absolute left-0 top-1.5 h-3.5 w-3.5 rounded-full border-[3px] border-white bg-[#f36a10] ring-1 ring-[#ffc79f]" />
                     <div className="text-sm font-extrabold text-[#172033]">{statusLabel[item.status_novo] || item.status_novo}</div>
