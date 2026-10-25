@@ -13,7 +13,7 @@ expect(protocol.includes('não exibe prazo automático de solução'), 'A interf
 expect(protocol.includes('navigator.clipboard') && protocol.includes('navigator.share'), 'A jornada deve permitir copiar e compartilhar o protocolo de forma opcional.');
 expect(protocol.includes('aria-live="polite"'), 'O feedback das ações deve ser acessível.');
 expect(protocol.includes('Consulta pública protegida.') && protocol.includes('Descrição, contato, fotos, endereço detalhado e observações internas não são exibidos.'), 'A salvaguarda de privacidade pública deve permanecer explícita e incluir endereço detalhado.');
-expect(protocol.includes('historico.map') && protocol.includes('status_novo') && protocol.includes('historyNewestFirst'), 'A timeline deve continuar baseada no histórico real, exibindo atualização mais recente primeiro no mobile.');
+expect((protocol.match(/historyNewestFirst\.map/g) || []).length >= 2 && protocol.includes('status_novo') && protocol.includes('const history = Array.isArray(resultado?.historico)'), 'A timeline deve continuar baseada no histórico real, exibindo atualização mais recente primeiro no mobile e no desktop.');
 expect(!/garantia|garantido|prazo de \d+|resolve em|solução em/i.test(protocol), 'A interface não deve prometer solução ou prazo não comprovado.');
 expect(protocol.includes('min-h-14') && protocol.includes('text-base'), 'A consulta deve preservar ergonomia mobile nos controles críticos.');
 expect(protocol.includes('PROTOCOL_RE') && protocol.includes('if (!PROTOCOL_RE.test(normalized))'), 'Formato inválido deve ser rejeitado no cliente antes da API sem substituir a validação do backend.');
