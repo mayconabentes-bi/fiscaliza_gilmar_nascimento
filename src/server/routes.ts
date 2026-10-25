@@ -25,6 +25,10 @@ function consentVersion() {
   return process.env.LGPD_CONSENT_VERSION || "2026-09-v1";
 }
 
+function termsUseVersion() {
+  return process.env.TERMS_USE_VERSION || "2026-10-CIDADAO";
+}
+
 function publicDemandIntakeEnabled() {
   return process.env.NODE_ENV !== "production" || process.env.ENABLE_PUBLIC_DEMAND_INTAKE === "true";
 }
@@ -66,17 +70,20 @@ export function setupRoutes(app: Express) {
     try {
       const passwordHash = await bcrypt.hash(password, 12);
       const id = uuidv4();
-      const acceptedAt = req.body?.aceite_lgpd === true ? new Date().toISOString() : null;
+      const acceptedNow = new Date().toISOString();
+      const acceptedAt = req.body?.aceite_lgpd === true ? acceptedNow : null;
       const version = req.body?.aceite_lgpd === true ? consentVersion() : null;
+      const termsAcceptedAt = req.body?.aceite_codigo === true ? acceptedNow : null;
+      const termsVersion = req.body?.aceite_codigo === true ? termsUseVersion() : null;
       const columns = db.prepare("PRAGMA table_info(usuarios)").all() as Array<{ name: string; notnull: number }>;
       const legacyCpf = columns.find((column) => column.name === "cpf_hash" && column.notnull === 1);
 
       if (legacyCpf) {
-        db.prepare(`INSERT INTO usuarios (id, nome_completo, cpf_hash, email, municipio, bairro, password_hash, consentimento_lgpd, data_consentimento, versao_consentimento) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-          .run(id, nomeCompleto, crypto.randomBytes(32).toString("hex"), normalizedEmail, municipio, bairro, passwordHash, req.body?.aceite_lgpd === true ? 1 : 0, acceptedAt, version);
+        db.prepare(`INSERT INTO usuarios (id, nome_completo, cpf_hash, email, municipio, bairro, password_hash, consentimento_lgpd, data_consentimento, versao_consentimento, termos_uso_aceito, data_aceite_termos, versao_termos) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+          .run(id, nomeCompleto, crypto.randomBytes(32).toString("hex"), normalizedEmail, municipio, bairro, passwordHash, req.body?.aceite_lgpd === true ? 1 : 0, acceptedAt, version, req.body?.aceite_codigo === true ? 1 : 0, termsAcceptedAt, termsVersion);
       } else {
-        db.prepare(`INSERT INTO usuarios (id, nome_completo, email, municipio, bairro, password_hash, consentimento_lgpd, data_consentimento, versao_consentimento) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-          .run(id, nomeCompleto, normalizedEmail, municipio, bairro, passwordHash, req.body?.aceite_lgpd === true ? 1 : 0, acceptedAt, version);
+        db.prepare(`INSERT INTO usuarios (id, nome_completo, email, municipio, bairro, password_hash, consentimento_lgpd, data_consentimento, versao_consentimento, termos_uso_aceito, data_aceite_termos, versao_termos) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+          .run(id, nomeCompleto, normalizedEmail, municipio, bairro, passwordHash, req.body?.aceite_lgpd === true ? 1 : 0, acceptedAt, version, req.body?.aceite_codigo === true ? 1 : 0, termsAcceptedAt, termsVersion);
       }
       res.status(201).json({ id, message: "Cadastro realizado." });
     } catch (error: any) {
@@ -144,7 +151,7 @@ export function setupRoutes(app: Express) {
     if (!claims) return res.status(401).json({ error: "Entre na sua conta para exportar os dados." });
     const db = getDb();
     try {
-      const user = db.prepare(`SELECT id, nome_completo, email, municipio, bairro, status, consentimento_lgpd, data_consentimento, versao_consentimento, created_at FROM usuarios WHERE id = ?`).get(claims.id) as any;
+      const user = db.prepare(`SELECT id, nome_completo, email, municipio, bairro, status, consentimento_lgpd, data_consentimento, versao_consentimento, termos_uso_aceito, data_aceite_termos, versao_termos, created_at FROM usuarios WHERE id = ?`).get(claims.id) as any;
       if (!user || user.status === "excluido") return res.status(404).json({ error: "Conta não encontrada." });
       const demandas = db.prepare(`SELECT protocolo, municipio, bairro, categoria, descricao, prioridade, status, aviso_privacidade_versao, aviso_privacidade_aceito_em, created_at, updated_at FROM demandas WHERE usuario_id = ? ORDER BY created_at DESC`).all(claims.id);
       const publicacoes = db.prepare(`SELECT tipo_participacao, area_tematica, municipio, conteudo, status_moderacao, created_at FROM publicacoes WHERE usuario_id = ? ORDER BY created_at DESC`).all(claims.id);
