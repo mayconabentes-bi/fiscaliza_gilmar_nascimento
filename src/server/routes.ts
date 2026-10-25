@@ -170,7 +170,7 @@ export function setupRoutes(app: Express) {
       const syntheticEmail = `excluido-${claims.id}@invalid.local`;
       db.transaction(() => {
         db.prepare(`UPDATE demandas SET usuario_id = NULL WHERE usuario_id = ?`).run(claims.id);
-        db.prepare(`UPDATE usuarios SET nome_completo = 'Conta excluída', email = ?, municipio = 'Removido', bairro = 'Removido', status = 'excluido', consentimento_lgpd = 0, password_hash = ? WHERE id = ?`)
+        db.prepare(`UPDATE usuarios SET nome_completo = 'Conta excluída', email = ?, municipio = 'Removido', bairro = 'Removido', status = 'excluido', consentimento_lgpd = 0, data_consentimento = NULL, versao_consentimento = NULL, termos_uso_aceito = 0, data_aceite_termos = NULL, versao_termos = NULL, password_hash = ? WHERE id = ?`)
           .run(syntheticEmail, crypto.randomBytes(48).toString("hex"), claims.id);
         db.prepare(`INSERT INTO logs_auditoria (id, entidade, entidade_id, acao, usuario_responsavel_id, metadata) VALUES (?, 'usuario', ?, 'SOLICITACAO_EXCLUSAO', ?, ?)`)
           .run(uuidv4(), claims.id, claims.id, JSON.stringify({ data: new Date().toISOString(), efeito: "conta pseudonimizada e demandas desvinculadas" }));
