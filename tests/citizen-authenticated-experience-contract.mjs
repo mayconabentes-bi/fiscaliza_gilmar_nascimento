@@ -10,6 +10,7 @@ const profile = read("src/pages/PerfilCidadao.tsx");
 const postgres = read("src/server/citizenDemandPostgres.ts");
 const local = read("src/server/routes.ts");
 const demandForm = read("src/pages/NovaDemanda.tsx");
+const protocol = read("src/pages/ConsultaProtocolo.tsx");
 
 expect(login.includes('type === "admin" ? "/dashboard" : "/meus-registros"'), "Login cidadão deve abrir Meus registros.");
 expect(login.includes('const initialType = searchParams.get("admin") === "1" ? "admin" : "cidadao"'), "Login deve manter cidadão como modo padrão e aceitar admin explícito.");
@@ -52,6 +53,11 @@ expect(demandForm.includes('faixa_etaria: user?.type === "cidadao" ? String(user
 expect(demandForm.includes('disabled={user?.type === "cidadao" && Boolean(user?.faixa_etaria)}'), "Faixa etária da conta deve ficar protegida contra alteração acidental no formulário.");
 expect(demandForm.includes('readOnly={user?.type === "cidadao"}') && demandForm.includes("Nome da sua conta."), "Nome autenticado deve ser apresentado como dado da conta no formulário.");
 expect(app.includes('<NovaDemanda user={user} />'), "Shell deve informar a sessão cidadã ao formulário para exibir o atalho pós-envio.");
+expect(app.includes('<ConsultaProtocolo user={user} />'), "Shell deve informar a sessão cidadã à consulta sem exigir autenticação para a rota pública.");
+expect(records.includes('state={{ fromAccount: true }}') && records.includes("Ver andamento"), "Meus registros deve preservar contexto ao abrir acompanhamento.");
+expect(demandForm.includes('state={{ fromSubmission: true }}'), "Envio concluído deve preservar contexto ao abrir o protocolo recém-gerado.");
+expect(protocol.includes('data-account-followup-context') && protocol.includes('data-account-followup-return') && protocol.includes("Voltar aos meus registros"), "Acompanhamento autenticado deve oferecer retorno explícito à conta.");
+expect(protocol.includes('const isCitizen = user?.type === "cidadao"'), "A integração da conta no protocolo deve ser apenas contextual e não tornar a consulta pública privada.");
 
 for (const source of [postgres, local]) {
   // A identidade do cidadão autenticado deve vir da conta, não de campos manipuláveis do formulário.

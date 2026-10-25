@@ -117,6 +117,7 @@ export default function MeusRegistros() {
             <Link
               key={registro.protocolo}
               to={`/protocolo?codigo=${encodeURIComponent(registro.protocolo)}`}
+              state={{ fromAccount: true }}
               className="surface-card block p-4 transition hover:border-[#b8c4db] sm:p-5"
             >
               <div className="flex items-start justify-between gap-4">
@@ -129,7 +130,7 @@ export default function MeusRegistros() {
                   <p className="mt-1 text-xs font-semibold text-[#657089]">{demandCategoryLabel(registro.categoria)}</p>
                   <div className="mt-2 flex items-center gap-2">
                     <span className="truncate font-mono text-xs text-[#526078]">{registro.protocolo}</span>
-                    <span className="hidden text-[11px] font-bold text-[#8a94a8] sm:inline">Abrir acompanhamento</span>
+                    <span className="text-[11px] font-bold text-[#8a94a8]">Ver andamento</span>
                   </div>
                 </div>
                 <ChevronRight className="mt-2 h-5 w-5 shrink-0 text-[#9aa5b7]" />
