@@ -48,6 +48,9 @@ expect(records.includes("data-first-access") && records.includes("Sua conta est�
 expect(records.includes('response.status === 401 || response.status === 403') && records.includes('localStorage.removeItem("user")') && records.includes('window.location.replace("/login?sessao=expirada")'), "Meus registros deve recuperar de sessão expirada sem deixar o cidadão preso.");
 expect(profile.includes("Perfil") && profile.includes("Faixa etária") && profile.includes("Localidade"), "Perfil deve exibir os dados básicos da conta.");
 expect(profile.includes('"/api/minha-conta/demandas"') && profile.includes("Seus registros") && profile.includes("Ver todos") && profile.includes("slice(0, 3)"), "Perfil deve mostrar resumo dos registros vinculados.");
+expect(profile.includes('response.status === 401 || response.status === 403') && profile.includes('window.location.replace("/login?sessao=expirada")'), "Perfil deve recuperar de sessão expirada sem deixar estado autenticado obsoleto.");
+expect(profile.includes('state={{ email: user?.email || "", fromProfile: true }}') && profile.includes('/recuperar-acesso?modo=senha'), "Perfil deve abrir recuperação com e-mail da conta via navigation state, sem expô-lo na URL.");
+expect(profile.includes('state={{ fromAccount: true }}'), "Registros recentes do perfil devem preservar contexto ao abrir o acompanhamento.");
 expect(demandForm.includes('user?.type === "cidadao"') && demandForm.includes('to="/meus-registros"') && demandForm.includes("Ver meus registros"), "Confirmação de envio autenticado deve oferecer Ver meus registros.");
 expect(demandForm.includes('faixa_etaria: user?.type === "cidadao" ? String(user?.faixa_etaria || "") : ""'), "Nova demanda autenticada deve reutilizar a faixa etária da conta quando disponível.");
 expect(demandForm.includes('disabled={user?.type === "cidadao" && Boolean(user?.faixa_etaria)}'), "Faixa etária da conta deve ficar protegida contra alteração acidental no formulário.");
@@ -74,5 +77,8 @@ expect(local.includes('SELECT nome_completo, status FROM usuarios WHERE id = ?')
 // isInternal = ADMIN/SUPER_ADMIN + equipe de setor (COORDENADOR/ATENDENTE).
 expect(app.includes('{!isInternal && !isCitizen && <footer'), "Conta cidadã e equipe interna não devem exibir o rodapé/navegação pública.");
 expect(app.includes('!isInternal && !isCitizen && !onDemandForm && <LGPDConsent />'), "Conta autenticada (cidadã ou equipe interna) não deve repetir o aviso público de consentimento.");
+expect(app.includes('if (!response.ok || data?.success !== true)') && app.includes('Por segurança, você continua conectado.'), "Logout deve falhar fechado se o servidor não confirmar a limpeza da sessão.");
+expect(app.includes('window.location.replace(target)') && app.includes('"/login?saida=1"') && app.includes('"/login?admin=1&saida=1"'), "Logout confirmado deve voltar ao login adequado e permitir reentrada.");
+expect(app.includes('data-logout-error') && app.includes('role="alert"'), "Falha de logout deve ser comunicada de forma acessível.");
 
 console.log("Citizen authenticated experience contract OK: Meus registros, Registrar, Acompanhar, Perfil e Sair.");
