@@ -18,6 +18,7 @@ const migration = read('supabase/migrations/20260915040000_p0d_production_persis
 const dockerfile = read('Dockerfile');
 const server = read('server.ts');
 const vercelApi = read('api/[...path].ts');
+const vercelConfig = JSON.parse(read('vercel.json'));
 
 assert(app.includes('setupCitizenAuthPostgres') && app.includes('setupCitizenDemandPostgres'), 'Produção deve registrar fluxos cidadãos Postgres.');
 assert(app.includes('setupCitizenCompliancePostgres') && app.includes('setupPrivateAdminPostgresRoutes'), 'Produção deve registrar compliance e triagem Postgres.');
@@ -45,7 +46,13 @@ assert(backup.includes("process.env.NODE_ENV === 'production'") && backup.includ
 assert(migration.includes('private.admins') && migration.includes('public.logs_auditoria'), 'Migration deve cobrir administração e auditoria.');
 assert(migration.includes('enable row level security') && migration.includes('revoke all'), 'Migration deve bloquear acesso direto anônimo/autenticado.');
 assert(vercelApi.includes('createApp') && vercelApi.includes('assertProductionReadiness'), 'Vercel deve reutilizar o mesmo Express e o mesmo gate de readiness da produção.');
-assert(!fs.existsSync('vercel.json') && !fs.existsSync('api/index.ts'), 'A ponte Vercel deve permanecer mínima, sem duplicar roteamento ou criar uma segunda implementação da API.');
+assert(Array.isArray(vercelConfig.rewrites) && vercelConfig.rewrites.length > 0, 'Vercel deve mapear rotas SPA explícitas para index.html.');
+assert(vercelConfig.rewrites.every((rule) => rule.destination === '/index.html'), 'Rewrites SPA devem apontar somente para index.html.');
+assert(vercelConfig.rewrites.every((rule) => !String(rule.source || '').startsWith('/api')), 'Rewrites SPA não podem interceptar /api/*.');
+for (const route of ['/protocolo', '/demandas/nova', '/login', '/admin/demandas']) {
+  assert(vercelConfig.rewrites.some((rule) => rule.source === route), `Vercel deve suportar acesso direto à rota SPA ${route}.`);
+}
+assert(!fs.existsSync('api/index.ts'), 'A ponte Vercel deve permanecer mínima, sem criar uma segunda implementação genérica da API.');
 assert(dockerfile.includes('NODE_ENV=production') && dockerfile.includes('CMD ["npm", "start"]'), 'Dockerfile deve subir o servidor Node em modo produção.');
 assert(server.includes('assertProductionReadiness') && server.includes('process.env.PORT') && server.includes('"0.0.0.0"'), 'Servidor deve validar readiness, usar PORT do Railway e escutar em 0.0.0.0.');
 assert(ready.includes('RAILWAY_PUBLIC_DOMAIN'), 'Fallback Railway deve continuar reconhecendo o domínio público do serviço durante a migração.');
