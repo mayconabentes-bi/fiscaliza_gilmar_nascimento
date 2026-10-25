@@ -15,7 +15,7 @@ const evidence = read('src/server/evidenceStorage.ts');
 const mobile = read('src/server/mobileConversion.ts');
 const backup = read('src/modules/infraestrutura-operacional/infrastructure/backup/BackupService.ts');
 const migration = read('supabase/migrations/20260915040000_p0d_production_persistence.sql');
-const vercelApi = read('api/[...].ts');
+const vercelApi = read('api/router.ts');
 const vercelConfig = JSON.parse(read('vercel.json'));
 
 assert(app.includes('setupCitizenAuthPostgres') && app.includes('setupCitizenDemandPostgres'), 'Produção deve registrar fluxos cidadãos Postgres.');
@@ -45,8 +45,10 @@ assert(migration.includes('private.admins') && migration.includes('public.logs_a
 assert(migration.includes('enable row level security') && migration.includes('revoke all'), 'Migration deve bloquear acesso direto anônimo/autenticado.');
 assert(vercelApi.includes('createApp') && vercelApi.includes('assertProductionReadiness'), 'Vercel deve reutilizar o mesmo Express e o mesmo gate de readiness da produção.');
 assert(Array.isArray(vercelConfig.rewrites) && vercelConfig.rewrites.length > 0, 'Vercel deve mapear rotas SPA explícitas para index.html.');
-assert(vercelConfig.rewrites.every((rule) => rule.destination === '/index.html'), 'Rewrites SPA devem apontar somente para index.html.');
-assert(vercelConfig.rewrites.every((rule) => !String(rule.source || '').startsWith('/api')), 'Rewrites SPA não podem interceptar /api/*.');
+const apiRewrite = vercelConfig.rewrites.find((rule) => rule.source === '/api/:path*');
+assert(apiRewrite?.destination === '/api/router?__path=:path*', 'Vercel deve encaminhar /api/* para a Function router.');
+const spaRewrites = vercelConfig.rewrites.filter((rule) => !String(rule.source || '').startsWith('/api'));
+assert(spaRewrites.every((rule) => rule.destination === '/index.html'), 'Rewrites SPA devem apontar somente para index.html.');
 for (const route of ['/protocolo', '/demandas/nova', '/login', '/admin/demandas']) {
   assert(vercelConfig.rewrites.some((rule) => rule.source === route), `Vercel deve suportar acesso direto à rota SPA ${route}.`);
 }
