@@ -18,16 +18,19 @@ const reports = fs.readFileSync('src/pages/Relatorios.tsx', 'utf8');
 const html = fs.readFileSync('index.html', 'utf8');
 const manifest = fs.readFileSync('public/site.webmanifest', 'utf8');
 const favicon = fs.readFileSync('public/favicon.svg', 'utf8');
+const appIcon = fs.readFileSync('public/app-icon.svg', 'utf8');
+const brand = fs.readFileSync('src/components/FiscalizeBrand.tsx', 'utf8');
 
 function expect(condition, message) {
   if (!condition) throw new Error(message);
 }
 
 expect(css.includes('--brand-blue: #1f2e6e') && css.includes('--brand-orange: #f36a10'), 'Paleta institucional base deve permanecer definida.');
-expect(css.includes('.brand-signature-mark') && app.includes('/brand/gilmar-nascimento-oficial.png') && login.includes('/brand/gilmar-nascimento-oficial.png'), 'Tratamento web da marca deve existir no CSS e nas superfícies visuais.');
-expect(app.includes('brand-accent-bar') && app.includes('brand-signature-mark'), 'Shell público deve aplicar identidade institucional.');
+expect(brand.includes('FiscalizeBrandMark') && brand.includes('FiscalizeWordmark') && brand.includes('text-[#f36a10]'), 'Componentes da nova marca FISCALIZE devem existir com símbolo e wordmark azul/laranja.');
+expect(!app.includes('gilmar-nascimento-oficial.png') && !login.includes('gilmar-nascimento-oficial.png') && !home.includes('gilmar-nascimento-oficial.png'), 'A identidade visual antiga não deve permanecer nas superfícies públicas.');
+expect(app.includes('brand-accent-bar') && app.includes('FiscalizeBrandMark') && app.includes('FiscalizeWordmark'), 'Shell público deve aplicar a nova identidade institucional.');
 expect(app.includes('text-[#1f2e6e]') && app.includes('primary-button'), 'Navegação e CTA devem usar a nova hierarquia visual.');
-expect(login.includes('brand-signature-mark--login') && login.includes('bg-[#f36a10]'), 'Login deve carregar marca e destaque laranja.');
+expect(login.includes('FiscalizeLockup') && login.includes('bg-[#f36a10]'), 'Login deve carregar a nova marca e destaque laranja.');
 expect(html.includes('name="theme-color" content="#1f2e6e"'), 'Theme color do navegador deve acompanhar a identidade.');
 expect(!app.includes('Deputado Estadual') && !login.includes('Deputado Estadual'), 'A interface não deve inserir cargo político como texto de UI.');
 
@@ -48,6 +51,7 @@ expect(strategy.includes('/api/admin/strategy/2028') && strategy.includes('/api/
 
 expect(html.includes('href="/favicon.svg"') && html.includes('href="/apple-touch-icon.png"') && html.includes('href="/site.webmanifest"'), 'HTML deve registrar favicon, touch icon e web manifest.');
 expect(favicon.includes('#1f2e6e') && favicon.includes('#f36a10'), 'Favicon vetorial deve usar azul e laranja institucionais.');
+expect(appIcon.includes('marcador de localização') && appIcon.includes('#1f2e6e') && appIcon.includes('#f36a10'), 'Ícone principal deve representar a nova marca pin + check do FISCALIZE.');
 expect(manifest.includes('"short_name":"FISCALIZE"') && (manifest.includes('"purpose":"any maskable"') || manifest.includes('"purpose":"maskable"')) && manifest.includes('"theme_color":"#1f2e6e"'), 'Web manifest deve preservar nome, cor e suporte maskable.');
 expect(fs.existsSync('public/app-icon-192.png') && fs.existsSync('public/app-icon-512.png') && fs.existsSync('public/apple-touch-icon.png'), 'Ícones PNG para instalação e Apple touch devem existir.');
 
