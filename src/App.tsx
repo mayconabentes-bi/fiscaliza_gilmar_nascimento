@@ -361,7 +361,7 @@ function AppShell() {
           <Route path="/register-cidadao" element={publicOnly(<RegisterCidadao />)} />
           <Route path="/recuperar-acesso" element={<RecoverAccess />} />
           <Route path="/demandas/nova" element={publicOnly(<NovaDemanda user={user} />)} />
-          <Route path="/protocolo" element={<ConsultaProtocolo />} />
+          <Route path="/protocolo" element={<ConsultaProtocolo user={user} />} />
           <Route path="/meus-registros" element={citizenOnly(<MeusRegistros />)} />
           <Route path="/perfil" element={citizenOnly(<PerfilCidadao user={user} />)} />
           <Route path="/metodologia" element={publicOnly(<Metodologia />)} />
