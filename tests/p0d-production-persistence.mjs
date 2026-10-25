@@ -15,8 +15,6 @@ const evidence = read('src/server/evidenceStorage.ts');
 const mobile = read('src/server/mobileConversion.ts');
 const backup = read('src/modules/infraestrutura-operacional/infrastructure/backup/BackupService.ts');
 const migration = read('supabase/migrations/20260915040000_p0d_production_persistence.sql');
-const dockerfile = read('Dockerfile');
-const server = read('server.ts');
 const vercelApi = read('api/[...path].ts');
 const vercelConfig = JSON.parse(read('vercel.json'));
 
@@ -53,8 +51,8 @@ for (const route of ['/protocolo', '/demandas/nova', '/login', '/admin/demandas'
   assert(vercelConfig.rewrites.some((rule) => rule.source === route), `Vercel deve suportar acesso direto à rota SPA ${route}.`);
 }
 assert(!fs.existsSync('api/index.ts'), 'A ponte Vercel deve permanecer mínima, sem criar uma segunda implementação genérica da API.');
-assert(dockerfile.includes('NODE_ENV=production') && dockerfile.includes('CMD ["npm", "start"]'), 'Dockerfile deve subir o servidor Node em modo produção.');
-assert(server.includes('assertProductionReadiness') && server.includes('process.env.PORT') && server.includes('"0.0.0.0"'), 'Servidor deve validar readiness, usar PORT do Railway e escutar em 0.0.0.0.');
-assert(ready.includes('RAILWAY_PUBLIC_DOMAIN'), 'Fallback Railway deve continuar reconhecendo o domínio público do serviço durante a migração.');
+assert(ready.includes('VERCEL_URL'), 'Vercel Preview deve reconhecer o hostname do deployment atual como origem confiável.');
+assert(ready.includes('VERCEL_ENV') && ready.includes('zqxouixpokuprqqscnwf') && ready.includes('jnlfmiwczpglojqytrbw'), 'Preview do Vercel deve possuir barreira explícita entre homologação e Supabase principal.');
+assert(!ready.includes('RAILWAY_PUBLIC_DOMAIN'), 'Runtime oficial não deve depender de Railway.');
 
 console.log('p0d-production-persistence: ok');
