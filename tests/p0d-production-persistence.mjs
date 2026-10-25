@@ -15,7 +15,7 @@ const evidence = read('src/server/evidenceStorage.ts');
 const mobile = read('src/server/mobileConversion.ts');
 const backup = read('src/modules/infraestrutura-operacional/infrastructure/backup/BackupService.ts');
 const migration = read('supabase/migrations/20260915040000_p0d_production_persistence.sql');
-const vercelApi = read('api/[...path].ts');
+const vercelApi = read('api/[...].ts');
 const vercelConfig = JSON.parse(read('vercel.json'));
 
 assert(app.includes('setupCitizenAuthPostgres') && app.includes('setupCitizenDemandPostgres'), 'Produção deve registrar fluxos cidadãos Postgres.');
