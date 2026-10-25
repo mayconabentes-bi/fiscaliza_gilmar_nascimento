@@ -24,7 +24,7 @@ expectIncludes(auth, [
 ], 'cadastro cidadão');
 
 expectIncludes(demand, [
-  'select id, status, faixa_etaria, protecao_reforcada',
+  'select id, nome_completo, status, faixa_etaria, protecao_reforcada',
   'ageBandForActiveParticipation(req.body?.faixa_etaria)',
   'revisao_reforcada, revisao_reforcada_motivo',
   'Participante adolescente de 16 a 17 anos',
