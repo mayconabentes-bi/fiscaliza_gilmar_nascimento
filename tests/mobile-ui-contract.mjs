@@ -110,6 +110,9 @@ expect(login.includes('Mostrar senha') && login.includes('Ocultar senha') && log
 expect(login.includes('/recuperar-acesso?modo=senha') && login.includes('/recuperar-acesso?modo=email'), 'Recuperação deve abrir diretamente no modo escolhido.');
 expect(login.includes('Entrar na área privada') && login.includes('Não existe cadastro de administrador pela aplicação.'), 'Modo administrativo deve permanecer claramente restrito.');
 expect(recovery.includes('searchParams.get("modo") === "email"') && recovery.includes('text-base'), 'Recuperação mobile deve respeitar o modo solicitado e evitar zoom nos campos.');
+expect(recovery.includes('data-profile-recovery') && recovery.includes('O e-mail da conta já está preenchido'), 'Recuperação aberta pelo perfil deve manter contexto sem repetir digitação desnecessária.');
+expect(recovery.includes('Mostrar nova senha') && recovery.includes('Mostrar confirmação da senha'), 'Troca de senha mobile deve permitir conferência explícita dos campos.');
+expect(app.includes('data-logout-error') && app.includes('Por segurança, você continua conectado.'), 'Falha de logout deve permanecer visível e não simular encerramento de sessão.');
 expect(html.includes('width=device-width'), 'Viewport mobile deve estar configurado.');
 
 const targetViewports = ['344x882', '375x667', '393x852', '412x915', '440x956', '744x1133', '768x968', '800x1080', '1032x1376'];

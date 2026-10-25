@@ -8,6 +8,8 @@ export default function Login({ setUser }: { setUser: (user: any) => void }) {
   const location = useLocation();
   const registrationState = location.state as { registrationSuccess?: boolean; email?: string } | null;
   const sessionExpired = searchParams.get("sessao") === "expirada";
+  const passwordChanged = searchParams.get("senha") === "alterada";
+  const signedOut = searchParams.get("saida") === "1";
   const initialType = searchParams.get("admin") === "1" ? "admin" : "cidadao";
   const [email, setEmail] = useState(() => registrationState?.email || "");
   const [password, setPassword] = useState("");
@@ -97,6 +99,18 @@ export default function Login({ setUser }: { setUser: (user: any) => void }) {
             <div role="status" data-session-expired className="rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-sm leading-6 text-amber-900">
               <strong className="block">Sua sessão terminou.</strong>
               Entre novamente para continuar acessando os registros vinculados à sua conta.
+            </div>
+          )}
+          {passwordChanged && (
+            <div role="status" data-password-changed className="rounded-xl border border-emerald-100 bg-emerald-50 p-3.5 text-sm leading-6 text-emerald-800">
+              <strong className="block">Senha atualizada com segurança.</strong>
+              Entre novamente usando a nova senha.
+            </div>
+          )}
+          {signedOut && !passwordChanged && (
+            <div role="status" data-logout-success className="rounded-xl border border-emerald-100 bg-emerald-50 p-3.5 text-sm leading-6 text-emerald-800">
+              <strong className="block">Sessão encerrada.</strong>
+              Você pode entrar novamente quando quiser.
             </div>
           )}
           {error && <div role="alert" data-login-error className="rounded-xl border border-red-100 bg-red-50 p-3.5 text-sm leading-6 text-red-700">{error}</div>}

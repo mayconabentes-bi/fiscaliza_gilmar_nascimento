@@ -211,6 +211,8 @@ function MobileNav({ user, onLogout }: { user: any; onLogout: () => void | Promi
 function AppShell() {
   const [user, setUser] = useState<any>(null);
   const [authReady, setAuthReady] = useState(false);
+  const [logoutBusy, setLogoutBusy] = useState(false);
+  const [logoutError, setLogoutError] = useState("");
   const location = useLocation();
 
   useEffect(() => {
@@ -273,10 +275,29 @@ function AppShell() {
   }, []);
 
   const handleLogout = async () => {
-    try { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); } catch (error) { console.error("Logout error:", error); }
-    localStorage.removeItem("user");
-    setUser(null);
-    window.location.href = "/";
+    if (logoutBusy) return;
+    setLogoutBusy(true);
+    setLogoutError("");
+    const target = user?.type === "cidadao" ? "/login?saida=1" : "/login?admin=1&saida=1";
+    try {
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data?.success !== true) {
+        throw new Error("Não foi possível confirmar o encerramento da sessão.");
+      }
+      localStorage.removeItem("user");
+      setUser(null);
+      window.location.replace(target);
+    } catch (error) {
+      console.error("Logout error:", error);
+      setLogoutError("Não foi possível encerrar sua sessão agora. Por segurança, você continua conectado. Tente novamente.");
+    } finally {
+      setLogoutBusy(false);
+    }
   };
 
   const isAdmin = isFullAdminUser(user);
@@ -317,6 +338,14 @@ function AppShell() {
 
   return (
     <div className={`flex min-h-screen flex-col font-sans text-[#172033] ${isInternal ? "private-shell" : ""}`}>
+      {logoutError && (
+        <div role="alert" data-logout-error className="fixed left-4 right-4 top-3 z-[70] mx-auto max-w-xl rounded-2xl border border-red-200 bg-white px-4 py-3 text-sm leading-6 text-red-700 shadow-xl">
+          <div className="flex items-start justify-between gap-3">
+            <span>{logoutError}</span>
+            <button type="button" onClick={() => setLogoutError("")} className="shrink-0 rounded-lg px-2 py-1 font-extrabold text-red-700 hover:bg-red-50" aria-label="Fechar aviso de logout">Fechar</button>
+          </div>
+        </div>
+      )}
       {!isInternal && !isCitizen && !onDemandForm && <LGPDConsent />}
       <div className="brand-accent-bar" aria-hidden="true" />
       <header className="sticky top-0 z-30 border-b border-[#dde4ef] bg-[#f5f7fb]/95 backdrop-blur-xl">
@@ -359,7 +388,7 @@ function AppShell() {
           <Route path="/" element={homeRoute} />
           <Route path="/login" element={authReady && isCitizen ? <Navigate to="/meus-registros" replace /> : authReady && isInternal ? <Navigate to={privateHome} replace /> : <Login setUser={setUser} />} />
           <Route path="/register-cidadao" element={publicOnly(<RegisterCidadao />)} />
-          <Route path="/recuperar-acesso" element={<RecoverAccess />} />
+          <Route path="/recuperar-acesso" element={<RecoverAccess onSessionReset={() => setUser(null)} />} />
           <Route path="/demandas/nova" element={publicOnly(<NovaDemanda user={user} />)} />
           <Route path="/protocolo" element={<ConsultaProtocolo user={user} />} />
           <Route path="/meus-registros" element={citizenOnly(<MeusRegistros />)} />
