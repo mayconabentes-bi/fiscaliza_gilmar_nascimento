@@ -388,7 +388,7 @@ function AppShell() {
           <Route path="/" element={homeRoute} />
           <Route path="/login" element={authReady && isCitizen ? <Navigate to="/meus-registros" replace /> : authReady && isInternal ? <Navigate to={privateHome} replace /> : <Login setUser={setUser} />} />
           <Route path="/register-cidadao" element={publicOnly(<RegisterCidadao />)} />
-          <Route path="/recuperar-acesso" element={<RecoverAccess />} />
+          <Route path="/recuperar-acesso" element={<RecoverAccess onSessionReset={() => setUser(null)} />} />
           <Route path="/demandas/nova" element={publicOnly(<NovaDemanda user={user} />)} />
           <Route path="/protocolo" element={<ConsultaProtocolo user={user} />} />
           <Route path="/meus-registros" element={citizenOnly(<MeusRegistros />)} />
