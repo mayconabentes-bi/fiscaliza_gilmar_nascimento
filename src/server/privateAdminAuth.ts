@@ -49,12 +49,12 @@ export function setupPrivateAdminAuth(app: Express) {
       if (process.env.NODE_ENV === "production") {
         const sql = await getHealthyPostgres();
         [admin] = await sql`
-          select id, nome, email, password_hash, ativo, perfil_acesso
+          select id, nome, password_hash, ativo, perfil_acesso
           from private.admins where lower(email) = lower(${email}) limit 1
         `;
       } else {
         const db = getDb();
-        try { admin = db.prepare(`SELECT id, nome, email, password_hash, ativo FROM admins WHERE email = ?`).get(email); }
+        try { admin = db.prepare(`SELECT id, nome, password_hash, ativo FROM admins WHERE email = ?`).get(email); }
         finally { db.close(); }
       }
 
@@ -67,7 +67,7 @@ export function setupPrivateAdminAuth(app: Express) {
       const token = jwt.sign({ id: admin.id, type: "admin", status: "ativo", perfil_acesso: perfil }, jwtSecret(), { expiresIn: "12h" });
       res.cookie("token", token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict", path: "/", maxAge: 12 * 60 * 60 * 1000 });
       res.setHeader("Cache-Control", "no-store, private");
-      return res.json({ user: { id: admin.id, nome: admin.nome, email: admin.email, type: "admin", perfil_acesso: perfil } });
+      return res.json({ user: { id: admin.id, nome: admin.nome, type: "admin", perfil_acesso: perfil } });
     } catch (error: any) {
       console.error("Falha ao autenticar administrador:", error);
       const configError = error?.message === "DATABASE_URL não configurada" || error?.message === "JWT_SECRET não configurado";
@@ -111,7 +111,6 @@ export function setupPrivateAdminAuth(app: Express) {
         user: {
           id: admin.id,
           nome: admin.nome || "Administrador FISCALIZE",
-          email: null,
           type: "admin",
           perfil_acesso: persistedProfile,
         },

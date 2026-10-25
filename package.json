@@ -60,7 +60,9 @@
     "test:citizen-account": "node tests/citizen-account-structure-contract.mjs && tsx tests/citizen-account-age-runtime.ts",
     "test:citizen-experience": "node tests/citizen-authenticated-experience-contract.mjs",
     "test:citizen-session-security": "node tests/citizen-session-security-contract.mjs && tsx tests/citizen-session-security-runtime.ts",
-    "test:triage-evidence-display": "node tests/triage-evidence-display-contract.mjs"
+    "test:triage-evidence-display": "node tests/triage-evidence-display-contract.mjs",
+    "test:readiness-security": "node tests/readiness-error-redaction-contract.mjs",
+    "test:security-hardening": "node tests/security-hardening-contract.mjs"
   },
   "dependencies": {
     "@discourse/heic": "^1.0.0",

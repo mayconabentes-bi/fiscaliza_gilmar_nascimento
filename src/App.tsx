@@ -222,10 +222,14 @@ function AppShell() {
       if (storedUser) {
         try {
           const parsedUser = JSON.parse(storedUser);
-          hasStoredUser = Boolean(parsedUser);
-          if (active) {
-            setUser(parsedUser);
-            setAuthReady(true);
+          if (parsedUser?.type === "admin") {
+            localStorage.removeItem("user");
+          } else {
+            hasStoredUser = Boolean(parsedUser);
+            if (active) {
+              setUser(parsedUser);
+              setAuthReady(true);
+            }
           }
         } catch {
           localStorage.removeItem("user");
@@ -244,7 +248,8 @@ function AppShell() {
         if (response.ok) {
           const data = await response.json();
           if (data?.authenticated && data?.user) {
-            localStorage.setItem("user", JSON.stringify(data.user));
+            if (data.user?.type === "admin") localStorage.removeItem("user");
+            else localStorage.setItem("user", JSON.stringify(data.user));
             if (active) setUser(data.user);
           } else {
             localStorage.removeItem("user");

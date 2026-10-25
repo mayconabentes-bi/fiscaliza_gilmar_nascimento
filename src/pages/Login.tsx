@@ -43,7 +43,8 @@ export default function Login({ setUser }: { setUser: (user: any) => void }) {
       if (!data?.user) throw new Error("Resposta inválida do serviço de autenticação.");
 
       const authenticatedUser = type === "admin" ? data.user : { ...data.user, type: "cidadao" };
-      localStorage.setItem("user", JSON.stringify(authenticatedUser));
+      if (type === "admin") localStorage.removeItem("user");
+      else localStorage.setItem("user", JSON.stringify(authenticatedUser));
       setUser(authenticatedUser);
       navigate(type === "admin" ? "/dashboard" : "/meus-registros");
     } catch (err: any) {

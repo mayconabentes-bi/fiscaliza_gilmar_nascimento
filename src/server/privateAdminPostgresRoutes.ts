@@ -804,7 +804,9 @@ export function setupPrivateAdminPostgresRoutes(app: Express) {
         },
         {
           category: "INFRASTRUCTURE", severity: "MEDIUM", check: "Rate limiting e headers HTTP",
-          status: "PASS", details: "A aplicação mantém rate limiting global e Helmet ativos no pipeline HTTP.",
+          status: "WARNING",
+          details: "Rate limiting e headers defensivos estão configurados no código, mas esta consulta não comprova sua eficácia no runtime serverless da Vercel.",
+          recommendation: "Validar os headers efetivamente servidos e o comportamento do rate limiting na Vercel antes de classificar este controle como aprovado.",
         },
       ];
       res.setHeader("Cache-Control", "no-store, private");
