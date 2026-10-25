@@ -86,6 +86,9 @@ expect(form.includes('O protocolo é gerado mesmo sem contato.'), 'Contato deve 
 expect(form.includes('Evite informar documentos, dados de saúde ou dados pessoais de terceiros'), 'Descrição deve reforçar minimização de dados pessoais.');
 expect(form.includes('data-safe-draft="explicit"') && form.includes('Somente bairro/localidade, área e tipo de problema'), 'Rascunho mobile deve comunicar minimização e prazo local.');
 expect(protocol.includes('data-followup-search') && protocol.includes('data-followup-status') && protocol.includes('data-followup-history'), 'Acompanhar mobile deve priorizar busca, situação atual e histórico.');
+expect(protocol.includes('Consultar protocolo') && protocol.includes('Você não precisa entrar na conta.') && protocol.includes('{loading ? "Consultando..." : "Consultar"}'), 'Consulta de protocolo deve usar linguagem direta e deixar claro que não exige login.');
+expect(protocol.includes('status mostrado pertence ao acompanhamento no FISCALIZE') && protocol.includes('não representa confirmação automática por órgão público'), 'Status público deve deixar explícito o limite institucional do acompanhamento.');
+expect((protocol.match(/historyNewestFirst\.map/g) || []).length >= 2 && protocol.includes('Atualização mais recente primeiro.'), 'Histórico deve apresentar a atualização mais recente primeiro em mobile e desktop.');
 expect(protocol.includes('PROTOCOL_RE') && protocol.includes('Limpar protocolo'), 'Consulta mobile deve validar formato localmente e permitir limpar o campo com alvo touch.');
 expect(protocol.includes('sm:hidden') && protocol.includes('historyNewestFirst.map'), 'Histórico mobile deve mostrar a atualização mais recente primeiro sem alterar o histórico persistido.');
 expect(protocol.includes('Consulta pública protegida.') && protocol.includes('endereço detalhado'), 'Acompanhar deve comunicar claramente a minimização da resposta pública.');

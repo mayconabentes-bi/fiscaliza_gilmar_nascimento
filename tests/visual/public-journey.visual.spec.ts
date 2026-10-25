@@ -159,10 +159,11 @@ test('acompanhamento coloca busca na primeira dobra', async ({ page }, testInfo)
   await stabilize(page);
 
   const input = page.getByLabel('Número do protocolo');
-  const submit = page.getByRole('button', { name: /ver andamento/i });
+  const submit = page.getByRole('button', { name: /^consultar$/i });
   await expect(input).toBeVisible();
   await expect(submit).toBeVisible();
   await expect(page.getByText(/consulta pública protegida/i)).toBeVisible();
+  await expect(page.getByText(/você não precisa entrar na conta/i)).toBeVisible();
 
   const viewport = page.viewportSize();
   const inputBox = await input.boundingBox();
@@ -208,6 +209,8 @@ test('acompanhamento usa somente status público determinístico', async ({ page
   await expect(page.getByText('AM-20260917-A1B2C3')).toBeVisible();
   await expect(page.locator('[data-followup-status]')).toBeVisible();
   await expect(page.getByText(/em análise/i).first()).toBeVisible();
+  await expect(page.getByText(/status mostrado pertence ao acompanhamento no FISCALIZE/i)).toBeVisible();
+  await expect(page.getByText(/atualização mais recente primeiro/i)).toBeVisible();
   await expect(page.getByText(/descrição, contato, fotos, endereço detalhado/i)).toBeVisible();
   await expect(page.locator('[data-followup-history]')).toBeVisible();
   await capture(page, 'acompanhamento-publico', testInfo.project.name);
@@ -225,7 +228,7 @@ test('acompanhamento orienta protocolo não encontrado sem expor dados', async (
   await page.goto('/protocolo');
   await stabilize(page);
   await page.getByLabel('Número do protocolo').fill('AM-20260917-FFFFFF');
-  await page.getByRole('button', { name: /ver andamento/i }).click();
+  await page.getByRole('button', { name: /^consultar$/i }).click();
 
   await expect(page.locator('[data-followup-error]')).toBeVisible();
   await expect(page.getByText('Protocolo não encontrado', { exact: true })).toBeVisible();
