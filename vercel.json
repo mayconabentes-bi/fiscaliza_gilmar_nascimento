@@ -1,0 +1,80 @@
+{
+  "rewrites": [
+    {
+      "source": "/login",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/register-cidadao",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/recuperar-acesso",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/demandas/nova",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/protocolo",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/meus-registros",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/perfil",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/metodologia",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/transparencia",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/termos",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/privacidade",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin/demandas",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin/equipe",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin/audit",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/radar-manaus",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/estrategia-2028",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/relatorios",
+      "destination": "/index.html"
+    }
+  ]
+}
