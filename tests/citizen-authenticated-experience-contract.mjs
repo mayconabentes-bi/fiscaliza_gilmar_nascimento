@@ -80,5 +80,6 @@ expect(app.includes('!isInternal && !isCitizen && !onDemandForm && <LGPDConsent 
 expect(app.includes('if (!response.ok || data?.success !== true)') && app.includes('Por segurança, você continua conectado.'), "Logout deve falhar fechado se o servidor não confirmar a limpeza da sessão.");
 expect(app.includes('window.location.replace(target)') && app.includes('"/login?saida=1"') && app.includes('"/login?admin=1&saida=1"'), "Logout confirmado deve voltar ao login adequado e permitir reentrada.");
 expect(app.includes('data-logout-error') && app.includes('role="alert"'), "Falha de logout deve ser comunicada de forma acessível.");
+expect(app.includes('<RecoverAccess onSessionReset={() => setUser(null)} />'), "Troca de senha deve limpar também o estado React da sessão atual.");
 
 console.log("Citizen authenticated experience contract OK: Meus registros, Registrar, Acompanhar, Perfil e Sair.");
