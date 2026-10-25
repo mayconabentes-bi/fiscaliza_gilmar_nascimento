@@ -1,11 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from "react-router-dom";
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
-import { ChevronDown, CirclePlus, FileBarChart, FileText, Flag, Home as HomeIcon, LayoutDashboard, Lock, LogIn, LogOut, MapPinned, MoreHorizontal, Radar, Search, ShieldCheck, User, Users } from "lucide-react";
+import { ChevronDown, CirclePlus, FileBarChart, FileText, Flag, Home as HomeIcon, LayoutDashboard, Lock, LogIn, LogOut, MapPinned, MoreHorizontal, Search, ShieldCheck, User, Users } from "lucide-react";
 
 import Home from "./pages/Home";
 import NovaDemanda from "./pages/NovaDemanda";
 import ConsultaProtocolo from "./pages/ConsultaProtocolo";
 import LGPDConsent from "./components/LGPDConsent";
+import { FiscalizeBrandMark, FiscalizeLockup, FiscalizeWordmark } from "./components/FiscalizeBrand";
 
 const Login = lazy(() => import("./pages/Login"));
 const RegisterCidadao = lazy(() => import("./pages/RegisterCidadao"));
@@ -56,9 +57,11 @@ function Brand({ privateMode = false, citizenMode = false, privateHome = "/dashb
   const ariaLabel = privateMode ? "FISCALIZE - núcleo privado" : citizenMode ? "FISCALIZE - meus registros" : "FISCALIZE - início";
   return (
     <Link to={homePath} className="flex min-w-0 items-center gap-2.5 sm:gap-3" aria-label={ariaLabel}>
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#d7e0f2] bg-[#032673] shadow-sm"><img src="/app-icon.svg" alt="" className="h-full w-full object-cover" /></span>
-      <span className="min-w-0"><span className="block text-[18px] font-extrabold tracking-[-0.045em] text-[#1f2e6e] sm:text-[19px]">FISCALIZE</span>{privateMode && <span className="hidden text-[10px] font-bold uppercase tracking-[0.12em] text-[#657089] sm:block">Núcleo privado</span>}</span>
-      {!privateMode && <span className="brand-signature-mark hidden sm:block" aria-hidden="true"><img src="/brand/gilmar-nascimento-oficial.png" alt="" /></span>}
+      <FiscalizeBrandMark className="h-10 w-10 shadow-sm" />
+      <span className="min-w-0">
+        <FiscalizeWordmark className="block text-[18px] sm:text-[19px]" />
+        {privateMode && <span className="hidden text-[10px] font-bold uppercase tracking-[0.12em] text-[#657089] sm:block">Núcleo privado</span>}
+      </span>
     </Link>
   );
 }
@@ -372,7 +375,7 @@ function AppShell() {
         </Routes></Suspense>
       </main>
 
-      {!isInternal && !isCitizen && <footer className="mt-auto border-t border-[#d7e0f2] bg-white pb-24 pt-9 lg:pb-9"><div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"><div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between"><div className="flex max-w-2xl flex-col gap-5 sm:flex-row sm:items-start"><span className="brand-signature-mark brand-signature-mark--footer" aria-hidden="true"><img src="/brand/gilmar-nascimento-oficial.png" alt="" /></span><div className="max-w-xl"><div className="flex items-center gap-2.5"><Radar className="h-4 w-4 text-[#1f2e6e]" /><span className="text-base font-extrabold text-[#1f2e6e]">FISCALIZE</span></div><p className="mt-3 text-sm leading-relaxed text-[#657089]">Um espaço para registrar, organizar e acompanhar problemas relatados em Manaus.</p></div></div><div className="flex flex-wrap gap-x-6 gap-y-3 text-sm font-semibold text-[#657089]"><Link to="/metodologia" className="hover:text-[#1f2e6e]">Como funciona</Link><Link to="/transparencia" className="hover:text-[#1f2e6e]">Sobre</Link><Link to="/privacidade" className="hover:text-[#1f2e6e]">Privacidade</Link><Link to="/termos" className="hover:text-[#1f2e6e]">Termos</Link></div></div><div className="mt-8 border-t border-[#eef2fb] pt-5 text-xs leading-relaxed text-[#7b8599]">© {new Date().getFullYear()} FISCALIZE.</div></div></footer>}
+      {!isInternal && !isCitizen && <footer className="mt-auto border-t border-[#d7e0f2] bg-white pb-24 pt-9 lg:pb-9"><div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"><div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between"><div className="max-w-2xl"><FiscalizeLockup markClassName="h-10 w-10" wordClassName="text-base" /><p className="mt-3 text-sm leading-relaxed text-[#657089]">Um espaço para registrar, organizar e acompanhar problemas relatados em Manaus.</p></div><div className="flex flex-wrap gap-x-6 gap-y-3 text-sm font-semibold text-[#657089]"><Link to="/metodologia" className="hover:text-[#1f2e6e]">Como funciona</Link><Link to="/transparencia" className="hover:text-[#1f2e6e]">Sobre</Link><Link to="/privacidade" className="hover:text-[#1f2e6e]">Privacidade</Link><Link to="/termos" className="hover:text-[#1f2e6e]">Termos</Link></div></div><div className="mt-8 border-t border-[#eef2fb] pt-5 text-xs leading-relaxed text-[#7b8599]">© {new Date().getFullYear()} FISCALIZE.</div></div></footer>}
       <MobileNav user={user} onLogout={handleLogout} />
     </div>
   );
