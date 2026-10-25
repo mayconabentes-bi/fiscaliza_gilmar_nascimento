@@ -477,7 +477,7 @@ export default function NovaDemanda({ user }: { user?: any }) {
         <section data-register-step="1" className={`${mobileStep === 1 ? "block" : "hidden"} space-y-5 sm:block`}>
           <label className="block">
             <span className="text-sm font-bold text-[#172033]">Faixa etária</span>
-            <select name="faixa_etaria" value={form.faixa_etaria} onChange={handleChange} disabled={user?.type === "cidadao"} required className="field text-base disabled:cursor-not-allowed disabled:bg-[#eef2fb] disabled:text-[#526078]">
+            <select name="faixa_etaria" value={form.faixa_etaria} onChange={handleChange} disabled={user?.type === "cidadao" && Boolean(user?.faixa_etaria)} required className="field text-base disabled:cursor-not-allowed disabled:bg-[#eef2fb] disabled:text-[#526078]">
               <option value="">Selecione</option>
               <option value="UNDER_16">Menos de 16 anos</option>
               <option value="AGE_16_17">16 a 17 anos</option>
@@ -487,7 +487,7 @@ export default function NovaDemanda({ user }: { user?: any }) {
               <option value="AGE_45_59">45 a 59 anos</option>
               <option value="AGE_60_PLUS">60 anos ou mais</option>
             </select>
-            <span className="mt-1.5 block text-xs leading-relaxed text-slate-500">{user?.type === "cidadao" ? "Faixa etária vinculada à sua conta. Ela é usada para aplicar as proteções adequadas." : "Usamos apenas a faixa etária para aplicar as proteções adequadas. O envio autônomo começa aos 16 anos."}</span>
+            <span className="mt-1.5 block text-xs leading-relaxed text-slate-500">{user?.type === "cidadao" && user?.faixa_etaria ? "Faixa etária vinculada à sua conta. Ela é usada para aplicar as proteções adequadas." : "Usamos apenas a faixa etária para aplicar as proteções adequadas. O envio autônomo começa aos 16 anos."}</span>
           </label>
           {form.faixa_etaria === "UNDER_16" && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-amber-900">Você pode consultar o conteúdo público do FISCALIZE, mas o envio autônomo de demandas está disponível a partir de 16 anos.</div>}
           {form.faixa_etaria === "AGE_16_17" && <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 text-sm leading-relaxed text-indigo-900"><strong>Proteção reforçada:</strong> seu registro terá tratamento mais restrito. Evite informar escola, endereço residencial, dados de saúde, documentos ou outras informações pessoais que não sejam necessárias.</div>}
