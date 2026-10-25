@@ -19,10 +19,13 @@ Registrar e acompanhar, como projeto cívico independente, encaminhamentos forma
 - Validar concorrência, auditoria, testes end-to-end, mobile, isolamento e deploy em homologação.
 
 ## Critérios de aceite
-- [ ] Migração aplicada em homologação
+- [x] Migração aplicada em homologação (Supabase fiscalize-homologacao; confirmação de tabelas e RLS)
 - [ ] Acesso negado a cidadão, visitantes e staff fora da permissão
 - [ ] Criação e atualização realizadas com histórico
 - [ ] Protocolo FISCALIZE permanece independente do protocolo externo
 - [ ] Nenhum dado sensível divulgado na rota pública
 - [ ] Testes de segurança e regressão aprovados
 - [ ] Revisão final antes do merge na main
+- [x] CI completa e migration smoke aprovados no commit f895dbc (antes desta atualização documental)
+- [ ] Publicação isolada da aplicação em homologação (bloqueada: acesso à plataforma de hospedagem não confirmado)
+- [ ] Teste manual no celular e desktop após publicação isolada
