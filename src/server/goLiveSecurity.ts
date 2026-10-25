@@ -122,7 +122,7 @@ export function setupHealthRoutes(app: Express) {
       });
     } catch (error: any) {
       console.error("Falha no readiness check:", error);
-      return res.status(503).json({ status: "not_ready", error: error instanceof Error ? error.message : "Falha na verificação de prontidão." });
+      return res.status(503).json({ status: "not_ready", code: "READINESS_CHECK_FAILED" });
     }
   });
 }
