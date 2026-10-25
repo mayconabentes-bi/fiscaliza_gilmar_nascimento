@@ -7,6 +7,7 @@ const auth = fs.readFileSync("src/server/privateAdminAuth.ts", "utf8");
 const app = fs.readFileSync("src/server/app.ts", "utf8");
 const policy = fs.readFileSync("src/server/adminAccessPolicy.ts", "utf8");
 const goLive = fs.readFileSync("src/server/goLiveSecurity.ts", "utf8");
+const civicForwarding = fs.readFileSync("src/server/civicForwardingRoutes.ts", "utf8");
 
 expect(policy.includes('["ADMIN", "SUPER_ADMIN"]'), "Política deve permitir somente ADMIN e SUPER_ADMIN.");
 expect(access.includes('from "./adminAccessPolicy.js"'), "Middleware deve usar política administrativa central.");
@@ -28,5 +29,6 @@ for (const prefix of ["/api/admin", "/api/demandas/metricas", "/api/relatorios",
   expect(app.includes(`app.use("${prefix}", requireAdmin)`), `${prefix} deve permanecer atrás do middleware admin.`);
 }
 expect(goLive.includes('["POST", "PUT", "PATCH", "DELETE"]') && goLive.includes("Origem não autorizada para operação mutável"), "Operações mutáveis devem manter proteção de origem/CSRF.");
+expect((civicForwarding.match(/\["ADMIN","SUPER_ADMIN"\]\.includes\(String\(req\.user\?\.perfil_acesso\)\)/g) || []).length >= 2, "Central de Encaminhamentos deve permitir ADMIN e SUPER_ADMIN nas rotas da demanda e de acompanhamento.");
 
 console.log("T1 admin security contract: ok");
