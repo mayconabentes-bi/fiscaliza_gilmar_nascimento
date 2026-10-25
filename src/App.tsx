@@ -200,7 +200,7 @@ function MobileNav({ user, onLogout }: { user: any; onLogout: () => void | Promi
           </> : <>
             <Link to="/" className={itemClass("/")}><HomeIcon className={iconClass("/")} /><span>Início</span></Link>
             <Link to="/demandas/nova" className={itemClass("/demandas/nova")}><CirclePlus className={iconClass("/demandas/nova")} /><span>Registrar</span></Link>
-            <Link to="/protocolo" className={itemClass("/protocolo")}><Search className={iconClass("/protocolo")} /><span>Acompanhar</span></Link>
+            <Link to="/protocolo" className={itemClass("/protocolo")}><Search className={iconClass("/protocolo")} /><span>Protocolo</span></Link>
             <Link to="/login" className={itemClass("/login")}><LogIn className={iconClass("/login")} /><span>Entrar</span></Link>
           </>}
         </div>
@@ -346,7 +346,7 @@ function AppShell() {
             </nav>
           ) : (
             <nav className="hidden items-center gap-1 lg:flex" aria-label="Navegação superior">
-              <Link to="/" className={publicNavClass("/")}>Início</Link><Link to="/demandas/nova" className={publicNavClass("/demandas/nova")}>Registrar</Link><Link to="/protocolo" className={publicNavClass("/protocolo")}>Acompanhar</Link><Link to="/metodologia" className={publicNavClass("/metodologia")}>Como funciona</Link><Link to="/transparencia" className={publicNavClass("/transparencia")}>Sobre</Link>
+              <Link to="/" className={publicNavClass("/")}>Início</Link><Link to="/demandas/nova" className={publicNavClass("/demandas/nova")}>Registrar</Link><Link to="/protocolo" className={publicNavClass("/protocolo")}>Protocolo</Link><Link to="/metodologia" className={publicNavClass("/metodologia")}>Como funciona</Link><Link to="/transparencia" className={publicNavClass("/transparencia")}>Sobre</Link>
               <Link to="/login" className="ml-3 rounded-lg border border-[#cfd8e8] bg-white px-4 py-2.5 text-sm font-bold text-[#1f2e6e] shadow-sm transition hover:border-[#aebcda]">Entrar</Link>
             </nav>
           )}

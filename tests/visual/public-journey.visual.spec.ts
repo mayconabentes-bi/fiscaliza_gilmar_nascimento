@@ -56,8 +56,8 @@ test('home mantém hierarquia e CTAs na primeira dobra', async ({ page }, testIn
   await page.goto('/');
   await stabilize(page);
 
-  const register = page.getByRole('link', { name: /registrar ocorrência/i });
-  const follow = page.getByRole('link', { name: /acompanhar protocolo/i });
+  const register = page.getByRole('link', { name: /registrar problema/i });
+  const follow = page.getByRole('link', { name: /consultar protocolo/i }).first();
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await expect(register).toBeVisible();
   await expect(follow).toBeVisible();
@@ -78,7 +78,7 @@ test('aviso de privacidade respeita a navegação touch', async ({ page }, testI
   await page.addInitScript(() => localStorage.removeItem('pulso_privacy_notice_seen'));
   await page.goto('/');
   await stabilize(page);
-  await page.waitForTimeout(1900);
+  await page.waitForTimeout(2700);
 
   const notice = page.locator('[data-privacy-notice]');
   await expect(notice).toBeVisible();
@@ -89,6 +89,21 @@ test('aviso de privacidade respeita a navegação touch', async ({ page }, testI
   expect(box).not.toBeNull();
   if ((viewport?.width || 0) < 1024) {
     expect((box?.y || 0) + (box?.height || 0)).toBeLessThanOrEqual((viewport?.height || 0) - 70);
+
+    const registerBox = await page.getByRole('link', { name: /registrar problema/i }).boundingBox();
+    const followBox = await page.getByRole('link', { name: /consultar protocolo/i }).first().boundingBox();
+    expect(registerBox).not.toBeNull();
+    expect(followBox).not.toBeNull();
+
+    const overlaps = (target: { x: number; y: number; width: number; height: number } | null) =>
+      Boolean(box && target &&
+        box.x < target.x + target.width &&
+        box.x + box.width > target.x &&
+        box.y < target.y + target.height &&
+        box.y + box.height > target.y);
+
+    expect(overlaps(registerBox)).toBe(false);
+    expect(overlaps(followBox)).toBe(false);
   }
 
   await capture(page, 'home-privacidade', testInfo.project.name);
