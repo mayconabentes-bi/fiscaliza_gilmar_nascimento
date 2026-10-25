@@ -106,7 +106,9 @@ export function setupCitizenCompliancePostgres(app: Express) {
           update public.usuarios
           set nome_completo = 'Conta excluída', email = ${syntheticEmail}, municipio = 'Removido',
               bairro = 'Removido', status = 'excluido', consentimento_lgpd = false,
-              data_consentimento = null, versao_consentimento = null, password_hash = ${disabledHash}
+              data_consentimento = null, versao_consentimento = null,
+              termos_uso_aceito = false, data_aceite_termos = null, versao_termos = null,
+              password_hash = ${disabledHash}
           where id = ${claims.id}
         `;
         await tx`
