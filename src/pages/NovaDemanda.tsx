@@ -210,6 +210,10 @@ export default function NovaDemanda({ user }: { user?: any }) {
     setCepBusy(true);
     try {
       const response = await fetch(`/api/localizacao/cep/${cep}`, { cache: "no-store" });
+      const contentType = response.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        throw new Error("Consulta de CEP temporariamente indisponível. Preencha a localização manualmente.");
+      }
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Não foi possível consultar o CEP.");
       if (String(data.municipio || "").toLowerCase() !== "manaus" || String(data.uf || "").toUpperCase() !== "AM") {
