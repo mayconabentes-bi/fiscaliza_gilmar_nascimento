@@ -31,7 +31,7 @@ export default function Home() {
 
   return (
     <div className="pb-8 sm:pb-20">
-      <section className="grid items-center gap-7 py-5 sm:min-h-[66vh] sm:gap-10 sm:py-16 lg:grid-cols-[1.08fr_0.92fr] lg:py-24">
+      <section className="grid items-center gap-7 py-5 sm:min-h-[66vh] sm:gap-10 sm:py-16 lg:grid-cols-[1.08fr_0.92fr] lg:py-12">
         <div className="max-w-3xl">
           <div className="flex flex-wrap items-center gap-2">
             <span className="section-kicker rounded-full border border-[#d7e0f2] bg-white px-3 py-1.5"><MapPin className="h-3.5 w-3.5" /> Manaus</span>
