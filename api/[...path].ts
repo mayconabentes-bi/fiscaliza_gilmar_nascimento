@@ -18,8 +18,8 @@ async function ensureReady() {
 
 export default async function handler(req: any, res: any) {
   try {
-    await ensureReady();
     await ensurePreviewAdmin();
+    await ensureReady();
     return app(req, res);
   } catch (error) {
     console.error("Vercel API readiness failure:", error);
