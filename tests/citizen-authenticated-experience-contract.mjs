@@ -17,6 +17,8 @@ expect(login.includes('sm:hidden') && login.includes('Acesso administrativo'), "
 expect(login.includes('aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}') && login.includes('type={showPassword ? "text" : "password"}'), "Login deve permitir revelar a senha somente por ação explícita.");
 expect(login.includes('res.status === 429') && login.includes('Muitas tentativas. Aguarde alguns minutos'), "Login deve orientar rate limit sem revelar detalhes internos.");
 expect(login.includes('localStorage.setItem("user"') && !login.includes('localStorage.setItem("token"') && !login.includes('localStorage.setItem("password"'), "Frontend pode hidratar usuário visual, mas nunca deve persistir token ou senha no localStorage.");
+expect(login.includes("registrationState?.registrationSuccess") && login.includes("Conta criada com sucesso."), "Login deve confirmar visualmente o cadastro concluído.");
+expect(login.includes('useState(() => registrationState?.email || "")'), "Login deve preencher o e-mail recebido por estado de navegação, sem query string.");
 expect(app.includes('path="/meus-registros"') && app.includes('citizenOnly(<MeusRegistros />)'), "Meus registros deve ser rota exclusiva do cidadão autenticado.");
 expect(app.includes('path="/perfil"') && app.includes('citizenOnly(<PerfilCidadao user={user} />)'), "Perfil deve ser rota exclusiva do cidadão autenticado.");
 expect(app.includes('isCitizen ? <Navigate to="/meus-registros" replace />'), "A raiz autenticada deve redirecionar cidadão para Meus registros.");
