@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { KeyRound, Mail, ShieldCheck } from "lucide-react";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { Eye, EyeOff, KeyRound, Mail, ShieldCheck } from "lucide-react";
 
 type RecoveryConfig = { enabled: boolean; supportEmail: string | null };
 
 export default function RecoverAccess() {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const recoveryState = location.state as { email?: string; fromProfile?: boolean } | null;
   const resetToken = useMemo(() => {
     const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
     return params.get("token") || "";
@@ -14,7 +16,9 @@ export default function RecoverAccess() {
   const initialMode = searchParams.get("modo") === "email" ? "email" : "password";
   const [mode, setMode] = useState<"password" | "email">(initialMode);
   const [config, setConfig] = useState<RecoveryConfig>({ enabled: true, supportEmail: null });
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => recoveryState?.email || "");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -58,6 +62,7 @@ export default function RecoverAccess() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Não foi possível redefinir a senha.");
+      localStorage.removeItem("user");
       setResetDone(true);
       setMessage(data.message || "Senha alterada com sucesso.");
       window.history.replaceState(null, "", "/recuperar-acesso");
@@ -73,8 +78,25 @@ export default function RecoverAccess() {
       <p className="mt-2 text-sm leading-6 text-[#657089]">Este link tem validade curta e deixa de funcionar assim que a senha é alterada.</p>
       <form className="mt-6 space-y-5" onSubmit={resetPassword}>
         {error && <div role="alert" className="rounded-xl border border-red-100 bg-red-50 p-3.5 text-sm text-red-700">{error}</div>}
-        <label className="block"><span className="text-sm font-bold text-[#34425b]">Nova senha</span><input type="password" autoComplete="new-password" minLength={8} required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="field text-base" /></label>
-        <label className="block"><span className="text-sm font-bold text-[#34425b]">Confirmar nova senha</span><input type="password" autoComplete="new-password" minLength={8} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="field text-base" /></label>
+        <label className="block">
+          <span className="text-sm font-bold text-[#34425b]">Nova senha</span>
+          <span className="relative mt-1 block">
+            <input type={showNewPassword ? "text" : "password"} autoComplete="new-password" minLength={8} required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="field mt-0 pr-12 text-base" />
+            <button type="button" onClick={() => setShowNewPassword((value) => !value)} aria-label={showNewPassword ? "Ocultar nova senha" : "Mostrar nova senha"} aria-pressed={showNewPassword} className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl text-[#657089] hover:bg-[#eef2fb]">
+              {showNewPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+            </button>
+          </span>
+          <span className="mt-1.5 block text-xs text-[#657089]">Use pelo menos 8 caracteres.</span>
+        </label>
+        <label className="block">
+          <span className="text-sm font-bold text-[#34425b]">Confirmar nova senha</span>
+          <span className="relative mt-1 block">
+            <input type={showConfirmPassword ? "text" : "password"} autoComplete="new-password" minLength={8} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="field mt-0 pr-12 text-base" />
+            <button type="button" onClick={() => setShowConfirmPassword((value) => !value)} aria-label={showConfirmPassword ? "Ocultar confirmação da senha" : "Mostrar confirmação da senha"} aria-pressed={showConfirmPassword} className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl text-[#657089] hover:bg-[#eef2fb]">
+              {showConfirmPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+            </button>
+          </span>
+        </label>
         <button type="submit" disabled={loading} className="primary-button min-h-12 w-full">{loading ? "Alterando..." : "Alterar senha"}</button>
       </form>
     </section></div>
@@ -85,7 +107,8 @@ export default function RecoverAccess() {
       <ShieldCheck className="mx-auto h-10 w-10 text-emerald-700" />
       <h1 className="mt-4 text-2xl font-extrabold text-[#172033]">Senha atualizada</h1>
       <p className="mt-3 text-sm leading-6 text-[#657089]">{message}</p>
-      <Link to="/login" className="primary-button mt-6 min-h-12 w-full">Entrar com a nova senha</Link>
+      <p className="mt-2 text-xs leading-5 text-[#657089]">Por segurança, as sessões anteriores deixam de ser válidas após a troca da senha.</p>
+      <a href="/login?senha=alterada" className="primary-button mt-6 min-h-12 w-full">Entrar com a nova senha</a>
     </section></div>
   );
 
@@ -94,6 +117,11 @@ export default function RecoverAccess() {
       <div className="-mx-5 -mt-5 mb-5 h-1 bg-[#f36a10] sm:-mx-7 sm:-mt-7" aria-hidden="true" />
       <h1 className="text-3xl font-extrabold tracking-[-0.045em] text-[#172033]">Recuperar acesso</h1>
       <p className="mt-2 text-sm leading-6 text-[#657089]">Escolha a situação que melhor descreve o problema de acesso.</p>
+      {recoveryState?.fromProfile && (
+        <div role="status" data-profile-recovery className="mt-4 rounded-xl border border-[#d7e0f2] bg-[#eef2fb] p-3.5 text-sm leading-6 text-[#526078]">
+          Você veio do seu perfil. O e-mail da conta já está preenchido para solicitar a redefinição da senha.
+        </div>
+      )}
       <div className="mt-6 grid grid-cols-2 gap-1 rounded-xl bg-[#eef2fb] p-1" role="group" aria-label="Tipo de recuperação">
         <button type="button" aria-pressed={mode === "password"} onClick={() => { setMode("password"); setError(""); setMessage(""); }} className={`min-h-11 rounded-lg px-3 text-sm font-bold ${mode === "password" ? "bg-white text-[#1f2e6e] shadow-sm" : "text-[#657089]"}`}>Esqueci a senha</button>
         <button type="button" aria-pressed={mode === "email"} onClick={() => { setMode("email"); setError(""); setMessage(""); }} className={`min-h-11 rounded-lg px-3 text-sm font-bold ${mode === "email" ? "bg-white text-[#1f2e6e] shadow-sm" : "text-[#657089]"}`}>Não lembro o e-mail</button>
