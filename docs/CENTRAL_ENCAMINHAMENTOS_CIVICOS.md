@@ -27,5 +27,5 @@ Registrar e acompanhar, como projeto cívico independente, encaminhamentos forma
 - [ ] Testes de segurança e regressão aprovados
 - [ ] Revisão final antes do merge na main
 - [x] CI completa e migration smoke aprovados no commit f895dbc (antes desta atualização documental)
-- [ ] Publicação isolada da aplicação em homologação (bloqueada: acesso à plataforma de hospedagem não confirmado)
-- [ ] Teste manual no celular e desktop após publicação isolada
+- [x] Preview isolado publicado no Vercel para o projeto `fiscalizacidade`
+- [ ] Teste manual no celular e desktop — liberado para execução após CI, Visual QA e migration smoke verdes
