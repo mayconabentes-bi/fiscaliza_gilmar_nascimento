@@ -24,6 +24,9 @@ function bad(res: any, reason="Dados inválidos para o encaminhamento.") { retur
 
 // Must be mounted AFTER /api/admin requireInternalAccess middleware.
 export function setupCivicForwardingRoutes(app: Express) {
+  // Current civic phase: owner ADMIN only; staff roles cannot access these records.
+  app.use("/api/admin/encaminhamentos", (req:any,res,next) => req.user?.perfil_acesso === "ADMIN" ? next() : res.status(403).json({error:"Acesso restrito."}));
+  app.use(/^\/api\/admin\/demandas\/[^/]+\/encaminhamentos$/, (req:any,res,next) => req.user?.perfil_acesso === "ADMIN" ? next() : res.status(403).json({error:"Acesso restrito."}));
   app.get("/api/admin/demandas/:id/encaminhamentos", async (req:any,res) => {
     try {
       const sql=await getHealthyPostgres();
