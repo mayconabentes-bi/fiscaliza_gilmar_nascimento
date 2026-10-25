@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { ChevronRight, CirclePlus, ClipboardList, RefreshCw, Search } from "lucide-react";
 import { fetchWithTimeout } from "../lib/request";
 import { demandCategoryLabel, demandProblemLabel } from "../shared/demandTaxonomy";
@@ -34,6 +34,8 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
 });
 
 export default function MeusRegistros() {
+  const location = useLocation();
+  const firstAccess = Boolean((location.state as { firstAccess?: boolean } | null)?.firstAccess);
   const [registros, setRegistros] = useState<Registro[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -48,6 +50,11 @@ export default function MeusRegistros() {
         10000,
       );
       const data = await response.json().catch(() => ({}));
+      if (response.status === 401 || response.status === 403) {
+        localStorage.removeItem("user");
+        window.location.replace("/login?sessao=expirada");
+        return;
+      }
       if (!response.ok) throw new Error(data.error || "Não foi possível carregar seus registros.");
       setRegistros(Array.isArray(data.registros) ? data.registros : []);
     } catch (err: any) {
@@ -76,6 +83,13 @@ export default function MeusRegistros() {
           <span className="hidden sm:inline">Atualizar</span>
         </button>
       </section>
+
+      {firstAccess && (
+        <div role="status" data-first-access className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm leading-6 text-emerald-900 sm:mt-5">
+          <strong className="block text-base">Sua conta está pronta.</strong>
+          Os registros feitos enquanto você estiver conectado aparecerão aqui automaticamente.
+        </div>
+      )}
 
       <div className="mt-4 flex flex-col gap-2 sm:mt-5 sm:flex-row">
         <Link to="/demandas/nova" className="primary-button min-h-12 w-full justify-center px-5 text-sm sm:w-auto">
