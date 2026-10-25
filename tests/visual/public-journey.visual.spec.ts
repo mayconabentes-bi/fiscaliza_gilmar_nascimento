@@ -128,8 +128,8 @@ test('registro mantém fluxo guiado, privacidade e revisão no mobile', async ({
     await expect(page.locator('[data-register-step="2"]')).toBeVisible();
     await page.getByLabel('Seu nome').fill('Pessoa QA Visual');
     await page.getByLabel('O que aconteceu?').fill('Ocorrência de teste visual para validar o fluxo guiado no celular.');
-    await expect(page.getByText(/adicionar evidências/i)).toBeVisible();
-    await expect(page.getByRole('button', { name: /adicionar contato para retorno/i })).toBeVisible();
+    await expect(page.getByText(/fotos do problema/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /adicionar contato \(opcional\)/i })).toBeVisible();
     await page.locator('input[name="gallery_photos"]').setInputFiles({
       name: 'evidencia-visual.png',
       mimeType: 'image/png',

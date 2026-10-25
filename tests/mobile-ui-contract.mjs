@@ -71,12 +71,16 @@ expect(form.includes('name="camera_photo"') && form.includes('name="gallery_phot
 expect(form.includes('data-engagement-progress="transparent"') && form.includes('role="progressbar"'), 'O formulário deve mostrar progresso transparente, sem urgência artificial.');
 expect(form.includes('form_step_location') && form.includes('form_step_details') && form.includes('form_step_review'), 'O funil deve medir apenas conclusão agregada das etapas cívicas.');
 expect(form.includes('data-mobile-register-flow="guided"') && (form.match(/data-register-step=/g) || []).length === 3, 'Registrar mobile deve possuir fluxo guiado em três etapas.');
+expect(form.includes('Registrar problema') && form.includes('Onde está o problema?') && form.includes('Fotos do problema'), 'Registrar mobile deve usar linguagem cidadã direta e consistente com a Home.');
+expect(form.includes('Seu nome identifica o registro e não aparece na consulta pública por protocolo.'), 'Registrar deve explicar a finalidade do nome sem aumentar exposição pública.');
+expect(form.includes('Suas fotos ficam privadas:') && form.includes('não aparecem na consulta pública por protocolo'), 'Registrar deve explicar privacidade das fotos em linguagem simples.');
+expect(form.includes('Política de Privacidade') && !form.includes('Gilmar Nascimento'), 'Registrar deve usar aviso de privacidade consistente com a versão cidadã independente.');
 expect(form.includes('Etapa {mobileStep} de 3') && form.includes('Localize') && form.includes('Descreva') && form.includes('Confirme'), 'Cabeçalho mobile deve comunicar etapa atual sem urgência artificial.');
 expect(!form.includes('leva poucos minutos'), 'Registrar não deve estimar tempo nem pressionar conclusão.');
 expect(form.indexOf('name="faixa_etaria"') < form.indexOf('name="logradouro"') && form.includes('UNDER_16'), 'Política etária deve permanecer antes da coleta detalhada.');
 expect(form.includes('data-register-review') && form.includes('Revise antes de enviar') && form.includes('Voltar e editar'), 'Etapa final deve oferecer revisão real e edição antes do envio.');
 expect(form.includes('noValidate') && form.includes('setMobileStep(1)') && form.includes('setMobileStep(2)') && form.includes('setMobileStep(3)'), 'Fluxo guiado deve usar validação explícita e encaminhar erros para a etapa correta.');
-expect(form.includes('+ Adicionar ponto de referência') && form.includes('+ Adicionar contato para retorno'), 'Campos opcionais devem permanecer recolhidos no mobile até solicitação do usuário.');
+expect(form.includes('+ Adicionar ponto de referência') && form.includes('+ Adicionar contato (opcional)'), 'Campos opcionais devem permanecer recolhidos no mobile até solicitação do usuário.');
 expect(form.includes('overflow-x-auto') && form.includes('{photos.length} de {MAX_PHOTOS}'), 'Prévia de evidências deve economizar altura no mobile e preservar o limite explícito.');
 expect(form.includes('O protocolo é gerado mesmo sem contato.'), 'Contato deve permanecer claramente opcional.');
 expect(form.includes('Evite informar documentos, dados de saúde ou dados pessoais de terceiros'), 'Descrição deve reforçar minimização de dados pessoais.');
