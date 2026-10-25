@@ -57,7 +57,7 @@ test('home mantém hierarquia e CTAs na primeira dobra', async ({ page }, testIn
   await stabilize(page);
 
   const register = page.getByRole('link', { name: /registrar problema/i });
-  const follow = page.getByRole('link', { name: /consultar protocolo/i });
+  const follow = page.getByRole('link', { name: /consultar protocolo/i }).first();
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await expect(register).toBeVisible();
   await expect(follow).toBeVisible();
@@ -91,7 +91,7 @@ test('aviso de privacidade respeita a navegação touch', async ({ page }, testI
     expect((box?.y || 0) + (box?.height || 0)).toBeLessThanOrEqual((viewport?.height || 0) - 70);
 
     const registerBox = await page.getByRole('link', { name: /registrar problema/i }).boundingBox();
-    const followBox = await page.getByRole('link', { name: /consultar protocolo/i }).boundingBox();
+    const followBox = await page.getByRole('link', { name: /consultar protocolo/i }).first().boundingBox();
     expect(registerBox).not.toBeNull();
     expect(followBox).not.toBeNull();
 
