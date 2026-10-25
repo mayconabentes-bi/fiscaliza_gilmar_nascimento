@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 
 function formatCep(value: string) {
   const digits = value.replace(/\D/g, "").slice(0, 8);
@@ -27,6 +28,8 @@ export default function RegisterCidadao() {
     aceite_lgpd: false,
   });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [cep, setCep] = useState("");
   const [cepLoading, setCepLoading] = useState(false);
   const [cepMessage, setCepMessage] = useState("");
@@ -104,17 +107,27 @@ export default function RegisterCidadao() {
       return;
     }
 
+    setLoading(true);
     try {
       const res = await fetch("/api/auth/register/cidadao", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-      const data = await res.json();
+      const contentType = res.headers.get("content-type") || "";
+      const data = contentType.includes("application/json") ? await res.json().catch(() => ({})) : {};
       if (!res.ok) throw new Error(data.error || "Não foi possível criar sua conta.");
-      navigate("/login");
+      navigate("/login", {
+        replace: true,
+        state: {
+          registrationSuccess: true,
+          email: formData.email.trim().toLowerCase(),
+        },
+      });
     } catch (err: any) {
       setError(err.message || "Não foi possível criar sua conta.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -123,6 +136,7 @@ export default function RegisterCidadao() {
       <div className="surface-card p-6 sm:p-8">
         <h1 className="text-3xl font-extrabold tracking-[-0.04em] text-slate-950">Criar conta</h1>
         <p className="mt-3 text-sm leading-relaxed text-slate-600">Pedimos apenas o necessário para identificar sua conta e organizar sua participação. Não solicitamos data de nascimento, CPF, RG ou biometria.</p>
+        <div className="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm leading-6 text-indigo-900"><strong>Nesta fase:</strong> o FISCALIZE recebe ocorrências localizadas em Manaus. Sua conta continua sendo o espaço para acompanhar os registros vinculados a você.</div>
 
         <form className="mt-7 space-y-5" onSubmit={handleSubmit}>
           {error && <div role="alert" className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
@@ -181,16 +195,25 @@ export default function RegisterCidadao() {
               <label className="block"><span className="text-sm font-bold">Bairro</span><input name="bairro" value={formData.bairro} onChange={handleChange} autoComplete="address-level3" required className="field" /></label>
             </div>
           </div>
-          <label className="block"><span className="text-sm font-bold">Senha</span><input name="password" type="password" value={formData.password} onChange={handleChange} autoComplete="new-password" minLength={8} required className="field" /></label>
+          <label className="block">
+            <span className="text-sm font-bold">Senha</span>
+            <span className="relative mt-1 block">
+              <input name="password" type={showPassword ? "text" : "password"} value={formData.password} onChange={handleChange} autoComplete="new-password" minLength={8} required className="field mt-0 pr-12 text-base" />
+              <button type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"} aria-pressed={showPassword} className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100">
+                {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+              </button>
+            </span>
+            <span className="mt-1.5 block text-xs leading-relaxed text-slate-500">Use pelo menos 8 caracteres.</span>
+          </label>
 
           {formData.faixa_etaria === "AGE_16_17" && <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 text-sm leading-relaxed text-indigo-900"><strong>Proteção reforçada:</strong> participantes de 16 e 17 anos têm tratamento mais restrito de dados e conteúdo. A participação não pode ser usada para perfil político, propaganda eleitoral ou inferência de preferência.</div>}
 
           <div className="space-y-3 rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
-            <label className="flex items-start gap-3 text-sm"><input name="aceite_codigo" type="checkbox" checked={formData.aceite_codigo} onChange={handleChange} className="mt-0.5 h-5 w-5" required /><span>Concordo em usar o FISCALIZE com respeito, sem abuso e sem informações falsas, conforme os <Link to="/termos" className="font-bold underline">Termos de Uso</Link>.</span></label>
-            <label className="flex items-start gap-3 text-sm"><input name="aceite_lgpd" type="checkbox" checked={formData.aceite_lgpd} onChange={handleChange} className="mt-0.5 h-5 w-5" required /><span>Li a <Link to="/privacidade" className="font-bold underline">Política de Privacidade</Link> e entendi como os dados necessários para a conta serão tratados.</span></label>
+            <label className="flex items-start gap-3 text-sm"><input name="aceite_codigo" type="checkbox" checked={formData.aceite_codigo} onChange={handleChange} className="mt-0.5 h-5 w-5" required /><span>Concordo em usar o FISCALIZE com respeito, sem abuso e sem informações falsas, conforme os <Link to="/termos" target="_blank" rel="noopener noreferrer" className="font-bold underline">Termos de Uso</Link>.</span></label>
+            <label className="flex items-start gap-3 text-sm"><input name="aceite_lgpd" type="checkbox" checked={formData.aceite_lgpd} onChange={handleChange} className="mt-0.5 h-5 w-5" required /><span>Li a <Link to="/privacidade" target="_blank" rel="noopener noreferrer" className="font-bold underline">Política de Privacidade</Link> e entendi como os dados necessários para a conta serão tratados.</span></label>
           </div>
 
-          <button type="submit" disabled={formData.faixa_etaria === "UNDER_16"} className="primary-button min-h-12 w-full disabled:cursor-not-allowed disabled:opacity-50">Criar conta</button>
+          <button type="submit" disabled={loading || formData.faixa_etaria === "UNDER_16"} aria-busy={loading} className="primary-button min-h-12 w-full disabled:cursor-not-allowed disabled:opacity-50">{loading ? "Criando conta..." : "Criar conta"}</button>
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-500">Já tem uma conta? <Link to="/login" className="font-bold text-emerald-700">Entrar</Link></p>
