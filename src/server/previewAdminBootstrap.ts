@@ -1,17 +1,11 @@
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
-import { getPostgres } from "./postgres.js";
-
-const PREVIEW_BRANCH = "feat/central-encaminhamentos-civicos";
+import { getHealthyPostgres } from "./postgres.js";
 
 let bootstrapPromise: Promise<void> | null = null;
 
 function previewEnabled() {
-  return (
-    process.env.NODE_ENV === "production" &&
-    process.env.VERCEL_ENV === "preview" &&
-    process.env.VERCEL_GIT_COMMIT_REF === PREVIEW_BRANCH
-  );
+  return process.env.NODE_ENV === "production" && process.env.VERCEL_ENV === "preview";
 }
 
 function requiredPreviewAdminEnv(name: "ADMIN_EMAIL" | "ADMIN_PASSWORD" | "ADMIN_NAME") {
@@ -27,19 +21,34 @@ async function provisionPreviewAdmin() {
   const password = requiredPreviewAdminEnv("ADMIN_PASSWORD");
   const nome = requiredPreviewAdminEnv("ADMIN_NAME");
 
-  if (password.length < 12) throw new Error("PREVIEW_ADMIN_PASSWORD_WEAK");
+  const strongPassword =
+    password.length >= 12 &&
+    /[A-Z]/.test(password) &&
+    /[a-z]/.test(password) &&
+    /[0-9]/.test(password) &&
+    /[^A-Za-z0-9]/.test(password);
+  if (!strongPassword) throw new Error("PREVIEW_ADMIN_PASSWORD_WEAK");
 
-  const passwordHash = await bcrypt.hash(password, 12);
-  const sql = getPostgres();
+  const sql = await getHealthyPostgres();
 
   const [existing] = await sql`
-    select id
+    select id, nome, password_hash, ativo, perfil_acesso, setor_id
     from private.admins
     where lower(email) = lower(${email})
     limit 1
   `;
 
   if (existing) {
+    const passwordMatches = await bcrypt.compare(password, String(existing.password_hash || ""));
+    const alreadyConfigured =
+      existing.nome === nome &&
+      existing.ativo === true &&
+      existing.perfil_acesso === "SUPER_ADMIN" &&
+      existing.setor_id === null &&
+      passwordMatches;
+    if (alreadyConfigured) return;
+
+    const passwordHash = await bcrypt.hash(password, 12);
     await sql`
       update private.admins
       set nome = ${nome},
@@ -52,6 +61,8 @@ async function provisionPreviewAdmin() {
     `;
     return;
   }
+
+  const passwordHash = await bcrypt.hash(password, 12);
 
   await sql`
     insert into private.admins (id, nome, email, password_hash, ativo, perfil_acesso, setor_id)
