@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Eye, EyeOff, ShieldCheck, User } from "lucide-react";
+import { FiscalizeLockup } from "../components/FiscalizeBrand";
 
 export default function Login({ setUser }: { setUser: (user: any) => void }) {
   const [searchParams] = useSearchParams();
@@ -55,8 +56,7 @@ export default function Login({ setUser }: { setUser: (user: any) => void }) {
   return (
     <div className="mx-auto max-w-md py-0 sm:py-14" data-login-mode={type}>
       <div className="text-center">
-        <span className="brand-signature-mark brand-signature-mark--login hidden sm:inline-flex" aria-hidden="true"><img src="/brand/gilmar-nascimento-oficial.png" alt="" /></span>
-        <span className="mx-auto mt-2 hidden h-11 w-11 items-center justify-center rounded-xl border border-[#d7e0f2] bg-white text-[#1f2e6e] shadow-sm sm:flex"><ShieldCheck className="h-5 w-5" /></span>
+        <FiscalizeLockup className="hidden justify-center sm:inline-flex" markClassName="h-14 w-14 shadow-sm" wordClassName="text-2xl" />
         <h1 className="mt-1 text-3xl font-extrabold tracking-[-0.045em] text-[#172033] sm:mt-5">
           <span className="sm:hidden">{type === "admin" ? "Acesso administrativo" : "Entrar"}</span>
           <span className="hidden sm:inline">Entrar no FISCALIZE</span>
