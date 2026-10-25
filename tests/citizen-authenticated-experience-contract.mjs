@@ -11,7 +11,7 @@ const postgres = read("src/server/citizenDemandPostgres.ts");
 const local = read("src/server/routes.ts");
 const demandForm = read("src/pages/NovaDemanda.tsx");
 
-expect(login.includes('navigate(type === "admin" ? "/dashboard" : "/meus-registros")'), "Login cidadão deve abrir Meus registros.");
+expect(login.includes('type === "admin" ? "/dashboard" : "/meus-registros"'), "Login cidadão deve abrir Meus registros.");
 expect(login.includes('const initialType = searchParams.get("admin") === "1" ? "admin" : "cidadao"'), "Login deve manter cidadão como modo padrão e aceitar admin explícito.");
 expect(login.includes('sm:hidden') && login.includes('Acesso administrativo'), "Acesso administrativo deve ficar secundário no mobile.");
 expect(login.includes('aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}') && login.includes('type={showPassword ? "text" : "password"}'), "Login deve permitir revelar a senha somente por ação explícita.");
@@ -19,6 +19,8 @@ expect(login.includes('res.status === 429') && login.includes('Muitas tentativas
 expect(login.includes('localStorage.setItem("user"') && !login.includes('localStorage.setItem("token"') && !login.includes('localStorage.setItem("password"'), "Frontend pode hidratar usuário visual, mas nunca deve persistir token ou senha no localStorage.");
 expect(login.includes("registrationState?.registrationSuccess") && login.includes("Conta criada com sucesso."), "Login deve confirmar visualmente o cadastro concluído.");
 expect(login.includes('useState(() => registrationState?.email || "")'), "Login deve preencher o e-mail recebido por estado de navegação, sem query string.");
+expect(login.includes("firstAccess: Boolean(registrationState?.registrationSuccess)"), "Login após cadastro deve sinalizar primeiro acesso para Meus registros.");
+expect(login.includes('searchParams.get("sessao") === "expirada"') && login.includes("Sua sessão terminou."), "Login deve orientar retorno após expiração da sessão.");
 expect(app.includes('path="/meus-registros"') && app.includes('citizenOnly(<MeusRegistros />)'), "Meus registros deve ser rota exclusiva do cidadão autenticado.");
 expect(app.includes('path="/perfil"') && app.includes('citizenOnly(<PerfilCidadao user={user} />)'), "Perfil deve ser rota exclusiva do cidadão autenticado.");
 expect(app.includes('isCitizen ? <Navigate to="/meus-registros" replace />'), "A raiz autenticada deve redirecionar cidadão para Meus registros.");
@@ -41,17 +43,27 @@ expect(records.includes("Você ainda não tem registros nesta conta."), "Tela de
 expect(records.includes('data-citizen-followup-list') && records.includes('Registrar nova ocorrência'), "Meus registros deve priorizar a lista vinculada e o novo registro.");
 expect(records.includes('Consultar outro protocolo') && !records.includes('Novo problema'), "Consulta manual deve ser secundária, sem repetir o card Registrar/Acompanhar.");
 expect(records.includes('aria-label="Atualizar meus registros"'), "Atualização da lista deve permanecer acessível no mobile.");
+expect(records.includes("data-first-access") && records.includes("Sua conta está pronta."), "Primeiro acesso deve confirmar que a conta está pronta.");
+expect(records.includes('response.status === 401 || response.status === 403') && records.includes('localStorage.removeItem("user")') && records.includes('window.location.replace("/login?sessao=expirada")'), "Meus registros deve recuperar de sessão expirada sem deixar o cidadão preso.");
 expect(profile.includes("Perfil") && profile.includes("Faixa etária") && profile.includes("Localidade"), "Perfil deve exibir os dados básicos da conta.");
 expect(profile.includes('"/api/minha-conta/demandas"') && profile.includes("Seus registros") && profile.includes("Ver todos") && profile.includes("slice(0, 3)"), "Perfil deve mostrar resumo dos registros vinculados.");
 expect(demandForm.includes('user?.type === "cidadao"') && demandForm.includes('to="/meus-registros"') && demandForm.includes("Ver meus registros"), "Confirmação de envio autenticado deve oferecer Ver meus registros.");
+expect(demandForm.includes('faixa_etaria: user?.type === "cidadao" ? String(user?.faixa_etaria || "") : ""'), "Nova demanda autenticada deve reutilizar a faixa etária da conta quando disponível.");
+expect(demandForm.includes('disabled={user?.type === "cidadao" && Boolean(user?.faixa_etaria)}'), "Faixa etária da conta deve ficar protegida contra alteração acidental no formulário.");
+expect(demandForm.includes('readOnly={user?.type === "cidadao"}') && demandForm.includes("Nome da sua conta."), "Nome autenticado deve ser apresentado como dado da conta no formulário.");
 expect(app.includes('<NovaDemanda user={user} />'), "Shell deve informar a sessão cidadã ao formulário para exibir o atalho pós-envio.");
 
 for (const source of [postgres, local]) {
+  // A identidade do cidadão autenticado deve vir da conta, não de campos manipuláveis do formulário.
   expect(source.includes('app.get("/api/minha-conta/demandas"'), "Backend deve oferecer endpoint privado de Meus registros.");
   expect(source.includes("citizenClaims(req)"), "Endpoint de Meus registros deve exigir claims cidadãs.");
   expect(source.includes("where usuario_id =") || source.includes("WHERE usuario_id = ?"), "Endpoint deve filtrar registros pelo usuário autenticado.");
   expect(source.includes('Cache-Control", "no-store, private"'), "Resposta da conta deve impedir cache público.");
 }
+
+expect(postgres.includes("select id, nome_completo, status, faixa_etaria") && postgres.includes("nome = cleanText(user.nome_completo"), "Backend Postgres deve usar nome e faixa etária da conta em demanda autenticada.");
+expect(postgres.includes("faixa_etaria: faixaEtaria"), "Fingerprint idempotente deve usar a faixa etária efetiva validada pelo servidor.");
+expect(local.includes('SELECT nome_completo, status FROM usuarios WHERE id = ?') && local.includes("nome = cleanText(account.nome_completo"), "Backend local deve manter o nome da conta como autoridade no registro autenticado.");
 
 // isInternal = ADMIN/SUPER_ADMIN + equipe de setor (COORDENADOR/ATENDENTE).
 expect(app.includes('{!isInternal && !isCitizen && <footer'), "Conta cidadã e equipe interna não devem exibir o rodapé/navegação pública.");
