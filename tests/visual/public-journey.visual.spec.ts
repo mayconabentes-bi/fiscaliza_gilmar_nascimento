@@ -144,12 +144,12 @@ test('registro mantém fluxo guiado, privacidade e revisão no mobile', async ({
     await expect(page.locator('[data-register-review]')).toBeVisible();
     await expect(page.getByText(/revise antes de enviar/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /enviar e gerar protocolo/i })).toBeVisible();
-    await expect(page.getByText(/não substitui canais oficiais/i)).toBeVisible();
+    await expect(page.getByText(/não substitui os canais oficiais/i)).toBeVisible();
     await capture(page, 'registro-etapa-3', testInfo.project.name);
   } else {
     await expect(page.getByRole('progressbar', { name: /progresso do registro/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /enviar e gerar protocolo/i })).toBeVisible();
-    await expect(page.getByText(/não substitui canais oficiais/i)).toBeVisible();
+    await expect(page.getByText(/não substitui os canais oficiais/i)).toBeVisible();
     await capture(page, 'registro-publico', testInfo.project.name);
   }
 });
