@@ -49,7 +49,7 @@ export default function EncaminhamentosCivicos({demanda,onClose}:{demanda:any;on
  return <div role="dialog" aria-modal="true" aria-labelledby="civic-forward-title" className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/60 sm:items-center sm:p-5">
   <div className="max-h-[95vh] w-full max-w-3xl overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl sm:rounded-3xl sm:p-7">
    <div className="flex items-start justify-between gap-3"><div><h2 id="civic-forward-title" className="text-xl font-extrabold">Encaminhamentos cívicos</h2><p className="mt-1 text-sm text-slate-600">{demanda.protocolo} · {demanda.bairro||"Manaus"}</p></div><button aria-label="Fechar encaminhamentos" onClick={onClose} className="rounded-lg p-3"><X/></button></div>
-   <p className="my-4 rounded-xl bg-blue-50 p-3 text-xs leading-5 text-blue-900">Área privada do projeto cívico independente. O registro nesta tela não constitui protocolo oficial; informe a referência recebida da instituição após o envio externo.</p>
+   <p className="my-4 rounded-xl bg-blue-50 p-3 text-xs leading-5 text-blue-900">Área privada do projeto cívico independente. O registro nesta tela não constitui protocolo oficial; informe a referência recebida da órgão destinatário após o envio externo.</p>
    {error&&<p role="alert" className="my-3 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
    {notice&&<p role="status" className="my-3 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}
    <section className="space-y-3 rounded-2xl border border-slate-200 p-4"><h3 className="font-bold">Preparar encaminhamento</h3>
@@ -65,7 +65,7 @@ export default function EncaminhamentosCivicos({demanda,onClose}:{demanda:any;on
     {editing===item.id&&<div className="mt-3 space-y-3 border-t pt-3">
      <label className="block font-semibold">Situação<select className="field mt-1 w-full" value={situacao} onChange={e=>setSituacao(e.target.value)}>{[item.situacao,...permitted[item.situacao]].map(s=><option key={s} value={s}>{steps.includes(s)?s:""}</option>)}</select></label>
      <label className="block font-semibold">Protocolo externo<input className="field mt-1 w-full" maxLength={160} value={referencia} onChange={e=>setReferencia(e.target.value)}/></label>
-     <label className="block font-semibold">Resposta da instituição (registro privado)<textarea className="field mt-1 w-full" rows={3} maxLength={2000} value={retorno} onChange={e=>setRetorno(e.target.value)}/></label>
+     <label className="block font-semibold">Resposta da órgão destinatário (registro privado)<textarea className="field mt-1 w-full" rows={3} maxLength={2000} value={retorno} onChange={e=>setRetorno(e.target.value)}/></label>
      <label className="block font-semibold">Próxima verificação<input className="field mt-1 w-full" type="date" value={proxima} onChange={e=>setProxima(e.target.value)}/></label>
      <div className="flex gap-2"><button disabled={busy|| (situacao==="PROTOCOLADO"&&!referencia.trim())} onClick={save} className="primary-button min-h-11">Salvar acompanhamento</button><button onClick={()=>setEditing(null)} className="secondary-button min-h-11">Cancelar</button></div>
     </div>}
