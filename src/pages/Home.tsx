@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Check, CircleDot, FileCheck2, MapPin, MessageSquareText, Radar, Route, ShieldCheck } from "lucide-react";
 import { getPulsoAttribution, trackPulsoEvent, withPulsoAttribution } from "../lib/mobileAnalytics";
+import { FiscalizeBrandMark } from "../components/FiscalizeBrand";
 
 const etapas = [
   { icon: MessageSquareText, titulo: "Registre", texto: "Informe o local e descreva a situação com o contexto necessário." },
@@ -62,7 +63,7 @@ export default function Home() {
                 <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#7c879d]">O que acontece depois do envio</p>
                 <p className="mt-1 text-lg font-extrabold tracking-[-0.025em] text-[#1f2e6e]">Um fluxo claro do registro ao acompanhamento</p>
               </div>
-              <span className="brand-signature-mark" aria-hidden="true"><img src="/brand/gilmar-nascimento-oficial.png" alt="" /></span>
+              <FiscalizeBrandMark className="h-11 w-11 shadow-sm" />
             </div>
             <div className="mt-6 space-y-1">
               {fluxo.map((item, index) => (
