@@ -92,6 +92,8 @@ jobs:
         run: npm run test:devices
       - name: Mobile performance budget
         run: npm run test:performance
+      - name: Public readiness error redaction
+        run: npm run test:readiness-security
       - name: Go-live readiness smoke tests
         run: npm run test:go-live
       - name: Shared-network field registration and staff baseline (synthetic local only)
