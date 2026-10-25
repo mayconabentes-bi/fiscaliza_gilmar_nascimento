@@ -236,6 +236,21 @@ test('acompanhamento orienta protocolo não encontrado sem expor dados', async (
   await capture(page, 'acompanhamento-nao-encontrado', testInfo.project.name);
 });
 
+test('como funciona explica etapas, status e limites em linguagem cidadã', async ({ page }, testInfo) => {
+  await page.goto('/metodologia');
+  await stabilize(page);
+
+  await expect(page.getByRole('heading', { level: 1, name: /entenda o caminho do seu registro/i })).toBeVisible();
+  await expect(page.locator('[data-methodology-flow]')).toBeVisible();
+  await expect(page.locator('[data-methodology-status]')).toContainText('Encaminhado');
+  await expect(page.locator('[data-methodology-status]')).toContainText('não significa protocolo ou aceite automático por órgão público');
+  await expect(page.locator('[data-methodology-limit]')).toContainText('Não substitui protocolo');
+  await expect(page.getByRole('link', { name: /registrar problema/i })).toBeVisible();
+  await expect(page.getByRole('link', { name: /consultar protocolo/i })).toBeVisible();
+
+  await capture(page, 'como-funciona', testInfo.project.name);
+});
+
 test('login cidadão prioriza autenticação comum na primeira dobra', async ({ page }, testInfo) => {
   await page.goto('/login');
   await stabilize(page);

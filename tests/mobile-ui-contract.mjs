@@ -4,6 +4,7 @@ const app = fs.readFileSync('src/App.tsx', 'utf8');
 const home = fs.readFileSync('src/pages/Home.tsx', 'utf8');
 const form = fs.readFileSync('src/pages/NovaDemanda.tsx', 'utf8');
 const protocol = fs.readFileSync('src/pages/ConsultaProtocolo.tsx', 'utf8');
+const methodology = fs.readFileSync('src/pages/Metodologia.tsx', 'utf8');
 const records = fs.readFileSync('src/pages/MeusRegistros.tsx', 'utf8');
 const login = fs.readFileSync('src/pages/Login.tsx', 'utf8');
 const recovery = fs.readFileSync('src/pages/RecoverAccess.tsx', 'utf8');
@@ -92,6 +93,9 @@ expect((protocol.match(/historyNewestFirst\.map/g) || []).length >= 2 && protoco
 expect(protocol.includes('PROTOCOL_RE') && protocol.includes('Limpar protocolo'), 'Consulta mobile deve validar formato localmente e permitir limpar o campo com alvo touch.');
 expect(protocol.includes('sm:hidden') && protocol.includes('historyNewestFirst.map'), 'Histórico mobile deve mostrar a atualização mais recente primeiro sem alterar o histórico persistido.');
 expect(protocol.includes('Consulta pública protegida.') && protocol.includes('endereço detalhado'), 'Acompanhar deve comunicar claramente a minimização da resposta pública.');
+expect(methodology.includes('data-methodology-flow') && methodology.includes('Em quatro passos.') && methodology.includes('Registrar problema') && methodology.includes('Consultar protocolo'), 'Como funciona mobile deve resumir a jornada e manter CTAs consistentes com a experiência pública.');
+expect(methodology.includes('data-methodology-status') && methodology.includes('não significa protocolo ou aceite automático por órgão público') && methodology.includes('não substitui eventual confirmação do órgão responsável'), 'Como funciona deve explicar status sem sugerir confirmação institucional não comprovada.');
+expect(methodology.includes('data-methodology-limit') && methodology.includes('Não substitui protocolo') && methodology.includes('não é serviço de emergência'), 'Como funciona deve preservar limites do protocolo interno e de emergência.');
 expect(records.includes('data-citizen-followup-list') && records.includes('Registrar nova ocorrência') && records.includes('Consultar outro protocolo'), 'Conta cidadã deve priorizar registros vinculados e deixar consulta manual como ação secundária.');
 expect(!records.includes('Novo problema') && !records.includes('Consultar protocolo</span>'), 'Meus registros mobile não deve repetir cards de navegação já presentes no shell.');
 expect(login.includes('data-login-mode={type}') && login.includes('Acesse seus registros e sua conta.'), 'Entrar mobile deve priorizar a jornada cidadã.');
