@@ -259,9 +259,10 @@ test('sobre deixa independência, responsabilidade e limites verificáveis', asy
   await expect(page.locator('[data-transparency-principles]')).toContainText('O FISCALIZE não é canal oficial');
   await expect(page.locator('[data-transparency-principles]')).toContainText('Participar não significa apoiar');
   await expect(page.locator('[data-transparency-commitments]')).toContainText('Não atribuir ao FISCALIZE ações realizadas por órgãos públicos ou terceiros');
-  await expect(page.getByRole('link', { name: /como funciona/i })).toBeVisible();
-  await expect(page.getByRole('link', { name: /^privacidade$/i })).toBeVisible();
-  await expect(page.getByRole('link', { name: /termos de uso/i })).toBeVisible();
+  const transparencyLinks = page.locator('[data-transparency-links]');
+  await expect(transparencyLinks.getByRole('link', { name: /como funciona/i })).toBeVisible();
+  await expect(transparencyLinks.getByRole('link', { name: /^privacidade$/i })).toBeVisible();
+  await expect(transparencyLinks.getByRole('link', { name: /termos de uso/i })).toBeVisible();
 
   await capture(page, 'sobre-transparencia', testInfo.project.name);
 });
