@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, Eye, Image as ImageIcon, RefreshCw, ShieldCheck, X } from "lucide-react";
 import { fetchWithTimeout } from "../lib/request";
+import EncaminhamentosCivicos from "../components/EncaminhamentosCivicos";
 import { DEMAND_TAXONOMY, demandCategoryLabel, demandProblemLabel, getDemandCategory } from "../shared/demandTaxonomy";
 import { canTransitionDemandStatus, isDemandStatus } from "../shared/demandStatusWorkflow";
 
@@ -70,6 +71,7 @@ export default function AdminDemandas() {
   const [tipoProblema, setTipoProblema] = useState("");
   const [error, setError] = useState("");
   const [demandaSelecionada, setDemandaSelecionada] = useState<any | null>(null);
+  const [encaminhamentoDemanda, setEncaminhamentoDemanda] = useState<any | null>(null);
   const [novoStatus, setNovoStatus] = useState<StatusValue>("RECEBIDA");
   const [novaPrioridade, setNovaPrioridade] = useState<PrioridadeValue>("MEDIA");
   const [observacao, setObservacao] = useState("");
@@ -352,6 +354,7 @@ export default function AdminDemandas() {
             )}
             <div className="mt-3 flex flex-col gap-2 sm:flex-row">
               <button type="button" onClick={() => abrirAlteracaoStatus(demanda)} className="min-h-12 flex-1 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-700">Abrir triagem</button>
+              <button type="button" onClick={() => setEncaminhamentoDemanda(demanda)} className="min-h-12 flex-1 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-900">Encaminhamentos</button>
               {demanda.tem_evidencia_foto ? (
                 <button type="button" onClick={() => abrirEvidencia(demanda)} className="min-h-12 flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700">
                   Ver {Number(demanda.evidencia_total || 1)} foto{Number(demanda.evidencia_total || 1) === 1 ? "" : "s"} · {evidenciaLabel(demanda.evidencia_moderacao_status)}
@@ -410,7 +413,7 @@ export default function AdminDemandas() {
                     ) : <span className="text-xs text-slate-400">Sem foto</span>}
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 text-right">
-                    <button onClick={() => abrirAlteracaoStatus(demanda)} className="inline-flex min-w-[112px] items-center justify-center whitespace-nowrap rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700">Alterar status</button>
+                    <div className="flex flex-col gap-2"><button onClick={() => abrirAlteracaoStatus(demanda)} className="inline-flex min-w-[112px] items-center justify-center whitespace-nowrap rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700">Alterar status</button><button onClick={() => setEncaminhamentoDemanda(demanda)} className="rounded-lg border border-blue-200 px-3 py-2 text-xs font-bold text-blue-900">Encaminhamentos</button></div>
                   </td>
                 </tr>
               ))}
@@ -419,6 +422,7 @@ export default function AdminDemandas() {
         </div>
       </div>
 
+      {encaminhamentoDemanda && <EncaminhamentosCivicos demanda={encaminhamentoDemanda} onClose={() => setEncaminhamentoDemanda(null)} />}
       {demandaSelecionada && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/45 p-0 sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-labelledby="status-modal-title">
           <div className="w-full max-w-2xl rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl">
