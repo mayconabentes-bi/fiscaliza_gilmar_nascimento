@@ -18,6 +18,10 @@ function consentVersion() {
   return process.env.LGPD_CONSENT_VERSION || "2026-09-v1";
 }
 
+function termsUseVersion() {
+  return process.env.TERMS_USE_VERSION || "2026-10-CIDADAO";
+}
+
 function validationError(res: any, message = "Revise os dados informados.") {
   return res.status(400).json({ error: message });
 }
@@ -238,16 +242,23 @@ export function setupCitizenAuthPostgres(app: Express) {
       const id = uuidv4();
       const passwordHash = await bcrypt.hash(password, 12);
       const consentimento = req.body?.aceite_lgpd === true;
-      const acceptedAt = consentimento ? new Date().toISOString() : null;
+      const aceiteTermos = req.body?.aceite_codigo === true;
+      const acceptedNow = new Date().toISOString();
+      const acceptedAt = consentimento ? acceptedNow : null;
       const version = consentimento ? consentVersion() : null;
+      const termsAcceptedAt = aceiteTermos ? acceptedNow : null;
+      const termsVersion = aceiteTermos ? termsUseVersion() : null;
       await sql`
         insert into public.usuarios (
           id, nome_completo, email, municipio, bairro, password_hash,
           consentimento_lgpd, data_consentimento, versao_consentimento,
+          termos_uso_aceito, data_aceite_termos, versao_termos,
           faixa_etaria, protecao_reforcada
         ) values (
           ${id}, ${nomeCompleto}, ${normalizedEmail}, ${municipio}, ${bairro}, ${passwordHash},
-          ${consentimento}, ${acceptedAt}, ${version}, ${faixaEtaria}, ${protecaoReforcada}
+          ${consentimento}, ${acceptedAt}, ${version},
+          ${aceiteTermos}, ${termsAcceptedAt}, ${termsVersion},
+          ${faixaEtaria}, ${protecaoReforcada}
         )
       `;
       return res.status(201).json({ id, message: "Cadastro realizado." });

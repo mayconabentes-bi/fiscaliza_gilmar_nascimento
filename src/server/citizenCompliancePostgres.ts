@@ -38,7 +38,7 @@ export function setupCitizenCompliancePostgres(app: Express) {
       const sql = getPostgres();
       const [user] = await sql`
         select id, nome_completo, email, municipio, bairro, status,
-               consentimento_lgpd, data_consentimento, versao_consentimento, created_at, password_hash
+               consentimento_lgpd, data_consentimento, versao_consentimento, termos_uso_aceito, data_aceite_termos, versao_termos, created_at, password_hash
         from public.usuarios where id = ${claims.id} limit 1
       `;
       if (
@@ -70,6 +70,9 @@ export function setupCitizenCompliancePostgres(app: Express) {
             consentimento_lgpd: user.consentimento_lgpd,
             data_consentimento: user.data_consentimento,
             versao_consentimento: user.versao_consentimento,
+            termos_uso_aceito: user.termos_uso_aceito,
+            data_aceite_termos: user.data_aceite_termos,
+            versao_termos: user.versao_termos,
             created_at: user.created_at,
           },
           demandas,
@@ -103,7 +106,9 @@ export function setupCitizenCompliancePostgres(app: Express) {
           update public.usuarios
           set nome_completo = 'Conta excluída', email = ${syntheticEmail}, municipio = 'Removido',
               bairro = 'Removido', status = 'excluido', consentimento_lgpd = false,
-              data_consentimento = null, versao_consentimento = null, password_hash = ${disabledHash}
+              data_consentimento = null, versao_consentimento = null,
+              termos_uso_aceito = false, data_aceite_termos = null, versao_termos = null,
+              password_hash = ${disabledHash}
           where id = ${claims.id}
         `;
         await tx`

@@ -1,12 +1,14 @@
 import React, { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Eye, EyeOff, ShieldCheck, User } from "lucide-react";
 import { FiscalizeLockup } from "../components/FiscalizeBrand";
 
 export default function Login({ setUser }: { setUser: (user: any) => void }) {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const registrationState = location.state as { registrationSuccess?: boolean; email?: string } | null;
   const initialType = searchParams.get("admin") === "1" ? "admin" : "cidadao";
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => registrationState?.email || "");
   const [password, setPassword] = useState("");
   const [type, setType] = useState<"cidadao" | "admin">(initialType);
   const [showPassword, setShowPassword] = useState(false);
@@ -84,6 +86,12 @@ export default function Login({ setUser }: { setUser: (user: any) => void }) {
         )}
 
         <form className="mt-4 space-y-4 sm:mt-6 sm:space-y-5" onSubmit={handleSubmit}>
+          {type === "cidadao" && registrationState?.registrationSuccess && (
+            <div role="status" data-registration-success className="rounded-xl border border-emerald-100 bg-emerald-50 p-3.5 text-sm leading-6 text-emerald-800">
+              <strong className="block">Conta criada com sucesso.</strong>
+              Seu e-mail já está preenchido. Digite a senha que você escolheu para entrar.
+            </div>
+          )}
           {error && <div role="alert" data-login-error className="rounded-xl border border-red-100 bg-red-50 p-3.5 text-sm leading-6 text-red-700">{error}</div>}
           <label className="block">
             <span className="text-sm font-bold text-[#34425b]">E-mail</span>

@@ -89,7 +89,7 @@ for (const [text, label] of [[register, 'Cadastro'], [intake, 'Demanda']]) {
 
 expectIncludes(register, [
   'A criação autônoma de conta no FISCALIZE está disponível a partir de 16 anos.',
-  'disabled={formData.faixa_etaria === "UNDER_16"}',
+  'disabled={loading || formData.faixa_etaria === "UNDER_16"}',
   'Proteção reforçada:',
 ], 'Cadastro — proteção etária');
 

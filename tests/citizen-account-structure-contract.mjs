@@ -11,6 +11,7 @@ const terms = read("src/pages/Termos.tsx");
 const db = read("src/server/db.ts");
 const cep = read("src/server/cepLookup.ts");
 const migration = read("supabase/migrations/20260922185900_citizen_profile_cleanup.sql");
+const termsMigration = read("supabase/migrations/20261025114500_citizen_terms_acceptance_audit.sql");
 
 expect(!auth.includes("AGE_18_PLUS"), "Backend de cadastro não deve referenciar AGE_18_PLUS.");
 expect(auth.includes("type AgeBand"), "Backend deve usar o tipo AgeBand real.");
@@ -35,7 +36,17 @@ expect(register.includes("O CEP e o logradouro consultado não são armazenados 
 expect(register.includes('data-cep-preview="full-address"') && register.includes("Endereço consultado"), "Cadastro deve exibir o endereço completo retornado para conferência.");
 expect(register.includes("cepRequestId") && register.includes('cache: "no-store"'), "Cadastro deve ignorar respostas CEP obsoletas e evitar cache local de consulta.");
 expect(!register.includes("onBlur={() =>"), "Cadastro não deve disparar consulta CEP duplicada por blur e clique.");
+expect(register.includes('registrationSuccess: true') && register.includes('state: {'), "Cadastro deve sinalizar sucesso ao login sem expor e-mail na URL.");
+expect(register.includes('loading') && register.includes('Criando conta...'), "Cadastro deve bloquear reenvio enquanto a conta é criada.");
+expect(register.includes('target="_blank"') && register.includes('rel="noopener noreferrer"'), "Termos e Privacidade devem abrir sem desmontar o formulário.");
+expect(register.includes('aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}'), "Cadastro deve permitir mostrar/ocultar senha explicitamente.");
+expect(register.includes("Nesta fase:") && register.includes("Manaus"), "Cadastro deve informar o escopo territorial atual.");
+expect(register.includes("Use pelo menos 8 caracteres."), "Cadastro deve explicar o requisito mínimo de senha.");
 expect(!register.includes("cep: formData") && !register.includes("cep: cep"), "CEP não deve ser enviado no payload de criação de conta.");
 expect(cep.includes("VIACEP_API_BASE") && cep.includes("AbortController"), "Backend de CEP deve manter timeout e provedor configurável.");
+expect(auth.includes("termos_uso_aceito") && auth.includes("data_aceite_termos") && auth.includes("versao_termos"), "Backend de cadastro deve persistir aceite auditável dos Termos.");
+expect(auth.includes('"2026-10-CIDADAO"'), "Versão dos Termos persistida deve acompanhar a versão pública atual.");
+expect(termsMigration.includes("termos_uso_aceito boolean not null default false"), "Migration deve adicionar flag de aceite dos Termos.");
+expect(termsMigration.includes("data_aceite_termos timestamptz") && termsMigration.includes("versao_termos text"), "Migration deve registrar data e versão dos Termos.");
 
 console.log("Citizen account structure contract OK: age bands, CEP minimization and legacy score cleanup.");
