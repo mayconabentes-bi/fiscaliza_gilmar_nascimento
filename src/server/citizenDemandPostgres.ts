@@ -145,6 +145,36 @@ export function setupCitizenDemandPostgres(app: Express) {
 
     try {
       const sql = await getHealthyPostgres();
+      let usuarioId: string | null = null;
+      let faixaEtaria: AgeBand | null = null;
+      let revisaoReforcada = false;
+
+      if (claims) {
+        const [user] = await sql`select id, nome_completo, status, faixa_etaria, protecao_reforcada, password_hash from public.usuarios where id = ${claims.id} limit 1`;
+        if (
+          !user
+          || user.status === "excluido"
+          || user.status === "suspenso"
+          || !isCitizenSessionCurrent(claims.pwd, user.password_hash)
+        ) {
+          res.clearCookie("token", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/" });
+          return res.status(401).json({ error: "Sessão inválida. Entre novamente para vincular o registro à sua conta." });
+        }
+        usuarioId = claims.id;
+        nome = cleanText(user.nome_completo, 160, true);
+        if (user.faixa_etaria) {
+          const agePolicy = ageBandForActiveParticipation(user.faixa_etaria);
+          faixaEtaria = agePolicy.ageBand;
+          revisaoReforcada = Boolean(user.protecao_reforcada) || agePolicy.enhancedProtection;
+        }
+      }
+
+      if (!faixaEtaria) {
+        const agePolicy = ageBandForActiveParticipation(req.body?.faixa_etaria);
+        faixaEtaria = agePolicy.ageBand;
+        revisaoReforcada = agePolicy.enhancedProtection;
+      }
+
       const requestFingerprint = demandRequestFingerprint({
         actor: claims?.id || null,
         nome,
@@ -160,34 +190,10 @@ export function setupCitizenDemandPostgres(app: Express) {
         categoria,
         tipo_problema: tipoProblema,
         descricao,
-        faixa_etaria: String(req.body?.faixa_etaria || ""),
+        faixa_etaria: faixaEtaria,
         aviso_privacidade_aceito: true,
         evidencias: fotoEvidenciasBase64.map(hashDemandEvidence),
       });
-
-      let usuarioId: string | null = null;
-      let faixaEtaria: AgeBand | null = null;
-      let revisaoReforcada = false;
-
-      if (claims) {
-        const [user] = await sql`select id, status, faixa_etaria, protecao_reforcada, password_hash from public.usuarios where id = ${claims.id} limit 1`;
-        if (
-          !user
-          || user.status === "excluido"
-          || user.status === "suspenso"
-          || !isCitizenSessionCurrent(claims.pwd, user.password_hash)
-        ) {
-          res.clearCookie("token", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/" });
-          return res.status(401).json({ error: "Sessão inválida. Entre novamente para vincular o registro à sua conta." });
-        }
-        usuarioId = claims.id;
-        if (user.faixa_etaria) {
-          const agePolicy = ageBandForActiveParticipation(user.faixa_etaria);
-          faixaEtaria = agePolicy.ageBand;
-          revisaoReforcada = Boolean(user.protecao_reforcada) || agePolicy.enhancedProtection;
-        }
-      }
-
 
       const [existingDemand] = await sql`
         select id, protocolo, status, request_fingerprint,
@@ -205,12 +211,6 @@ export function setupCitizenDemandPostgres(app: Express) {
         }
         res.setHeader("Idempotent-Replay", "true");
         return res.status(200).json(persistedDemandResponse(existingDemand, true));
-      }
-
-      if (!faixaEtaria) {
-        const agePolicy = ageBandForActiveParticipation(req.body?.faixa_etaria);
-        faixaEtaria = agePolicy.ageBand;
-        revisaoReforcada = agePolicy.enhancedProtection;
       }
 
       const id = uuidv4();
