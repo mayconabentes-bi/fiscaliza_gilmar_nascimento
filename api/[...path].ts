@@ -15,9 +15,18 @@ async function ensureReady() {
   await readinessPromise;
 }
 
-function canBypassGlobalReadiness(req: any) {
+function requestPath(req: any) {
   const rawUrl = String(req.url || "");
   const pathname = rawUrl.split("?")[0];
+  if (pathname && pathname !== "/api/[...path]") return pathname;
+
+  const rawPath = req.query?.path;
+  const parts = Array.isArray(rawPath) ? rawPath : typeof rawPath === "string" ? rawPath.split("/") : [];
+  return parts.length ? `/api/${parts.filter(Boolean).join("/")}` : pathname;
+}
+
+function canBypassGlobalReadiness(req: any) {
+  const pathname = requestPath(req);
 
   if (req.method === "GET" && pathname === "/api/public-config") return true;
   if (req.method === "POST" && pathname === "/api/demandas") return true;
