@@ -15,9 +15,18 @@ async function ensureReady() {
   await readinessPromise;
 }
 
+function canBypassGlobalReadiness(req: any) {
+  if (req.method !== "GET") return false;
+  const rawUrl = String(req.url || "");
+  const pathname = rawUrl.split("?")[0];
+  return pathname === "/api/public-config";
+}
+
 export default async function handler(req: any, res: any) {
   try {
-    await ensureReady();
+    if (!canBypassGlobalReadiness(req)) {
+      await ensureReady();
+    }
     return app(req, res);
   } catch (error) {
     console.error("Vercel API readiness failure:", error);
