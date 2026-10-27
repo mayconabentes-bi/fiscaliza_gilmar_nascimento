@@ -21,6 +21,7 @@ function canBypassGlobalReadiness(req: any) {
 
   if (req.method === "GET" && pathname === "/api/public-config") return true;
   if (req.method === "POST" && pathname === "/api/demandas") return true;
+  if (req.method === "POST" && pathname === "/api/auth/admin/login") return true;
 
   return false;
 }
