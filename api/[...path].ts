@@ -16,10 +16,13 @@ async function ensureReady() {
 }
 
 function canBypassGlobalReadiness(req: any) {
-  if (req.method !== "GET") return false;
   const rawUrl = String(req.url || "");
   const pathname = rawUrl.split("?")[0];
-  return pathname === "/api/public-config";
+
+  if (req.method === "GET" && pathname === "/api/public-config") return true;
+  if (req.method === "POST" && pathname === "/api/demandas") return true;
+
+  return false;
 }
 
 export default async function handler(req: any, res: any) {
