@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Eye, FileText, Landmark, ShieldCheck, UserRound, Waypoints } from "lucide-react";
+import { ArrowRight, CheckCircle2, Eye, EyeOff, FileText, Landmark, ShieldCheck, UserRound, Waypoints } from "lucide-react";
 import { FiscalizeBrandMark } from "../components/FiscalizeBrand";
 
 const pilares = [
@@ -33,25 +33,93 @@ const compromissos = [
   "Identificar exemplos como exemplos e apresentar fonte e período quando divulgarmos resultados agregados."
 ];
 
+const resumoRapido = [
+  "Iniciativa cívica independente",
+  "Não é canal oficial de órgão público",
+  "Participar não cria vínculo político"
+];
+
+const dadosPublicos = [
+  "Protocolo do FISCALIZE",
+  "Status do acompanhamento",
+  "Histórico de atualizações necessário à consulta"
+];
+
+const dadosProtegidos = [
+  "Contato do cidadão",
+  "Fotos enviadas",
+  "Descrição detalhada e informações internas"
+];
+
 export default function Transparencia() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 py-2 sm:space-y-8 sm:py-8">
-      <header className="surface-card overflow-hidden" data-transparency-hero>
+      <header className="overflow-hidden rounded-[1.5rem] border border-[#dde4ef] bg-white" data-transparency-hero>
         <div className="h-1.5 bg-[#f36a10]" aria-hidden="true" />
         <div className="grid gap-5 p-5 sm:gap-7 sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center">
           <div className="max-w-3xl">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="section-kicker rounded-full border border-[#d7e0f2] bg-[#f7f9fd] px-3 py-1.5">Sobre o FISCALIZE</span>
-              <span className="hidden rounded-full bg-[#fff0e5] px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#b84405] sm:inline-flex">Transparência e limites</span>
+              <span className="section-kicker rounded-full border border-[#d7e0f2] bg-[#f7f9fd] px-3 py-1.5">Transparência</span>
+              <span className="rounded-full bg-[#eef2fb] px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#1f2e6e]">Independente e não oficial</span>
             </div>
-            <h1 className="mt-4 text-3xl font-extrabold tracking-[-0.045em] text-[#172033] sm:mt-5 sm:text-4xl">Quem somos, o que fazemos e o que não fazemos.</h1>
-            <p className="mt-3 text-sm leading-6 text-[#657089] sm:mt-4 sm:text-base sm:leading-7">Esta página reúne as informações essenciais para você entender quem mantém a plataforma, como os registros são usados e quais são os limites do serviço.</p>
+            <h1 className="mt-4 text-3xl font-extrabold tracking-[-0.045em] text-[#172033] sm:mt-5 sm:text-4xl">Saiba quem mantém o FISCALIZE e quais são os limites da plataforma.</h1>
+            <p className="mt-3 text-sm leading-6 text-[#657089] sm:mt-4 sm:text-base sm:leading-7">Aqui você encontra, de forma direta, o que o FISCALIZE faz, o que não faz e como protege as informações usadas no acompanhamento dos registros.</p>
+            <div className="mt-5 grid gap-2 sm:grid-cols-3">
+              {resumoRapido.map((item) => (
+                <div key={item} className="flex min-h-11 items-center gap-2 rounded-xl border border-[#e3e8f2] bg-[#f8fafe] px-3 py-2.5 text-xs font-bold leading-5 text-[#526078]">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-[#1f2e6e]" />
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
           </div>
           <div className="hidden justify-start sm:flex lg:justify-end"><FiscalizeBrandMark className="h-16 w-16 shadow-sm" /></div>
         </div>
       </header>
 
+      <section data-transparency-data className="grid gap-3 md:grid-cols-2">
+        <article className="surface-card p-4 sm:p-6">
+          <div className="flex items-start gap-3">
+            <span className="icon-tile shrink-0"><Eye className="h-5 w-5" /></span>
+            <div>
+              <span className="section-kicker">Na consulta pública</span>
+              <h2 className="mt-2 text-lg font-extrabold text-[#172033] sm:text-xl">O que pode aparecer.</h2>
+            </div>
+          </div>
+          <ul className="mt-4 space-y-2.5">
+            {dadosPublicos.map((item) => (
+              <li key={item} className="flex gap-2.5 text-sm leading-6 text-[#657089]">
+                <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-[#1f2e6e]" />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </article>
+
+        <article className="surface-card p-4 sm:p-6">
+          <div className="flex items-start gap-3">
+            <span className="icon-tile shrink-0"><EyeOff className="h-5 w-5" /></span>
+            <div>
+              <span className="section-kicker">Protegido</span>
+              <h2 className="mt-2 text-lg font-extrabold text-[#172033] sm:text-xl">O que não fica público.</h2>
+            </div>
+          </div>
+          <ul className="mt-4 space-y-2.5">
+            {dadosProtegidos.map((item) => (
+              <li key={item} className="flex gap-2.5 text-sm leading-6 text-[#657089]">
+                <ShieldCheck className="mt-1 h-4 w-4 shrink-0 text-[#1f2e6e]" />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </article>
+      </section>
+
       <section data-transparency-principles>
+        <div className="mb-4">
+          <span className="section-kicker">Sobre o projeto</span>
+          <h2 className="mt-2 text-2xl font-extrabold tracking-[-0.035em] text-[#172033]">O essencial, sem letras miúdas.</h2>
+        </div>
         <div className="grid gap-3 sm:gap-5 md:grid-cols-2">
           {pilares.map(({ icon: Icon, titulo, texto }, index) => (
             <article key={titulo} className="surface-card p-4 sm:p-6">
