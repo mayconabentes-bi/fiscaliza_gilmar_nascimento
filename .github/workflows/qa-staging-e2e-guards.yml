@@ -1,0 +1,29 @@
+name: QA setorial staging - seguranca sintetica
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "scripts/qa-staging-sector-e2e.mjs"
+      - "tests/qa-staging-e2e-guards.test.mjs"
+      - ".github/workflows/qa-staging-e2e-guards.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Instalar dependencias bloqueadas em package-lock
+        run: npm ci --ignore-scripts
+      - name: Validar guardas com dados totalmente ficticios
+        run: node --test tests/qa-staging-e2e-guards.test.mjs
